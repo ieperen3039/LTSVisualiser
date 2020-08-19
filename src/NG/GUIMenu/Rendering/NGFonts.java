@@ -16,10 +16,6 @@ import static NG.Tools.Directory.fonts;
  * @author Geert van Ieperen. Created on 23-8-2018.
  */
 public enum NGFonts {
-    ORBITRON_REGULAR(fonts, "Orbitron", "Orbitron-Regular.ttf"),
-    ORBITRON_MEDIUM(fonts, "Orbitron", "Orbitron-Medium.ttf"),
-    ORBITRON_BOLD(fonts, "Orbitron", "Orbitron-Bold.ttf"),
-    ORBITRON_BLACK(fonts, "Orbitron", "Orbitron-Black.ttf"),
     LUCIDA_CONSOLE(fonts, "LucidaConsole", "lucon.ttf");
 
     public final String name;
