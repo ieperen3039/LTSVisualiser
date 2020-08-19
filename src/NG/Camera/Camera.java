@@ -44,6 +44,15 @@ public interface Camera extends ToolElement, MouseListener {
      * viewspace.
      */
     default Matrix4f getViewProjection(float aspectRatio) {
+        Matrix4f vpMatrix = getProjectionMatrix(aspectRatio);
+        return vpMatrix.lookAt(
+                getEye(),
+                getFocus(),
+                getUpVector()
+        );
+    }
+
+    default Matrix4f getProjectionMatrix(float aspectRatio) {
         Matrix4f vpMatrix = new Matrix4f();
 
         if (isIsometric()) {
@@ -52,14 +61,6 @@ public interface Camera extends ToolElement, MouseListener {
         } else {
             vpMatrix.setPerspective(Settings.FOV, aspectRatio, Settings.Z_NEAR, Settings.Z_FAR);
         }
-
-        // set the view
-        vpMatrix.lookAt(
-                getEye(),
-                getFocus(),
-                getUpVector()
-        );
-
         return vpMatrix;
     }
 

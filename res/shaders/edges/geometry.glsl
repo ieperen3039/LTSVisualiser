@@ -22,13 +22,13 @@ void main() {
     float bodyHSize = headSize / 10;
     // a^2 + b^2 = c^2
     // a = sqrt(c^2 - b^2)
-    float adjustedRadius = sqrt(nodeRadius * nodeRadius - arrowHSize * arrowHSize);
+    float adjustedRadius = (headSize > 0) ? nodeRadius : sqrt(nodeRadius * nodeRadius - arrowHSize * arrowHSize);
 
     vec3 aToB = normalize(b[0] - a[0]);
     vec3 aPos = a[0] + aToB * adjustedRadius;
     vec3 bPos = b[0] - aToB * nodeRadius;
 
-    vec4 aScPos = viewProjection * vec4(aPos, 1.0) + vec4(0.0, 0.0, 1.0/32, 0.0); // prevents z-fighting;
+    vec4 aScPos = viewProjection * vec4(aPos, 1.0);
     vec4 bScPos = viewProjection * vec4(bPos, 1.0);
     vec2 aScToBSc = vec2(bScPos.xy - aScPos.xy);
     vec2 aPerpendicular = normalize(vec2(aScToBSc.y, -aScToBSc.x));

@@ -2,6 +2,7 @@ package NG.Core;
 
 import NG.Camera.Camera;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
+import NG.Graph.Graph;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.GLFWWindow;
@@ -30,6 +31,8 @@ public interface Root {
     KeyControl keyControl();
 
     Version getVersionNumber();
+
+    Graph graph();
 
     /**
      * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed

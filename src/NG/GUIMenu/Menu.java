@@ -20,11 +20,11 @@ public class Menu extends SDecorator {
     public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 30);
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(240, 190, 0);
     private final NodeClustering nodeCluster;
-    private final Graph parser;
+    private final Graph graph;
 
     public Menu(Main main) {
         this.nodeCluster = main.nodeCluster;
-        this.parser = main.graph;
+        this.graph = main.graph;
         SpringLayout updateLoop = main.updateLoop;
         UIFrameManager frameManager = main.frameManager;
         RenderLoop renderLoop = main.renderer;
@@ -34,9 +34,9 @@ public class Menu extends SDecorator {
                 new SPanel(SContainer.column(
                         new SimulationSliderUI(updateLoop),
                         new SFiller(),
-                        new ClusterMethodSelector(frameManager, nodeCluster, parser.actionLabels),
+                        new ClusterMethodSelector(frameManager, nodeCluster, graph.actionLabels),
                         new SFiller(),
-                        new ColorFrame(parser.actionLabels, nodeCluster),
+                        new ColorFrame(graph.actionLabels, nodeCluster),
                         new SFiller(),
                         new TimingUI(updateLoop, renderLoop),
                         new SFiller()

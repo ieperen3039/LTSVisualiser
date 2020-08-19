@@ -7,7 +7,6 @@ import NG.Rendering.MatrixStack.AbstractSGL;
 import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.ShaderException;
 import NG.Rendering.Shaders.ShaderProgram;
-import NG.Settings.Settings;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
 import org.joml.Matrix4f;
@@ -64,9 +63,7 @@ public class NodeShader implements ShaderProgram {
         float ratio = (float) window.getWidth() / window.getHeight();
         Camera camera = root.camera();
 
-        Matrix4f projection = new Matrix4f();
-        float visionSize = camera.vectorToFocus().length() - Settings.Z_NEAR;
-        projection.setOrthoSymmetric(ratio * visionSize, visionSize, Settings.Z_NEAR, Settings.Z_FAR);
+        Matrix4f projection = camera.getProjectionMatrix(ratio);
         writeMatrix(projection, projectionMatrixUID);
 
         // set the view

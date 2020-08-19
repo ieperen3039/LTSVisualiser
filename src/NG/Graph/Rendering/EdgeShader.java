@@ -7,7 +7,6 @@ import NG.Rendering.MatrixStack.AbstractSGL;
 import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.ShaderException;
 import NG.Rendering.Shaders.ShaderProgram;
-import NG.Settings.Settings;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
 import org.joml.Matrix4f;
@@ -31,7 +30,7 @@ public class EdgeShader implements ShaderProgram {
     private static final Path FRAGMENT_PATH = Directory.shaders.getPath("edges", "fragment.frag");
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
     private static final float EDGE_SIZE = NODE_RADIUS * 1.5f;
-    private static final float HEAD_SIZE = NODE_RADIUS * 2.0f;
+    private static final float HEAD_SIZE = 0; //NODE_RADIUS * 2.0f
 
     private final int programID;
     private final int vertexShaderID;
@@ -71,9 +70,7 @@ public class EdgeShader implements ShaderProgram {
         float ratio = (float) window.getWidth() / window.getHeight();
         Camera camera = root.camera();
 
-        Matrix4f projection = new Matrix4f();
-        float visionSize = camera.vectorToFocus().length() - Settings.Z_NEAR;
-        projection.setOrthoSymmetric(ratio * visionSize, visionSize, Settings.Z_NEAR, Settings.Z_FAR);
+        Matrix4f projection = camera.getProjectionMatrix(ratio);
         writeMatrix(projection, projectionMatrixUID);
 
         // set the view

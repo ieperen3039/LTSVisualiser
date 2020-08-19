@@ -54,6 +54,7 @@ public abstract class AbstractMouseTool implements MouseTool {
             return;
         }
 
+        root.graph().onClick(button, x, y);
         root.camera().onClick(button, x, y);
         releaseListener = root.camera();
     }
@@ -101,6 +102,7 @@ public abstract class AbstractMouseTool implements MouseTool {
 
         root.gui().mouseMoved(xDelta, yDelta, xPos, yPos);
         root.camera().mouseMoved(xDelta, yDelta, xPos, yPos);
+        root.graph().mouseMoved(xDelta, yDelta, xPos, yPos);
     }
 
     @Override

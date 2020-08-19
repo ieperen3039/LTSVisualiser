@@ -1,7 +1,7 @@
 package NG.Core;
 
 import NG.Camera.Camera;
-import NG.Camera.MovableCamera;
+import NG.Camera.PointCenteredCamera;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
@@ -70,7 +70,7 @@ public class Main implements Root {
         keyControl = inputHandler.getKeyControl();
         frameManager = new FrameManagerImpl();
         mainThread = Thread.currentThread();
-        camera = new MovableCamera(Vectors.O, 20);
+        camera = new PointCenteredCamera(Vectors.O);
 
         graph = Graph.readPlainString(graphString);
         updateLoop = new SpringLayout(graph.nodeMesh, graph.edgeMesh);
@@ -88,9 +88,9 @@ public class Main implements Root {
         frameManager.init(this);
         updateLoop.init(this);
         camera.init(this);
+        graph.init(this);
 
         // read graph
-        graph.init();
         nodeCluster = new NodeClustering(this, graph, Main.ClusterMethod.NO_CLUSTERING);
 
         renderer.renderSequence(new EdgeShader())
@@ -171,6 +171,11 @@ public class Main implements Root {
     }
 
     @Override
+    public Graph graph() {
+        return graph;
+    }
+
+    @Override
     public void executeOnRenderThread(Runnable action) {
         if (Thread.currentThread() == mainThread) {
             action.run();
@@ -189,5 +194,6 @@ public class Main implements Root {
         renderer.cleanup();
         updateLoop.cleanup();
         inputHandler.cleanup();
+        graph.cleanup();
     }
 }
