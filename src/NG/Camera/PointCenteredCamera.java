@@ -106,6 +106,6 @@ public class PointCenteredCamera implements Camera {
 
     @Override
     public boolean isIsometric() {
-        return false;
+        return root.settings().ISOMETRIC_VIEW;
     }
 }

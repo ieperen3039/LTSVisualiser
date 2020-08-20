@@ -1,10 +1,12 @@
 package NG.Graph;
 
+import NG.Camera.Camera;
 import NG.Core.Root;
 import NG.Core.ToolElement;
 import NG.DataStructures.Generic.Color4f;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
+import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.MouseClickListener;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
@@ -12,14 +14,16 @@ import NG.Rendering.GLFWWindow;
 import NG.Tools.Vectors;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.regex.Pattern;
 
-import static NG.Graph.Rendering.NodeShader.NODE_RADIUS;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 
 /**
  * @author Geert van Ieperen created on 20-7-2020.
@@ -55,14 +59,6 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
     public void init(Root root) {
         this.root = root;
 
-        for (EdgeMesh.Edge edge : edges) {
-            // create mapping
-            mapping.computeIfAbsent(edge.a, node -> new ArrayList<>(0))
-                    .add(edge.b);
-            // make sure deadlocks are part of the mapping keys
-            mapping.computeIfAbsent(edge.b, node -> new ArrayList<>(0));
-        }
-
         // create position mapping
         double[][] positions = HDEPositioning.position(edges, nodes);
         for (int i = 0; i < nodes.length; i++) {
@@ -84,29 +80,64 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
     @Override
     public void onClick(int button, int xRel, int yRel) {
+        checkMouseClick(button, xRel, yRel);
+    }
+
+    public boolean checkMouseClick(int button, int xRel, int yRel) {
+        if (button != GLFW_MOUSE_BUTTON_LEFT && button != GLFW_MOUSE_BUTTON_RIGHT) return false;
+
         GLFWWindow window = root.window();
-        float ratio = (float) window.getWidth() / window.getHeight();
-        Matrix4f viewProjection = root.camera().getViewProjection(ratio);
+        int width = window.getWidth();
+        int height = window.getHeight();
+        float ratio = (float) width / height;
+        Camera camera = root.camera();
+        Matrix4f viewProjection = camera.getViewProjection(ratio);
+
+        assert camera.isIsometric() : "Click detection doesnt work in perspective mode";
 
         NodeMesh.Node candidate = null;
         float lowestZ = 1; // z values higher than this are not visible
 
+        Vector3fc right = new Vector3f(camera.vectorToFocus())
+                .cross(camera.getUpVector())
+                .normalize(NodeShader.NODE_RADIUS);
+
+        float xPix = (2.0f * xRel / width) - 1;
+        float yPix = 1 - (2.0f * yRel / height);
+
         for (NodeMesh.Node node : nodes) {
             Vector3f scrPos = new Vector3f(node.position).mulPosition(viewProjection);
-            if (scrPos.x - NODE_RADIUS < xRel &&
-                    scrPos.x + NODE_RADIUS > xRel &&
-                    scrPos.y - NODE_RADIUS < yRel &&
-                    scrPos.y + NODE_RADIUS > yRel &&
-                    scrPos.z > -1 &&
-                    scrPos.z < lowestZ
+            float scSize = new Vector3f(right).mulDirection(viewProjection).length();
+
+            if (scrPos.x < xPix + scSize && scrPos.x > xPix - scSize &&
+                    scrPos.y < yPix + scSize && scrPos.y > yPix - scSize &&
+                    scrPos.z > -1 && scrPos.z < lowestZ
             ) {
                 candidate = node;
                 lowestZ = scrPos.z;
             }
         }
+        if (candidate == null) return false;
 
-        selectedNode = candidate;
-        selectedNodeZPlane = lowestZ;
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            selectedNode = candidate;
+            selectedNodeZPlane = lowestZ;
+            candidate.isFixed = true;
+
+        } else { // button == GLFW_MOUSE_BUTTON_RIGHT
+            if (!candidate.stayFixed) {
+                candidate.isFixed = true;
+                candidate.stayFixed = true;
+                candidate.color = Color4f.GREY;
+
+            } else {
+                candidate.isFixed = false;
+                candidate.stayFixed = false;
+                candidate.resetColor();
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -125,7 +156,13 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
     @Override
     public void onRelease(int button, int xSc, int ySc) {
-        selectedNode = null;
+        if (selectedNode != null) {
+            if (!selectedNode.stayFixed) {
+                selectedNode.isFixed = false;
+            }
+
+            selectedNode = null;
+        }
     }
 
     @Override
@@ -135,12 +172,13 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
         mapping.clear();
     }
 
-    public static Graph readPlainString(String data) {
-        String[] lines = data.split("\n");
+    public static Graph readPlainString(Path path) throws IOException {
+        List<String> lines = Files.readAllLines(path);
+        assert lines.size() == 3;
 
-        String[] stateLabels = separator.split(lines[0]);
-        String[] actionLabels = separator.split(lines[1]);
-        String[] transitions = separator.split(lines[2]);
+        String[] stateLabels = separator.split(lines.get(0));
+        String[] actionLabels = separator.split(lines.get(1));
+        String[] transitions = separator.split(lines.get(2));
         Graph graph = new Graph(stateLabels.length, transitions.length, actionLabels);
 
         for (int i = 0; i < stateLabels.length; i++) {
@@ -161,6 +199,14 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
             String label = actionLabels[labelInd];
 
             graph.edges[i] = new EdgeMesh.Edge(aNode, bNode, label);
+        }
+
+        for (EdgeMesh.Edge edge : graph.edges) {
+            // create mapping
+            graph.mapping.computeIfAbsent(edge.a, node -> new ArrayList<>(0))
+                    .add(edge.b);
+            // make sure deadlocks are part of the mapping keys
+            graph.mapping.computeIfAbsent(edge.b, node -> new ArrayList<>(0));
         }
 
         return graph;

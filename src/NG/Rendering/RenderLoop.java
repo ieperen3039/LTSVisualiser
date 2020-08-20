@@ -103,7 +103,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         int windowHeight = window.getHeight();
         if (accurateTiming) timer.startTiming("GUI");
         root.settings();
-        overlay.draw(windowWidth, windowHeight, 10, Settings.TOOL_BAR_HEIGHT + 10, 12);
+        overlay.draw(windowWidth, windowHeight, 10, 10, 12);
 
         if (accurateTiming) {
             glFinish();

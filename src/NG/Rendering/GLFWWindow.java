@@ -412,7 +412,7 @@ public class GLFWWindow {
         public Settings(NG.Settings.Settings s) {
             this(
                     s.DEBUG, false,
-                    s.ANTIALIAS_LEVEL, !s.DEBUG,
+                    s.ANTIALIAS_LEVEL, false,
                     s.WINDOW_WIDTH, s.WINDOW_HEIGHT,
                     s.V_SYNC, s.TARGET_FPS, true
             );

@@ -22,6 +22,7 @@ import NG.Tools.Logger;
 import NG.Tools.Vectors;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * A game of planning and making money.
@@ -49,7 +50,7 @@ public class Main implements Root {
         NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
     }
 
-    public Main(String graphString) throws IOException {
+    public Main(Path path) throws IOException {
         Logger.INFO.print("Starting up the engine...");
 
         Logger.DEBUG.print("General debug information: " +
@@ -72,7 +73,7 @@ public class Main implements Root {
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
 
-        graph = Graph.readPlainString(graphString);
+        graph = Graph.readPlainString(path);
         updateLoop = new SpringLayout(graph.nodeMesh, graph.edgeMesh);
     }
 

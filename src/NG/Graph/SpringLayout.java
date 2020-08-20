@@ -101,6 +101,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         // apply forces
         float tension = 0;
         for (NodeMesh.Node node : nodeList) {
+            if (node.isFixed) continue;
             Vector3f force = nodeForces.get(node);
             tension += force.length();
 

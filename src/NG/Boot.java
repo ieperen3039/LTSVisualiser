@@ -5,10 +5,10 @@ import NG.Tools.Logger;
 import org.lwjgl.system.Configuration;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Boots the Root
@@ -28,28 +28,14 @@ public class Boot {
             Logger.setLoggingLevel(Logger.INFO);
         }
 
-        String graphString;
-
         int lts = args.indexOf("-lts");
-        if (lts != -1){
-            StringBuilder str = new StringBuilder();
-            File source = new File(args.get(lts + 1));
-            Logger.DEBUG.print("Opening " + source.getCanonicalPath());
-
-            Scanner scanner = new Scanner(source);
-            while (scanner.hasNext()) str.append(scanner.nextLine()).append("\n");
-            graphString = str.toString();
-
-        } else {
-            System.out.println("Insert Graph: ");
-            Scanner scin = new Scanner(System.in);
-            graphString = scin.next();
-        }
+        Path path = new File(args.get(lts + 1)).toPath();
+        Logger.DEBUG.print("Opening " + path);
 
         if (args.contains("-lwjgl-debug")) {
             Configuration.DEBUG.set(true);
         }
 
-        new Main(graphString).root();
+        new Main(path).root();
     }
 }

@@ -144,9 +144,13 @@ public class NodeMesh implements Mesh {
     }
 
     public static class Node implements Serializable {
+        public static final Color4f BASE_COLOR = Color4f.WHITE;
+
         public final Vector3f position;
         public final String label;
-        public Color4f color = Color4f.WHITE;
+        public Color4f color = BASE_COLOR;
+        public boolean isFixed = false;
+        public boolean stayFixed = false;
 
         public Node(Vector3fc position, String label) {
             this.position = new Vector3f(position);
@@ -156,6 +160,10 @@ public class NodeMesh implements Mesh {
         @Override
         public String toString() {
             return label;
+        }
+
+        public void resetColor() {
+            color = BASE_COLOR;
         }
     }
 }

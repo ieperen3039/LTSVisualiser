@@ -9,8 +9,6 @@ import NG.Rendering.MatrixStack.SGL;
 import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFW;
 
-import static NG.InputHandling.MouseTools.AbstractMouseTool.MouseAction.*;
-
 /**
  * @author Geert van Ieperen created on 24-4-2020.
  */
@@ -18,7 +16,6 @@ public abstract class AbstractMouseTool implements MouseTool {
     protected Root root;
 
     private MouseReleaseListener releaseListener;
-    private MouseAction mouseAction = HOVER;
 
     public enum MouseAction {
         PRESS_ACTIVATE, PRESS_DEACTIVATE, DRAG_ACTIVATE, DRAG_DEACTIVATE, HOVER
@@ -29,14 +26,8 @@ public abstract class AbstractMouseTool implements MouseTool {
         releaseListener = root.camera();
     }
 
-    protected MouseAction getMouseAction() {
-        return mouseAction;
-    }
-
     @Override
     public void onClick(int button, int x, int y) {
-        if (mouseAction != HOVER) return;
-
         // TODO keybindings
         switch (button) {
             case GLFW.GLFW_MOUSE_BUTTON_RIGHT:
@@ -45,7 +36,6 @@ public abstract class AbstractMouseTool implements MouseTool {
                     return;
                 }
             case GLFW.GLFW_MOUSE_BUTTON_LEFT:
-                mouseAction = PRESS_ACTIVATE;
                 break;
         }
 
@@ -54,14 +44,17 @@ public abstract class AbstractMouseTool implements MouseTool {
             return;
         }
 
-        root.graph().onClick(button, x, y);
-        root.camera().onClick(button, x, y);
-        releaseListener = root.camera();
+        boolean didClickGraph = root.graph().checkMouseClick(button, x, y);
+        if (didClickGraph) {
+            releaseListener = root.graph();
+        } else {
+            root.camera().onClick(button, x, y);
+            releaseListener = root.camera();
+        }
     }
 
     @Override
     public void onRelease(int button, int xSc, int ySc) {
-        mouseAction = HOVER;
 
         // this is the case when a mouse-down caused a mouse tool switch
         if (releaseListener != null) {
@@ -97,9 +90,6 @@ public abstract class AbstractMouseTool implements MouseTool {
 
     @Override
     public final void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
-        if (mouseAction == PRESS_ACTIVATE) mouseAction = DRAG_ACTIVATE;
-        if (mouseAction == PRESS_DEACTIVATE) mouseAction = DRAG_DEACTIVATE;
-
         root.gui().mouseMoved(xDelta, yDelta, xPos, yPos);
         root.camera().mouseMoved(xDelta, yDelta, xPos, yPos);
         root.graph().mouseMoved(xDelta, yDelta, xPos, yPos);
