@@ -66,6 +66,7 @@ public class SDropDown extends SComponent implements MouseClickListener {
         this.optionPane = new DropDownOptions(values);
         this.gui = gui;
 
+        this.dropOptionHeight = properties.minHeight;
         this.minWidth = properties.minWidth;
         this.minHeight = properties.minHeight;
         setGrowthPolicy(properties.wantHzGrow, properties.wantVtGrow);
@@ -97,6 +98,7 @@ public class SDropDown extends SComponent implements MouseClickListener {
         assert !values.isEmpty();
         this.minHeight = properties.minHeight;
         this.minWidth = properties.minWidth;
+        this.dropOptionHeight = properties.minHeight;
 
         int candidate = 0;
         String[] arr = new String[values.size()];
@@ -137,8 +139,9 @@ public class SDropDown extends SComponent implements MouseClickListener {
         this.dropOptionHeight = dropOptionHeight;
     }
 
-    public void addStateChangeListener(Consumer<Integer> action) {
+    public SDropDown addStateChangeListener(Consumer<Integer> action) {
         stateChangeListeners.add(action);
+        return this;
     }
 
     @Override

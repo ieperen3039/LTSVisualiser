@@ -90,6 +90,8 @@ public class GLFWWindow {
             setWindowed(settings);
         }
 
+        glfwMaximizeWindow(window);
+
         if (settings.vSync) {
             // Turn on vSync
             glfwSwapInterval(1);
@@ -324,8 +326,8 @@ public class GLFWWindow {
         // Center window on display
         glfwSetWindowPos(
                 window,
-                (vidmode.width() - settings.windowWidth) / 2,
-                (vidmode.height() - settings.windowHeight) / 2
+                (vidmode.width() - width) / 2,
+                (vidmode.height() - height) / 2
         );
         fullScreen = false;
     }

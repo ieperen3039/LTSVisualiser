@@ -1,6 +1,7 @@
 package NG.Camera;
 
 import NG.Core.Root;
+import NG.Settings.Settings;
 import NG.Tools.Vectors;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -38,6 +39,9 @@ public class PointCenteredCamera implements Camera {
     @Override
     public void onScroll(float value) {
         vDist *= (ZOOM_SPEED * value) + 1f;
+
+        Settings s = root.settings();
+        vDist = Math.min(Math.max(vDist, s.MIN_CAMERA_DIST), s.MAX_CAMERA_DIST);
     }
 
 

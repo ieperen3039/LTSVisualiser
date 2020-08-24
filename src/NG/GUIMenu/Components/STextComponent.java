@@ -19,6 +19,7 @@ public abstract class STextComponent extends SComponent {
     protected int textWidth;
     private String text;
     private boolean textWidthIsInvalid = true;
+    private int maximumCharacters = -1;
 
     public STextComponent(
             String text, NGFonts.TextType textType, SFrameLookAndFeel.Alignment alignment, int width, int height
@@ -53,6 +54,15 @@ public abstract class STextComponent extends SComponent {
         return text;
     }
 
+    /**
+     * When set to any value larger than 0, the text will be at most this number of characters long. When getText()
+     * returns a longer string, the string is cut, and the last characters are shown as ...
+     * @param maximumCharacters the upper limit on the number of characters
+     */
+    public void setMaximumCharacters(int maximumCharacters) {
+        this.maximumCharacters = maximumCharacters;
+    }
+
     public void setText(String text) {
         this.text = text;
         textWidthIsInvalid = true;
@@ -61,6 +71,10 @@ public abstract class STextComponent extends SComponent {
     @Override
     public void draw(SFrameLookAndFeel design, Vector2ic screenPosition) {
         String text = getText();
+
+        if (maximumCharacters > 0 && text.length() > maximumCharacters) {
+            text = text.substring(0, maximumCharacters - 3).concat("...");
+        }
 
         if (textWidthIsInvalid) {
             textWidth = design.getTextWidth(text, textType);

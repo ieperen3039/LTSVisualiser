@@ -46,7 +46,7 @@ public abstract class SComponent {
      * restores the validity of the layout of this component.
      * @see #doValidateLayout()
      */
-    public final void validateLayout() {
+    public final synchronized void validateLayout() {
         if (!layoutIsValid) {
             doValidateLayout();
             layoutIsValid = true;

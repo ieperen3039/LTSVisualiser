@@ -28,8 +28,8 @@ public class NodeClustering {
 
     public NodeClustering(Root root, Graph graph, Main.ClusterMethod method) {
         this.root = root;
-        this.nodes = graph.nodeMesh;
-        this.edges = graph.edgeMesh;
+        this.nodes = graph.getNodeMesh();
+        this.edges = graph.getEdgeMesh();
         this.originalConnectivity = graph.mapping;
 
         setMethod(method);
@@ -179,5 +179,11 @@ public class NodeClustering {
                 edge.color = color;
             }
         }
+
+        root.executeOnRenderThread(edges::reload);
+    }
+
+    public Collection<String> getEdgeAttributes() {
+        return edgeAttributeCluster;
     }
 }

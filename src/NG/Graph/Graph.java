@@ -11,16 +11,13 @@ import NG.InputHandling.MouseClickListener;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.Rendering.GLFWWindow;
-import NG.Tools.Vectors;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.regex.Pattern;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
@@ -29,35 +26,35 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
  * @author Geert van Ieperen created on 20-7-2020.
  */
 public class Graph implements ToolElement, MouseClickListener, MouseMoveListener, MouseReleaseListener {
-    private static final Pattern dash = Pattern.compile("-");
-    private static final Pattern separator = Pattern.compile(";");
-
     public final NodeMesh.Node[] nodes;
     public final EdgeMesh.Edge[] edges;
     public final String[] actionLabels;
+    // maps nodes to their neighbours
+    public final Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping;
 
     // initialized at init()
     private Root root;
-    public final NodeMesh nodeMesh;
-    public final EdgeMesh edgeMesh;
-    public final Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping;
+    private final NodeMesh nodeMesh;
+    private final EdgeMesh edgeMesh;
+    public int initialState = 0;
 
     // the node that the mouse is holding
     private NodeMesh.Node selectedNode = null;
     private float selectedNodeZPlane = 0;
 
-    private Graph(int numStates, int numTransitions, String[] actionLabels) {
+    public Graph(int numStates, int numTransitions) {
         this.mapping = new HashMap<>();
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
 
-        this.actionLabels = actionLabels;
         this.nodes = new NodeMesh.Node[numStates];
         this.edges = new EdgeMesh.Edge[numTransitions];
+        this.actionLabels = new String[numTransitions];
     }
 
     public void init(Root root) {
         this.root = root;
+        if (edges.length < 1) return;
 
         // create position mapping
         double[][] positions = HDEPositioning.position(edges, nodes);
@@ -71,10 +68,10 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
         // set positions to graph
         for (NodeMesh.Node node : nodes) {
-            nodeMesh.addParticle(node);
+            getNodeMesh().addParticle(node);
         }
         for (EdgeMesh.Edge edge : edges) {
-            edgeMesh.addParticle(edge);
+            getEdgeMesh().addParticle(edge);
         }
     }
 
@@ -167,48 +164,18 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
     @Override
     public void cleanup() {
-//        nodeMesh.dispose();
-//        edgeMesh.dispose();
+        root.executeOnRenderThread(() -> {
+            nodeMesh.dispose();
+            edgeMesh.dispose();
+        });
         mapping.clear();
     }
 
-    public static Graph readPlainString(Path path) throws IOException {
-        List<String> lines = Files.readAllLines(path);
-        assert lines.size() == 3;
+    public NodeMesh getNodeMesh() {
+        return nodeMesh;
+    }
 
-        String[] stateLabels = separator.split(lines.get(0));
-        String[] actionLabels = separator.split(lines.get(1));
-        String[] transitions = separator.split(lines.get(2));
-        Graph graph = new Graph(stateLabels.length, transitions.length, actionLabels);
-
-        for (int i = 0; i < stateLabels.length; i++) {
-            graph.nodes[i] = new NodeMesh.Node(Vectors.O, stateLabels[i]);
-        }
-
-        graph.nodes[0].color = Color4f.GREEN;
-
-        for (int i = 0; i < transitions.length; i++) {
-            String elt = transitions[i];
-            String[] elements = dash.split(elt);
-            int a = Integer.parseInt(elements[0]);
-            int b = Integer.parseInt(elements[1]);
-            int labelInd = Integer.parseInt(elements[2]);
-
-            NodeMesh.Node aNode = graph.nodes[a];
-            NodeMesh.Node bNode = graph.nodes[b];
-            String label = actionLabels[labelInd];
-
-            graph.edges[i] = new EdgeMesh.Edge(aNode, bNode, label);
-        }
-
-        for (EdgeMesh.Edge edge : graph.edges) {
-            // create mapping
-            graph.mapping.computeIfAbsent(edge.a, node -> new ArrayList<>(0))
-                    .add(edge.b);
-            // make sure deadlocks are part of the mapping keys
-            graph.mapping.computeIfAbsent(edge.b, node -> new ArrayList<>(0));
-        }
-
-        return graph;
+    public EdgeMesh getEdgeMesh() {
+        return edgeMesh;
     }
 }

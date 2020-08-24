@@ -18,7 +18,8 @@ public enum Directory {
     softMods(false, "mods_soft"),
     screenshots(false, "Screenshots"),
     savedMaps(false, "Saved maps"),
-    images(true, "res", "images");
+    images(true, "res", "images"),
+    graphs(true, "examples");
 
     private final Path directory; // relative path
     private static Path workingDirectory = null;

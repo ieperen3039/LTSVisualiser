@@ -16,7 +16,7 @@ public class HDEPositioning {
     private static final double THRESHOLD = 1 / 128f;
 
     public static double[][] position(EdgeMesh.Edge[] edges, NodeMesh.Node[] nodes) {
-        assert nodes.length > NUM_INITIAL_DIMENSIONS;
+        int initialDimensions = Math.min(NUM_INITIAL_DIMENSIONS, nodes.length);
 
         // make mapping bidirectional
         HashMap<NodeMesh.Node, Collection<NodeMesh.Node>> biMapping = new HashMap<>();
@@ -28,7 +28,7 @@ public class HDEPositioning {
         }
 
         // get coordinates as [nodes.length][NUM_INITIAL_DIMENSIONS]
-        double[][] coordinates = getHighDimensionLayout(biMapping, nodes); // X
+        double[][] coordinates = getHighDimensionLayout(biMapping, nodes, initialDimensions); // X
 
         // get covariance matrix as [NUM_INITIAL_DIMENSIONS][NUM_INITIAL_DIMENSIONS]
         center(coordinates);
@@ -75,14 +75,14 @@ public class HDEPositioning {
     }
 
     private static double[][] getHighDimensionLayout(
-            Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping, NodeMesh.Node[] nodes
+            Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping, NodeMesh.Node[] nodes, int initialDimensions
     ) {
-        double[][] coordinates = new double[nodes.length][NUM_INITIAL_DIMENSIONS];
+        double[][] coordinates = new double[nodes.length][initialDimensions];
         int[] anchorDistance = new int[nodes.length]; // distance to any picked coordinate
         Arrays.fill(anchorDistance, Integer.MAX_VALUE);
 
         NodeMesh.Node pivot = nodes[0];
-        for (int i = 0; i < NUM_INITIAL_DIMENSIONS; i++) {
+        for (int i = 0; i < initialDimensions; i++) {
             // compute all distances to pivot
             Map<NodeMesh.Node, Integer> distances = getAllDistances(pivot, mapping);
 
@@ -106,9 +106,9 @@ public class HDEPositioning {
     }
 
     private static double[][] getHighDimensionLayout2(
-            Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping, NodeMesh.Node[] nodes
+            Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping, NodeMesh.Node[] nodes, int initialDimensions
     ){
-        double[][] coordinates = new double[nodes.length][NUM_INITIAL_DIMENSIONS];
+        double[][] coordinates = new double[nodes.length][initialDimensions];
 
         return coordinates;
     }

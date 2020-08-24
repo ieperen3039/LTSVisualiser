@@ -120,7 +120,7 @@ public abstract class AbstractGameLoop extends Thread {
         } finally {
             Logger.removeOnlinePrint(tickCounter);
             Logger.removeOnlinePrint(possessionCounter);
-            postLoopActions.clear();
+            runPostLoopActions();
             cleanup();
         }
 

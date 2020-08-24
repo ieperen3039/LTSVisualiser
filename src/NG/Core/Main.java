@@ -7,6 +7,7 @@ import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
 import NG.Graph.Graph;
+import NG.Graph.LTSParser;
 import NG.Graph.NodeClustering;
 import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.NodeShader;
@@ -14,15 +15,15 @@ import NG.Graph.SpringLayout;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.GLFWWindow;
-import NG.Rendering.MatrixStack.SGL;
 import NG.Rendering.RenderLoop;
 import NG.Settings.Settings;
+import NG.Tools.AutoLock;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
 import NG.Tools.Vectors;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 
 /**
  * A game of planning and making money.
@@ -37,20 +38,22 @@ public class Main implements Root {
     public final RenderLoop renderer;
     public final UIFrameManager frameManager;
     public final SpringLayout updateLoop;
-    public final Graph graph;
     private final Settings settings;
     private final GLFWWindow window;
     private final MouseToolCallbacks inputHandler;
     private final KeyControl keyControl;
     private final Camera camera;
     private final Thread mainThread;
+
     public NodeClustering nodeCluster;
+    private final AutoLock graphLock = new AutoLock.Instance();
+    private Graph graph;
 
     public enum ClusterMethod {
         NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
     }
 
-    public Main(Path path) throws IOException {
+    public Main() throws IOException {
         Logger.INFO.print("Starting up the engine...");
 
         Logger.DEBUG.print("General debug information: " +
@@ -73,8 +76,8 @@ public class Main implements Root {
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
 
-        graph = Graph.readPlainString(path);
-        updateLoop = new SpringLayout(graph.nodeMesh, graph.edgeMesh);
+        this.graph = new Graph(0, 0);
+        updateLoop = new SpringLayout();
     }
 
     /**
@@ -95,9 +98,19 @@ public class Main implements Root {
         nodeCluster = new NodeClustering(this, graph, Main.ClusterMethod.NO_CLUSTERING);
 
         renderer.renderSequence(new EdgeShader())
-                .add(this::drawEdges);
+                .add((gl, root) -> {
+                    if (graphLock.tryLock()) {
+                        gl.render(nodeCluster.getEdges());
+                        graphLock.unlock();
+                    }
+                });
         renderer.renderSequence(new NodeShader())
-                .add(this::drawNodes);
+                .add((gl, root) -> {
+                    if (graphLock.tryLock()) {
+                        gl.render(nodeCluster.getNodes());
+                        graphLock.unlock();
+                    }
+                });
 
         // GUIs
         renderer.addHudItem(frameManager::draw);
@@ -105,7 +118,7 @@ public class Main implements Root {
         SComponent menu = new Menu(this);
         frameManager.setMainGUI(menu);
 
-        updateLoop.addUpdateListeners(nodeCluster::update);
+        updateLoop.addUpdateListeners(() -> nodeCluster.update());
         updateLoop.addUpdateListeners(this::updateMeshes);
 
         Logger.INFO.print("Finished initialisation\n");
@@ -126,18 +139,12 @@ public class Main implements Root {
         cleanup();
     }
 
-    private void drawEdges(SGL gl, Root root) {
-        gl.render(nodeCluster.getEdges());
-    }
-
-    private void drawNodes(SGL gl, Root root) {
-        gl.render(nodeCluster.getNodes());
-    }
-
     private void updateMeshes() {
         executeOnRenderThread(() -> {
-            nodeCluster.getNodes().reload();
-            nodeCluster.getEdges().reload();
+            try (AutoLock.Section section = graphLock.open()) {
+                nodeCluster.getNodes().reload();
+                nodeCluster.getEdges().reload();
+            }
         });
     }
 
@@ -191,10 +198,28 @@ public class Main implements Root {
     }
 
     private void cleanup() {
-        window.cleanup();
-        renderer.cleanup();
         updateLoop.cleanup();
         inputHandler.cleanup();
         graph.cleanup();
+        window.cleanup();
+    }
+
+    public void setGraphSafe(File newGraph) {
+        try {
+            LTSParser ltsParser = new LTSParser(newGraph);
+
+            try (AutoLock.Section section = graphLock.open()) {
+                graph.cleanup();
+                graph = ltsParser.get();
+                graph.init(this);
+                nodeCluster = new NodeClustering(this, graph, Main.ClusterMethod.NO_CLUSTERING);
+                updateMeshes();
+
+                Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
+            }
+
+        } catch (IOException e) {
+            Logger.ERROR.print(e);
+        }
     }
 }

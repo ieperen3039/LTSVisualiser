@@ -5,9 +5,9 @@ import NG.Core.Version;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.Components.SFiller;
 import NG.GUIMenu.Components.SFrame;
-import NG.GUIMenu.Rendering.BaseLF;
 import NG.GUIMenu.Rendering.NVGOverlay;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
+import NG.GUIMenu.Rendering.WindowsLF;
 import NG.InputHandling.KeyTypeListener;
 import NG.InputHandling.MouseClickListener;
 import NG.InputHandling.MouseDragListener;
@@ -38,7 +38,7 @@ public class FrameManagerImpl implements UIFrameManager {
 
     public FrameManagerImpl() {
         this.frames = new ArrayDeque<>();
-        lookAndFeel = new BaseLF();
+        lookAndFeel = new WindowsLF();
         mainPanel = new SFiller(0, 0);
     }
 

@@ -113,13 +113,18 @@ class SScrollBar extends SComponent implements MouseScrollListener {
 
     private void positionDragbar(float fraction) {
         int dragBarSpace = getDragBarSpace();
-        if (dragBarSpace > 0) {
-            int dragBarHeight = (int) (dragBarSpace * Math.min(1, barSizeFraction));
+        int dragBarHeight = Math.max((int) (dragBarSpace * Math.min(1, barSizeFraction)), dragBar.minHeight());
+
+        if (dragBarSpace > dragBarHeight) {
             dragBar.setSize(SCROLL_BAR_WIDTH, dragBarHeight);
 
             int dragMaxYPos = getHeight() - SCROLL_BUTTON_SIZE - dragBarHeight;
             int drabBarY = (int) Toolbox.interpolate(SCROLL_BUTTON_SIZE, dragMaxYPos, fraction);
             dragBar.setPosition(0, drabBarY);
+
+        } else if (dragBarSpace > 0) {
+            dragBar.setSize(SCROLL_BAR_WIDTH, dragBarSpace);
+            dragBar.setPosition(0, SCROLL_BUTTON_SIZE);
 
         } else {
             dragBar.setVisible(false);

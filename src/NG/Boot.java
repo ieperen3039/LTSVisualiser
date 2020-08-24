@@ -4,8 +4,6 @@ import NG.Core.Main;
 import NG.Tools.Logger;
 import org.lwjgl.system.Configuration;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,14 +26,10 @@ public class Boot {
             Logger.setLoggingLevel(Logger.INFO);
         }
 
-        int lts = args.indexOf("-lts");
-        Path path = new File(args.get(lts + 1)).toPath();
-        Logger.DEBUG.print("Opening " + path);
-
         if (args.contains("-lwjgl-debug")) {
             Configuration.DEBUG.set(true);
         }
 
-        new Main(path).root();
+        new Main().root();
     }
 }
