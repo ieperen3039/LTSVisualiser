@@ -4,6 +4,7 @@ import NG.Camera.Camera;
 import NG.Core.Root;
 import NG.Core.ToolElement;
 import NG.DataStructures.Generic.Color4f;
+import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
 import NG.Graph.Rendering.NodeShader;
@@ -11,12 +12,11 @@ import NG.InputHandling.MouseClickListener;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.Rendering.GLFWWindow;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector3fc;
+import org.joml.*;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
@@ -30,7 +30,7 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
     public final EdgeMesh.Edge[] edges;
     public final String[] actionLabels;
     // maps nodes to their neighbours
-    public final Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping;
+    public final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> mapping;
 
     // initialized at init()
     private Root root;
@@ -71,6 +71,7 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
             getNodeMesh().addParticle(node);
         }
         for (EdgeMesh.Edge edge : edges) {
+            edge.handle.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
     }
@@ -88,38 +89,38 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
         int height = window.getHeight();
         float ratio = (float) width / height;
         Camera camera = root.camera();
-        Matrix4f viewProjection = camera.getViewProjection(ratio);
+        Matrix4f invViewProjection = camera.getViewProjection(ratio).invert();
 
-        assert camera.isIsometric() : "Click detection doesnt work in perspective mode";
+        float xvp = (2.0f * xRel / width) - 1;
+        float yvp = 1 - (2.0f * yRel / height);
+        Vector3fc cameraOrigin = new Vector3f(xvp, yvp, 1).mulPosition(invViewProjection);
+        Vector3fc cameraDirection = new Vector3f(0, 0, -1).mulDirection(invViewProjection).normalize();
 
         NodeMesh.Node candidate = null;
-        float lowestZ = 1; // z values higher than this are not visible
-
-        Vector3fc right = new Vector3f(camera.vectorToFocus())
-                .cross(camera.getUpVector())
-                .normalize(NodeShader.NODE_RADIUS);
-
-        float xPix = (2.0f * xRel / width) - 1;
-        float yPix = 1 - (2.0f * yRel / height);
+        float closestIntersect = Float.NEGATIVE_INFINITY;
 
         for (NodeMesh.Node node : nodes) {
-            Vector3f scrPos = new Vector3f(node.position).mulPosition(viewProjection);
-            float scSize = new Vector3f(right).mulDirection(viewProjection).length();
+            Vector2f result = new Vector2f();
+            boolean doIntersect = Intersectionf.intersectRaySphere(
+                    cameraOrigin, cameraDirection,
+                    node.position, NodeShader.NODE_RADIUS * NodeShader.NODE_RADIUS,
+                    result
+            );
+            float intersect = (result.x + result.y) / 2; // results are assuming an orb, we assume a perpendicular disc
 
-            if (scrPos.x < xPix + scSize && scrPos.x > xPix - scSize &&
-                    scrPos.y < yPix + scSize && scrPos.y > yPix - scSize &&
-                    scrPos.z > -1 && scrPos.z < lowestZ
-            ) {
+            if (doIntersect && intersect > closestIntersect) {
                 candidate = node;
-                lowestZ = scrPos.z;
+                closestIntersect = intersect;
             }
         }
         if (candidate == null) return false;
 
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
             selectedNode = candidate;
-            selectedNodeZPlane = lowestZ;
             candidate.isFixed = true;
+            // calculate z-coordinate in view plane
+            selectedNodeZPlane = new Vector3f(candidate.position)
+                    .mulPosition(camera.getViewProjection(ratio)).z;
 
         } else { // button == GLFW_MOUSE_BUTTON_RIGHT
             if (!candidate.stayFixed) {
@@ -132,6 +133,8 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
                 candidate.stayFixed = false;
                 candidate.resetColor();
             }
+
+            root.updateMeshes();
         }
 
         return true;
@@ -139,7 +142,12 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
     @Override
     public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
-        if (selectedNode != null) {
+        if (selectedNode == null) {
+            // highlight nodes
+
+
+        } else {
+            // move node
             GLFWWindow window = root.window();
             float ratio = (float) window.getWidth() / window.getHeight();
             Matrix4f invViewProjection = root.camera().getViewProjection(ratio).invert();
@@ -148,6 +156,8 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
             Vector3f newPosition = new Vector3f(x, y, selectedNodeZPlane).mulPosition(invViewProjection);
             selectedNode.position.set(newPosition);
+
+            root.updateMeshes();
         }
     }
 
@@ -177,5 +187,9 @@ public class Graph implements ToolElement, MouseClickListener, MouseMoveListener
 
     public EdgeMesh getEdgeMesh() {
         return edgeMesh;
+    }
+
+    public Collection<String> getEdgeAttributes() {
+        return List.of(actionLabels);
     }
 }

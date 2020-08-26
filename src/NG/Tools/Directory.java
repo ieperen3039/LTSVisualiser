@@ -12,12 +12,7 @@ import java.nio.file.Paths;
  */
 public enum Directory {
     shaders(true, "res", "shaders"),
-    meshes(true, "res", "models"),
     fonts(true, "res", "fonts"),
-    hardMods(false, "mods_hard"),
-    softMods(false, "mods_soft"),
-    screenshots(false, "Screenshots"),
-    savedMaps(false, "Saved maps"),
     images(true, "res", "images"),
     graphs(true, "examples");
 

@@ -29,8 +29,8 @@ public class EdgeShader implements ShaderProgram {
     private static final Path VERTEX_PATH = Directory.shaders.getPath("edges", "vertex.vert");
     private static final Path FRAGMENT_PATH = Directory.shaders.getPath("edges", "fragment.frag");
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
-    private static final float EDGE_SIZE = NODE_RADIUS * 1.5f;
-    private static final float HEAD_SIZE = 0; //NODE_RADIUS * 2.0f
+    private static final float HEAD_SIZE = NODE_RADIUS * 1.0f;
+    private static final float EDGE_SIZE = HEAD_SIZE * 0.4f;
 
     private final int programID;
     private final int vertexShaderID;
@@ -60,7 +60,7 @@ public class EdgeShader implements ShaderProgram {
         viewMatrixUID = glGetUniformLocation(programID, "viewMatrix");
         projectionMatrixUID = glGetUniformLocation(programID, "projectionMatrix");
         radiusUID = glGetUniformLocation(programID, "nodeRadius");
-        edgeSizeUID = glGetUniformLocation(programID, "arrowSize");
+        edgeSizeUID = glGetUniformLocation(programID, "edgeSize");
         headSizeUID = glGetUniformLocation(programID, "headSize");
     }
 

@@ -1,8 +1,8 @@
 package NG.Graph;
 
 import NG.Core.Root;
-import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
+import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
 import org.joml.Vector3f;
@@ -17,16 +17,20 @@ public class NodeClustering {
     private final Root root;
     private final NodeMesh nodes;
     private final EdgeMesh edges;
-    private final Map<NodeMesh.Node, Collection<NodeMesh.Node>> originalConnectivity;
+    private final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> originalConnectivity;
 
     // maps a new cluster node to the set of elements representing that cluster
     private final Map<NodeMesh.Node, Collection<NodeMesh.Node>> clusterMapping = new HashMap<>();
     private final Set<String> edgeAttributeCluster = new HashSet<>();
     private NodeMesh clusterNodes = null;
     private EdgeMesh clusterEdges = null;
-    private Main.ClusterMethod method;
+    private ClusterMethod method;
 
-    public NodeClustering(Root root, Graph graph, Main.ClusterMethod method) {
+    public enum ClusterMethod {
+        NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
+    }
+
+    public NodeClustering(Root root, Graph graph, ClusterMethod method) {
         this.root = root;
         this.nodes = graph.getNodeMesh();
         this.edges = graph.getEdgeMesh();
@@ -63,7 +67,9 @@ public class NodeClustering {
             // for every element in this cluster
             for (NodeMesh.Node element : cluster) {
                 // for each node connected to this element
-                for (NodeMesh.Node other : originalConnectivity.get(element)) {
+                PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = originalConnectivity.get(element);
+                for (int i = 0; i < neighbours.size(); i++) {
+                    NodeMesh.Node other = neighbours.right(i);
                     // for each element to outside this cluster
                     if (cluster.contains(other)) continue;
                     // add a connection from this cluster to the cluster of that element
@@ -96,7 +102,8 @@ public class NodeClustering {
 
             for (NodeMesh.Node other : clusterEdgeMap.get(node)) {
                 assert other != null;
-                clusterEdges.addParticle(node, other, "");
+                EdgeMesh.Edge edge = new EdgeMesh.Edge(node, other, "");
+                clusterEdges.addParticle(edge);
             }
         }
     }
@@ -108,24 +115,24 @@ public class NodeClustering {
         return node;
     }
 
-    public void setMethod(Main.ClusterMethod method) {
-        if (this.method == method) return;
-        this.method = method;
+    public synchronized void update() {
+        if (method == ClusterMethod.NO_CLUSTERING) return;
 
-        switch (method) {
-            case TAU:
-                createCluster(() -> attributeCluster(Collections.singleton("tau")));
-                break;
-            case EDGE_ATTRIBUTE:
-                createCluster(() -> attributeCluster(edgeAttributeCluster));
-            case NO_CLUSTERING:
-            default:
+        clusterMapping.forEach((node, cluster) -> {
+            Vector3f total = new Vector3f();
+            for (NodeMesh.Node element : cluster) {
+                total.add(element.position);
+            }
+            total.div(cluster.size());
+            node.position.set(total);
+        });
+
+        for (EdgeMesh.Edge edge : clusterEdges.edgeList()) {
+            edge.handle.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
         }
-
-        update();
     }
 
-    private Map<NodeMesh.Node, NodeMesh.Node> attributeCluster(Set<String> attributeLabels){
+    private Map<NodeMesh.Node, NodeMesh.Node> attributeCluster(Set<String> attributeLabels) {
         Map<NodeMesh.Node, NodeMesh.Node> leaderMap = new HashMap<>();
 
         for (EdgeMesh.Edge edge : edges.edgeList()) {
@@ -142,48 +149,49 @@ public class NodeClustering {
         return leaderMap;
     }
 
-    public synchronized void update(){
-        clusterMapping.forEach((node, cluster) -> {
-            Vector3f total = new Vector3f();
-            for (NodeMesh.Node element : cluster) {
-                total.add(element.position);
-            }
-            total.div(cluster.size());
-            node.position.set(total);
-        });
-    }
-
     public synchronized NodeMesh getNodes() {
-        return method == Main.ClusterMethod.NO_CLUSTERING || clusterNodes == null ? nodes : clusterNodes;
+        return method == ClusterMethod.NO_CLUSTERING || clusterNodes == null ? nodes : clusterNodes;
     }
 
     public synchronized EdgeMesh getEdges() {
-        return method == Main.ClusterMethod.NO_CLUSTERING || clusterEdges == null ? edges : clusterEdges;
+        return method == ClusterMethod.NO_CLUSTERING || clusterEdges == null ? edges : clusterEdges;
     }
 
-    public void edgeAttribute(String label, boolean on) {
-        if (on){
+    public void clusterEdgeAttribute(String label, boolean on) {
+        if (on) {
             edgeAttributeCluster.add(label);
         } else {
             edgeAttributeCluster.remove(label);
         }
-
-        createCluster(() -> attributeCluster(edgeAttributeCluster));
     }
 
     public void setAttributeColor(String label, Color4f color) {
-        List<EdgeMesh.Edge> edgeList = edges.edgeList();
 
-        for (EdgeMesh.Edge edge : edgeList) {
+        for (EdgeMesh.Edge edge : edges.edgeList()) {
             if (edge.label.equals(label)) {
                 edge.color = color;
             }
         }
-
         root.executeOnRenderThread(edges::reload);
     }
 
-    public Collection<String> getEdgeAttributes() {
-        return edgeAttributeCluster;
+    public ClusterMethod getMethod() {
+        return method;
+    }
+
+    public void setMethod(ClusterMethod method) {
+        this.method = method;
+
+        switch (method) {
+            case TAU:
+                createCluster(() -> attributeCluster(Collections.singleton("tau")));
+                break;
+            case EDGE_ATTRIBUTE:
+                createCluster(() -> attributeCluster(edgeAttributeCluster));
+            case NO_CLUSTERING:
+            default:
+        }
+
+        update();
     }
 }

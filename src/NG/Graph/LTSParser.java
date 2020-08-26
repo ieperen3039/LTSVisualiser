@@ -1,12 +1,12 @@
 package NG.Graph;
 
+import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
 import NG.Tools.Vectors;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,11 +77,12 @@ public class LTSParser {
 
             NodeMesh.Node startState = graph.nodes[startStateIndex];
             NodeMesh.Node endState = graph.nodes[endStateIndex];
+            EdgeMesh.Edge edge = new EdgeMesh.Edge(startState, endState, label);
 
             graph.actionLabels[edgeIndex] = label;
-            graph.edges[edgeIndex] = new EdgeMesh.Edge(startState, endState, label);
-            graph.mapping.computeIfAbsent(startState, s -> new ArrayList<>()).add(endState);
-            graph.mapping.computeIfAbsent(endState, s -> new ArrayList<>()).add(startState);
+            graph.edges[edgeIndex] = edge;
+            graph.mapping.computeIfAbsent(startState, s -> new PairList<>()).add(edge, endState);
+            graph.mapping.computeIfAbsent(endState, s -> new PairList<>()).add(edge, startState);
 
             edgeIndex++;
         }

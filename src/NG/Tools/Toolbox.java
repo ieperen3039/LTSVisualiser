@@ -1,6 +1,8 @@
 package NG.Tools;
 
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.lwjgl.BufferUtils;
 
 import javax.swing.*;
@@ -151,10 +153,6 @@ public final class Toolbox {
         int floor = (int) value;
         if (floor == value) return floor;
         return random.nextFloat() > (value - floor) ? floor : floor + 1;
-    }
-
-    public static float instantPreserveFraction(float rotationPreserveFactor, float deltaTime) {
-        return (float) (StrictMath.pow(rotationPreserveFactor, deltaTime));
     }
 
     public static void sleep(int millis) {
@@ -405,5 +403,14 @@ public final class Toolbox {
             }
         }
         return intersection;
+    }
+
+    public Vector3f bezier(Vector3fc A, Vector3fc B, Vector3fc C, float u) {
+        Vector3f temp = new Vector3f();
+        final float uinv = 1 - u;
+        // A * uinv2 + 2B*uinv*u + C * u2
+        return new Vector3f(A).mul(uinv * uinv)
+                .add(B.mul(2 * u * uinv, temp))
+                .add(C.mul(u * u, temp));
     }
 }

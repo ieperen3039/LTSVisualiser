@@ -4,7 +4,6 @@ import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.GUIMenu.Components.*;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
-import NG.GUIMenu.LayoutManagers.SingleElementLayout;
 import NG.Graph.Graph;
 import NG.Graph.NodeClustering;
 import NG.Graph.Rendering.EdgeMesh;
@@ -32,19 +31,12 @@ public class Menu extends SDecorator {
             Directory.graphs.getFile("industrial", "DIRAC", "SMS.aut")
     );
 
-    private final SContainer rightPanel;
     private final Main main;
+    private final GraphFileSelector graphFileSelector;
 
     public Menu(Main main) {
         this.main = main;
-        rightPanel = new SContainer.GhostContainer(new SingleElementLayout());
-        setMainPanel(SContainer.row(
-                new SFiller(),
-                new SPanel(SContainer.column(
-                        new GraphFileSelector(main.gui(), main, this),
-                        rightPanel
-                )).setGrowthPolicy(false, true)
-        ));
+        graphFileSelector = new GraphFileSelector(main, this);
 
         main.setGraphSafe(files.get(0));
         reloadUI();
@@ -53,28 +45,49 @@ public class Menu extends SDecorator {
     public void reloadUI() {
         Graph graph = main.graph();
         NodeClustering nodeCluster = main.nodeCluster;
-        SpringLayout updateLoop = main.updateLoop;
+        SpringLayout updateLoop = main.getUpdateLoop();
         UIFrameManager frameManager = main.frameManager;
         RenderLoop renderLoop = main.renderer;
+        String[] edgeAttributes = graph.getEdgeAttributes().stream()
+                .distinct().toArray(String[]::new);
 
-        rightPanel.add(SContainer.column(
-                new SimulationSliderUI(updateLoop),
-                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-                new ClusterMethodSelector(frameManager, nodeCluster),
-                new SFiller(0, 10).setGrowthPolicy(false, false),
-                new ColorFrame(graph.actionLabels, nodeCluster),
-                new SFiller(0, 10).setGrowthPolicy(false, false),
-                new TimingUI(updateLoop, renderLoop),
-                new SFiller()
-        ), null);
+        setMainPanel(SContainer.row(
+                new SFiller(),
+                new SPanel(SContainer.column(
+                        graphFileSelector,
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        new SimulationSliderUI(updateLoop),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        new ClusterMethodSelector(frameManager, nodeCluster),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        new ColorFrame(edgeAttributes, nodeCluster),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        new TimingUI(updateLoop, renderLoop),
+                        new SFiller()
+                )).setGrowthPolicy(false, true)
+        ));
+    }
+
+    private static void selectAttribute(NodeClustering nodeCluster, String label, boolean on) {
+        nodeCluster.setAttributeColor(label, on ? EDGE_MARK_COLOR : EdgeMesh.EDGE_BASE_COLOR);
+        nodeCluster.clusterEdgeAttribute(label, on);
+
+        if (nodeCluster.getMethod() == NodeClustering.ClusterMethod.EDGE_ATTRIBUTE) {
+            // reset clustering to include marked edge
+            nodeCluster.setMethod(NodeClustering.ClusterMethod.EDGE_ATTRIBUTE);
+        }
     }
 
     private static class GraphFileSelector extends SContainer.GhostContainer {
 
-        public GraphFileSelector(UIFrameManager gui, Main main, Menu menu) {
+        public GraphFileSelector(Main main, Menu menu) {
             super(SContainer.column(
                     new STextArea("Graph Selector", BUTTON_PROPS),
-                    new SDropDown(gui, BUTTON_PROPS, 0, files, File::getName)
+                    new SDropDown(main.gui(), BUTTON_PROPS, 0, files, File::getName)
                             .addStateChangeListener((i) -> {
                                 main.setGraphSafe(files.get(i));
                                 menu.reloadUI();
@@ -124,51 +137,25 @@ public class Menu extends SDecorator {
             for (int i = 0; i < actionLabels.length; i++) {
                 String label = actionLabels[i];
                 buttons[i] = new SToggleButton(label, BUTTON_PROPS)
-                        .addStateChangeListener(on -> nodeCluster.setAttributeColor(label, on ? EDGE_MARK_COLOR : EdgeMesh.EDGE_BASE_COLOR));
+                        .addStateChangeListener(on -> selectAttribute(nodeCluster, label, on));
                 buttons[i].setActive(false);
                 buttons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
             }
 
             return buttons;
         }
-
     }
 
-    private static class ClusterMethodSelector extends SDropDown {
-        private static final List<Main.ClusterMethod> CLUSTER_METHODS = List.of(Main.ClusterMethod.values());
+    private static class ClusterMethodSelector extends SContainer.GhostContainer {
+        private static final List<NodeClustering.ClusterMethod> CLUSTER_METHODS = List.of(NodeClustering.ClusterMethod.values());
 
         public ClusterMethodSelector(UIFrameManager frameManager, NodeClustering nodeCluster) {
-            super(frameManager, BUTTON_PROPS, 0, CLUSTER_METHODS, Enum::name);
+            super(SContainer.column(
+                    new STextArea("Cluster method", BUTTON_PROPS),
+                    new SDropDown(frameManager, BUTTON_PROPS, 0, CLUSTER_METHODS, Enum::name)
+                            .addStateChangeListener(i -> nodeCluster.setMethod(CLUSTER_METHODS.get(i)))
+            ));
             setGrowthPolicy(true, false);
-
-            final String[] actionLabels = nodeCluster.getEdgeAttributes().toArray(new String[0]);
-
-            addStateChangeListener(i -> {
-                nodeCluster.setMethod(CLUSTER_METHODS.get(i));
-                SFrame gui = getGUI(CLUSTER_METHODS.get(i), actionLabels, nodeCluster);
-                if (gui != null) frameManager.addFrame(gui);
-            });
-
-            setCurrent(0);
-        }
-
-        private SFrame getGUI(Main.ClusterMethod clusterMethod, String[] actionLabels, NodeClustering nodeCluster) {
-            switch (clusterMethod) {
-                case EDGE_ATTRIBUTE:
-
-                    SToggleButton[] buttons = new SToggleButton[actionLabels.length];
-
-                    for (int i = 0; i < actionLabels.length; i++) {
-                        String label = actionLabels[i];
-                        buttons[i] = new SToggleButton(label, BUTTON_PROPS)
-                                .addStateChangeListener(on -> nodeCluster.edgeAttribute(label, on));
-                    }
-
-                    return new SFrame("Collapse Edge Attributes", new SScrollableList(10, buttons));
-
-                default:
-                    return null;
-            }
         }
     }
 
@@ -188,17 +175,20 @@ public class Menu extends SDecorator {
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{
-                            new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttraction()), BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getAttraction(), BUTTON_PROPS, updateLoop::setAttraction)
+                            new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttractionFactor()), BUTTON_PROPS),
+                            new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
                     }, {
-                            new SActiveTextArea(() -> String.format("Repulsion %5.03f", updateLoop.getRepulsion()), BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getRepulsion(), BUTTON_PROPS, updateLoop::setRepulsion)
+                            new SActiveTextArea(() -> String.format("Repulsion %5.03f", updateLoop.getRepulsionFactor()), BUTTON_PROPS),
+                            new SSlider(0, 10f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
                     }, {
-                            new SActiveTextArea(() -> String.format("NatLength %5.03f", updateLoop.getNatLength()), BUTTON_PROPS),
+                            new SActiveTextArea(() -> String.format("Natural Length %5.03f", updateLoop.getNatLength()), BUTTON_PROPS),
                             new SSlider(0, 10f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
                     }, {
-                            new SActiveTextArea(() -> String.format("Speed %5.03f", updateLoop.getSpeed() / SPEED_MAXIMUM), BUTTON_PROPS),
+                            new SActiveTextArea(() -> String.format("Simulation Step Size %5.03f", updateLoop.getSpeed() / SPEED_MAXIMUM), BUTTON_PROPS),
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
+                    }, {
+                            new SActiveTextArea(() -> String.format("Handle Repulsion %5.03f", updateLoop.getEdgeRepulsionFactor()), BUTTON_PROPS),
+                            new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
                     }}
             ));
             setGrowthPolicy(true, false);

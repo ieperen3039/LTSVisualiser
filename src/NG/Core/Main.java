@@ -33,11 +33,11 @@ import java.io.IOException;
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
 public class Main implements Root {
-    private static final Version GAME_VERSION = new Version(0, 0);
+    private static final Version GAME_VERSION = new Version(0, 1);
 
     public final RenderLoop renderer;
     public final UIFrameManager frameManager;
-    public final SpringLayout updateLoop;
+    private final SpringLayout updateLoop;
     private final Settings settings;
     private final GLFWWindow window;
     private final MouseToolCallbacks inputHandler;
@@ -49,12 +49,8 @@ public class Main implements Root {
     private final AutoLock graphLock = new AutoLock.Instance();
     private Graph graph;
 
-    public enum ClusterMethod {
-        NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
-    }
-
     public Main() throws IOException {
-        Logger.INFO.print("Starting up the engine...");
+        Logger.INFO.print("Starting up...");
 
         Logger.DEBUG.print("General debug information: " +
                 // manual aligning will do the trick
@@ -66,8 +62,8 @@ public class Main implements Root {
 
         // these are not GameAspects, and thus the init() rule does not apply.
         settings = new Settings();
-
         GLFWWindow.Settings videoSettings = new GLFWWindow.Settings(settings);
+
         window = new GLFWWindow(Settings.GAME_NAME, videoSettings, true);
         renderer = new RenderLoop(settings.TARGET_FPS);
         inputHandler = new MouseToolCallbacks();
@@ -95,7 +91,7 @@ public class Main implements Root {
         graph.init(this);
 
         // read graph
-        nodeCluster = new NodeClustering(this, graph, Main.ClusterMethod.NO_CLUSTERING);
+        nodeCluster = new NodeClustering(this, graph, NodeClustering.ClusterMethod.NO_CLUSTERING);
 
         renderer.renderSequence(new EdgeShader())
                 .add((gl, root) -> {
@@ -118,7 +114,6 @@ public class Main implements Root {
         SComponent menu = new Menu(this);
         frameManager.setMainGUI(menu);
 
-        updateLoop.addUpdateListeners(() -> nodeCluster.update());
         updateLoop.addUpdateListeners(this::updateMeshes);
 
         Logger.INFO.print("Finished initialisation\n");
@@ -139,7 +134,9 @@ public class Main implements Root {
         cleanup();
     }
 
-    private void updateMeshes() {
+    @Override
+    public void updateMeshes() {
+        nodeCluster.update();
         executeOnRenderThread(() -> {
             try (AutoLock.Section section = graphLock.open()) {
                 nodeCluster.getNodes().reload();
@@ -184,6 +181,11 @@ public class Main implements Root {
     }
 
     @Override
+    public SpringLayout getUpdateLoop() {
+        return updateLoop;
+    }
+
+    @Override
     public void executeOnRenderThread(Runnable action) {
         if (Thread.currentThread() == mainThread) {
             action.run();
@@ -198,7 +200,6 @@ public class Main implements Root {
     }
 
     private void cleanup() {
-        updateLoop.cleanup();
         inputHandler.cleanup();
         graph.cleanup();
         window.cleanup();
@@ -212,7 +213,7 @@ public class Main implements Root {
                 graph.cleanup();
                 graph = ltsParser.get();
                 graph.init(this);
-                nodeCluster = new NodeClustering(this, graph, Main.ClusterMethod.NO_CLUSTERING);
+                nodeCluster = new NodeClustering(this, graph, NodeClustering.ClusterMethod.NO_CLUSTERING);
                 updateMeshes();
 
                 Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");

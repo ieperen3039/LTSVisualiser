@@ -3,6 +3,7 @@ package NG.Core;
 import NG.Camera.Camera;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.Graph.Graph;
+import NG.Graph.SpringLayout;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.GLFWWindow;
@@ -18,6 +19,8 @@ import java.util.concurrent.FutureTask;
  * @author Geert van Ieperen. Created on 16-9-2018.
  */
 public interface Root {
+    void updateMeshes();
+
     Camera camera();
 
     Settings settings();
@@ -33,6 +36,8 @@ public interface Root {
     Version getVersionNumber();
 
     Graph graph();
+
+    SpringLayout getUpdateLoop();
 
     /**
      * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed

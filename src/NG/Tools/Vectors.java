@@ -6,8 +6,6 @@ import org.joml.*;
 
 import java.util.Locale;
 
-import static java.lang.Float.isNaN;
-
 /**
  * A collection of utility functions for vectors, specifically for Vector2f
  * @author Geert van Ieperen. Created on 13-9-2018.
@@ -273,7 +271,7 @@ public final class Vectors {
      * @return true iff none of the scalars of the given vector is nan, and the length of the vector is not zero
      */
     public static boolean isScalable(Vector3fc vec) {
-        return !isNaN(vec.x()) && !isNaN(vec.y()) && !isNaN(vec.z()) && !((vec.x() == 0) && (vec.y() == 0) && (vec.z() == 0));
+        return !((vec.x() == 0) && (vec.y() == 0) && (vec.z() == 0));
     }
 
     public static Vector3f getNormalVector(Vector3fc A, Vector3fc B, Vector3fc C) {
@@ -342,6 +340,10 @@ public final class Vectors {
         box.union(point.set(other.maxX, other.minY, other.maxZ).mulPosition(transformation));
         box.union(point.set(other.minX, other.maxY, other.maxZ).mulPosition(transformation));
         box.union(point.set(other.maxX, other.maxY, other.maxZ).mulPosition(transformation));
+    }
+
+    public static boolean isNaN(Vector3fc v) {
+        return Float.isNaN(v.x()) || Float.isNaN(v.y()) || Float.isNaN(v.z());
     }
 
     public static final class Scaling {
