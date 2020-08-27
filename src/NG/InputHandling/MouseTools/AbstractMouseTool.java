@@ -1,8 +1,10 @@
 package NG.InputHandling.MouseTools;
 
+import NG.Camera.Camera;
 import NG.Core.Root;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
+import NG.Graph.Graph;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseScrollListener;
 import NG.Rendering.MatrixStack.SGL;
@@ -31,8 +33,9 @@ public abstract class AbstractMouseTool implements MouseTool {
         // TODO keybindings
         switch (button) {
             case GLFW.GLFW_MOUSE_BUTTON_RIGHT:
-                if (root.inputHandling().getMouseTool() != root.inputHandling().getDefaultMouseTool()) {
-                    root.inputHandling().setMouseTool(null);
+                MouseToolCallbacks callbacks = root.inputHandling();
+                if (callbacks.getMouseTool() != callbacks.getDefaultMouseTool()) {
+                    callbacks.setMouseTool(null);
                     return;
                 }
             case GLFW.GLFW_MOUSE_BUTTON_LEFT:
@@ -44,12 +47,16 @@ public abstract class AbstractMouseTool implements MouseTool {
             return;
         }
 
-        boolean didClickGraph = root.graph().checkMouseClick(button, x, y);
+        Graph graph = root.getVisibleGraph();
+        boolean didClickGraph = graph.checkMouseClick(button, x, y);
+
         if (didClickGraph) {
-            releaseListener = root.graph();
+            releaseListener = graph;
+
         } else {
-            root.camera().onClick(button, x, y);
-            releaseListener = root.camera();
+            Camera camera = root.camera();
+            camera.onClick(button, x, y);
+            releaseListener = camera;
         }
     }
 

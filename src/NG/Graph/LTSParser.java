@@ -18,7 +18,7 @@ public class LTSParser {
     private static final Pattern headerPattern = Pattern.compile("des \\((\\d+),\\s?(\\d+),\\s?(\\d+)\\)\\s*");
     private static final Pattern edgePattern = Pattern.compile("\\((\\d+),\\s?\"(.*)\",\\s?(\\d+)\\)\\s*");
 
-    Graph graph;
+    SourceGraph graph;
 
     /**
      * Starts with 1 header line
@@ -54,7 +54,7 @@ public class LTSParser {
         int nrOfTransitions = Integer.parseInt(matcher.group(2));
         int nrOfStates = Integer.parseInt(matcher.group(3));
 
-        graph = new Graph(nrOfStates, nrOfTransitions);
+        graph = new SourceGraph(nrOfStates, nrOfTransitions);
         graph.initialState = initialStateIndex;
 
         // prepare states
@@ -88,7 +88,7 @@ public class LTSParser {
         }
     }
 
-    public Graph get() {
+    public SourceGraph get() {
         return graph;
     }
 }

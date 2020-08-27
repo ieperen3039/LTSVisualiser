@@ -21,7 +21,7 @@ import java.util.*;
 public class Menu extends SDecorator {
     public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 30);
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(240, 190, 0);
-    public static final int SPACE_BETWEEN_UI_SECTIONS = 10;
+    public static final int SPACE_BETWEEN_UI_SECTIONS = 20;
 
     // private static final List<File> files = getFiles(Directory.graphs.getFile(), ".aut");
     private static final List<File> files = List.of(
@@ -48,22 +48,22 @@ public class Menu extends SDecorator {
         SpringLayout updateLoop = main.getUpdateLoop();
         UIFrameManager frameManager = main.frameManager;
         RenderLoop renderLoop = main.renderer;
-        String[] edgeAttributes = graph.getEdgeAttributes().stream()
-                .distinct().toArray(String[]::new);
 
         setMainPanel(SContainer.row(
                 new SFiller(),
                 new SPanel(SContainer.column(
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
                         graphFileSelector,
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         new SimulationSliderUI(updateLoop),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        new ClusterMethodSelector(frameManager, nodeCluster),
+                        new ClusterMethodSelector(frameManager, nodeCluster, main),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        new ColorFrame(edgeAttributes, nodeCluster),
+                        new AttributeFrame(nodeCluster, graph),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         new TimingUI(updateLoop, renderLoop),
@@ -72,17 +72,12 @@ public class Menu extends SDecorator {
         ));
     }
 
-    private static void selectAttribute(NodeClustering nodeCluster, String label, boolean on) {
-        nodeCluster.setAttributeColor(label, on ? EDGE_MARK_COLOR : EdgeMesh.EDGE_BASE_COLOR);
+    private static void selectAttribute(Graph sourceGraph, NodeClustering nodeCluster, String label, boolean on) {
+        sourceGraph.setAttributeColor(label, on ? EDGE_MARK_COLOR : EdgeMesh.EDGE_BASE_COLOR);
         nodeCluster.clusterEdgeAttribute(label, on);
-
-        if (nodeCluster.getMethod() == NodeClustering.ClusterMethod.EDGE_ATTRIBUTE) {
-            // reset clustering to include marked edge
-            nodeCluster.setMethod(NodeClustering.ClusterMethod.EDGE_ATTRIBUTE);
-        }
     }
 
-    private static class GraphFileSelector extends SContainer.GhostContainer {
+    private static class GraphFileSelector extends SPanel {
 
         public GraphFileSelector(Main main, Menu menu) {
             super(SContainer.column(
@@ -120,24 +115,27 @@ public class Menu extends SDecorator {
         }
     }
 
-    private static class ColorFrame extends SPanel {
+    private static class AttributeFrame extends SPanel {
         private static final int MAX_CHARACTERS_ACTION_LABELS = 35;
 
-        public ColorFrame(String[] actionLabels, NodeClustering nodeCluster) {
+        public AttributeFrame(NodeClustering nodeCluster, Graph graph) {
             super(SContainer.column(
                     new STextArea("Color selection", BUTTON_PROPS),
-                    new SScrollableList(6, getButtons(actionLabels, nodeCluster))
+                    new SScrollableList(6, getButtons(nodeCluster, graph))
             ));
             setGrowthPolicy(false, false);
         }
 
-        private static SComponent[] getButtons(String[] actionLabels, NodeClustering nodeCluster) {
+        private static SComponent[] getButtons(NodeClustering nodeCluster, Graph graph) {
+            String[] actionLabels = graph.getEdgeAttributes().stream()
+                    .distinct().toArray(String[]::new);
+
             SToggleButton[] buttons = new SToggleButton[actionLabels.length];
 
             for (int i = 0; i < actionLabels.length; i++) {
                 String label = actionLabels[i];
                 buttons[i] = new SToggleButton(label, BUTTON_PROPS)
-                        .addStateChangeListener(on -> selectAttribute(nodeCluster, label, on));
+                        .addStateChangeListener(on -> selectAttribute(graph, nodeCluster, label, on));
                 buttons[i].setActive(false);
                 buttons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
             }
@@ -146,14 +144,16 @@ public class Menu extends SDecorator {
         }
     }
 
-    private static class ClusterMethodSelector extends SContainer.GhostContainer {
-        private static final List<NodeClustering.ClusterMethod> CLUSTER_METHODS = List.of(NodeClustering.ClusterMethod.values());
+    private static class ClusterMethodSelector extends SPanel {
+        private static final List<Main.ClusterMethod> CLUSTER_METHODS = List.of(Main.ClusterMethod.values());
 
-        public ClusterMethodSelector(UIFrameManager frameManager, NodeClustering nodeCluster) {
+        public ClusterMethodSelector(UIFrameManager frameManager, NodeClustering nodeCluster, Main main) {
             super(SContainer.column(
                     new STextArea("Cluster method", BUTTON_PROPS),
                     new SDropDown(frameManager, BUTTON_PROPS, 0, CLUSTER_METHODS, Enum::name)
-                            .addStateChangeListener(i -> nodeCluster.setMethod(CLUSTER_METHODS.get(i)))
+                            .addStateChangeListener(i -> main.setClusterMethod(CLUSTER_METHODS.get(i))),
+                    new SToggleButton("Compute layout of Cluster", BUTTON_PROPS)
+                            .addStateChangeListener(on -> main.doSourceLayout(!on))
             ));
             setGrowthPolicy(true, false);
         }

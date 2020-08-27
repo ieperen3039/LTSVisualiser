@@ -6,15 +6,13 @@ import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
-import NG.Graph.Graph;
-import NG.Graph.LTSParser;
-import NG.Graph.NodeClustering;
+import NG.Graph.*;
 import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.NodeShader;
-import NG.Graph.SpringLayout;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.GLFWWindow;
+import NG.Rendering.MatrixStack.SGL;
 import NG.Rendering.RenderLoop;
 import NG.Settings.Settings;
 import NG.Tools.AutoLock;
@@ -47,7 +45,13 @@ public class Main implements Root {
 
     public NodeClustering nodeCluster;
     private final AutoLock graphLock = new AutoLock.Instance();
-    private Graph graph;
+    private SourceGraph graph;
+    private boolean doComputeSourceLayout = true;
+    private ClusterMethod clusterMethod = ClusterMethod.NO_CLUSTERING;
+
+    public enum ClusterMethod {
+        NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
+    }
 
     public Main() throws IOException {
         Logger.INFO.print("Starting up...");
@@ -71,8 +75,9 @@ public class Main implements Root {
         frameManager = new FrameManagerImpl();
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
+        nodeCluster = new NodeClustering();
 
-        this.graph = new Graph(0, 0);
+        graph = new SourceGraph(0, 0);
         updateLoop = new SpringLayout();
     }
 
@@ -91,22 +96,12 @@ public class Main implements Root {
         graph.init(this);
 
         // read graph
-        nodeCluster = new NodeClustering(this, graph, NodeClustering.ClusterMethod.NO_CLUSTERING);
+        nodeCluster.init(this);
 
         renderer.renderSequence(new EdgeShader())
-                .add((gl, root) -> {
-                    if (graphLock.tryLock()) {
-                        gl.render(nodeCluster.getEdges());
-                        graphLock.unlock();
-                    }
-                });
+                .add(this::renderEdges);
         renderer.renderSequence(new NodeShader())
-                .add((gl, root) -> {
-                    if (graphLock.tryLock()) {
-                        gl.render(nodeCluster.getNodes());
-                        graphLock.unlock();
-                    }
-                });
+                .add(this::renderNodes);
 
         // GUIs
         renderer.addHudItem(frameManager::draw);
@@ -114,7 +109,7 @@ public class Main implements Root {
         SComponent menu = new Menu(this);
         frameManager.setMainGUI(menu);
 
-        updateLoop.addUpdateListeners(this::updateMeshes);
+        updateLoop.addUpdateListeners(this::onNodePositionChange);
 
         Logger.INFO.print("Finished initialisation\n");
     }
@@ -135,13 +130,19 @@ public class Main implements Root {
     }
 
     @Override
-    public void updateMeshes() {
-        nodeCluster.update();
-        executeOnRenderThread(() -> {
-            try (AutoLock.Section section = graphLock.open()) {
-                nodeCluster.getNodes().reload();
-                nodeCluster.getEdges().reload();
+    public void onNodePositionChange() {
+        try (AutoLock.Section section = graphLock.open()) {
+            if (doComputeSourceLayout) {
+                nodeCluster.pullClusterPositions();
+            } else {
+                nodeCluster.pushClusterPositions();
             }
+        }
+
+        executeOnRenderThread(() -> {
+            Graph graph = getVisibleGraph();
+            graph.getNodeMesh().reload();
+            graph.getEdgeMesh().reload();
         });
     }
 
@@ -213,14 +214,49 @@ public class Main implements Root {
                 graph.cleanup();
                 graph = ltsParser.get();
                 graph.init(this);
-                nodeCluster = new NodeClustering(this, graph, NodeClustering.ClusterMethod.NO_CLUSTERING);
-                updateMeshes();
 
-                Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
+                updateLoop.setGraph(graph);
+
+                nodeCluster = new NodeClustering();
+                nodeCluster.init(this);
+                onNodePositionChange();
             }
+
+            Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
 
         } catch (IOException e) {
             Logger.ERROR.print(e);
         }
+    }
+
+    public void doSourceLayout(boolean doSource) {
+        doComputeSourceLayout = doSource;
+
+        updateLoop.setGraph(doComputeSourceLayout ? graph : nodeCluster);
+    }
+
+    public void setClusterMethod(ClusterMethod method) {
+        this.clusterMethod = method;
+
+        onNodePositionChange();
+    }
+
+    private void renderEdges(SGL gl, Root root) {
+        try (AutoLock.Section section = graphLock.open()) {
+            Graph target = getVisibleGraph();
+            gl.render(target.getEdgeMesh());
+        }
+    }
+
+    private void renderNodes(SGL gl, Root root) {
+        try (AutoLock.Section section = graphLock.open()) {
+            Graph target = getVisibleGraph();
+            gl.render(target.getNodeMesh());
+        }
+    }
+
+    @Override
+    public Graph getVisibleGraph() {
+        return (clusterMethod == ClusterMethod.NO_CLUSTERING) ? graph : nodeCluster;
     }
 }

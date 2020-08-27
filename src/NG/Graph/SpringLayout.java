@@ -30,6 +30,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     public static final float EDGE_HANDLE_FORCE_FACTOR = 10f;
     public static final float EDGE_HANDLE_DISTANCE = 1f;
     private static final int NUM_THREADS = 5;
+    private static final float MAX_NODE_MOVEMENT = 10f;
 
     public final TimeObserver timer = new TimeObserver(10, false);
     private final ExecutorService executor;
@@ -39,7 +40,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private float attraction = 5f; // 1/100th of what LTSGraph uses
     private float speed = 0;
     private float edgeRepulsion = 0.5f;
-    private Root root;
+    private Graph graph;
 
     public SpringLayout() {
         super("layout", 200);
@@ -48,7 +49,11 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
     @Override
     public void init(Root root) throws Exception {
-        this.root = root;
+        graph = root.graph();
+    }
+
+    public synchronized void setGraph(Graph graph) {
+        this.graph = graph;
     }
 
     @Override
@@ -56,20 +61,19 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         if (speed == 0) return;
         timer.startNewLoop();
 
-        Graph graph = root.graph();
-        NodeMesh.Node[] nodes = graph.nodes;
-        EdgeMesh.Edge[] edges = graph.edges;
+        List<NodeMesh.Node> nodes = graph.getNodeMesh().nodeList();
+        List<EdgeMesh.Edge> edges = graph.getEdgeMesh().edgeList();
 
-        int batchSize = (nodes.length / NUM_THREADS) + 1;
+        int batchSize = (nodes.size() / NUM_THREADS) + 1;
         List<Future<Vector3f[]>> futureResults = new ArrayList<>();
         Map<NodeMesh.Node, Vector3f> nodeForces = new HashMap<>();
 
         // start node repulsion computations
         timer.startTiming("node scheduling");
         int index = 0;
-        while (index < nodes.length) {
+        while (index < nodes.size()) {
             int startIndex = index;
-            int endIndex = Math.min(index + batchSize, nodes.length);
+            int endIndex = Math.min(index + batchSize, nodes.size());
 
             Callable<Vector3f[]> task = () -> computeRepulsions(nodes, startIndex, endIndex);
 
@@ -102,7 +106,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         // edge handle repulsion
         for (NodeMesh.Node node : nodes) {
-            PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.mapping.getOrDefault(node, PairList.empty());
+            PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
 
             for (int i = 0; i < neighbours.size(); i++) {
                 EdgeMesh.Edge a = neighbours.left(i);
@@ -129,7 +133,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             for (int j = 0; j < batch.length; j++) {
                 assert !Vectors.isNaN(batch[j]);
-                NodeMesh.Node node = nodes[i + j];
+                NodeMesh.Node node = nodes.get(i + j);
                 Vector3f nodeForce = nodeForces.computeIfAbsent(node, k -> new Vector3f());
                 nodeForce.add(batch[j]);
             }
@@ -153,6 +157,10 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             Vector3f movement = force.mul(speed); // modifies edgeHandleForces
 
+            if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
+                movement.normalize(MAX_NODE_MOVEMENT);
+            }
+
             edge.handle.add(movement);
             assert !Vectors.isNaN(edge.handle) : movement;
         }
@@ -162,6 +170,10 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             Vector3f force = nodeForces.get(node);
             Vector3f movement = force.mul(speed); // modifies nodeForces
+
+            if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
+                movement.normalize(MAX_NODE_MOVEMENT);
+            }
 
             node.position.add(movement);
             assert !Vectors.isNaN(node.position) : movement;
@@ -174,19 +186,21 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 //        if (tension < 1f) stopLoop();
     }
 
-    private Vector3f[] computeRepulsions(NodeMesh.Node[] nodes, int startIndex, int endIndex) {
+    private Vector3f[] computeRepulsions(List<NodeMesh.Node> nodes, int startIndex, int endIndex) {
         int nrOfNodes = endIndex - startIndex;
         Vector3f[] forces = new Vector3f[nrOfNodes];
 
         for (int i = 0; i < nrOfNodes; i++) {
             forces[i] = new Vector3f();
-            NodeMesh.Node node = nodes[startIndex + i];
+            NodeMesh.Node node = nodes.get(startIndex + i);
 
             for (NodeMesh.Node other : nodes) {
                 if (node == other) continue;
                 Vector3f otherToThis = getRepulsion(node.position, other.position, natLength, repulsion);
                 forces[i].add(otherToThis);
             }
+
+            if (Thread.interrupted()) return forces;
         }
 
         return forces;
@@ -233,7 +247,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
     @Override
     public synchronized void cleanup() {
-        executor.shutdown();
+        executor.shutdownNow();
         updateListeners.clear();
     }
 
@@ -259,7 +273,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     public void setNatLength(float natLength) {
-        this.natLength = natLength;
+        this.natLength = Math.max(natLength, 0.01f);
     }
 
     private static Vector3f getAttractionLTS(Vector3fc a, Vector3fc b, float attraction, float natLength) {

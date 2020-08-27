@@ -28,7 +28,7 @@ public class NodeMesh implements Mesh {
     private int colorVboID;
 
     private boolean isLoaded = false;
-    private List<Node> bulk = new ArrayList<>();
+    private final List<Node> bulk = new ArrayList<>();
     private int nrOfParticles = 0;
 
     /**
@@ -112,7 +112,6 @@ public class NodeMesh implements Mesh {
     }
 
     public void dispose() {
-        bulk.clear();
         // Delete the VBOs
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDeleteBuffers(new int[]{posMidVboID, colorVboID});
@@ -147,7 +146,8 @@ public class NodeMesh implements Mesh {
         public static final Color4f BASE_COLOR = Color4f.WHITE;
 
         public final Vector3f position;
-        public final String label;
+        public final String label; // the node label, if any
+
         public Color4f color = BASE_COLOR;
         public boolean isFixed = false;
         public boolean stayFixed = false;

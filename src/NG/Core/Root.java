@@ -19,7 +19,7 @@ import java.util.concurrent.FutureTask;
  * @author Geert van Ieperen. Created on 16-9-2018.
  */
 public interface Root {
-    void updateMeshes();
+    void onNodePositionChange();
 
     Camera camera();
 
@@ -67,4 +67,6 @@ public interface Root {
         executeOnRenderThread(task);
         return task;
     }
+
+    Graph getVisibleGraph();
 }
