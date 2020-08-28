@@ -12,7 +12,10 @@ import NG.InputHandling.MouseClickListener;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.Rendering.GLFWWindow;
-import org.joml.*;
+import org.joml.Math;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import java.util.Collection;
 
@@ -41,22 +44,55 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
     public boolean checkMouseClick(int button, int xRel, int yRel) {
         if (button != GLFW_MOUSE_BUTTON_LEFT && button != GLFW_MOUSE_BUTTON_RIGHT) return false;
 
-        NodeMesh.Node candidate = getNode(xRel, yRel);
-        if (candidate == null) return false;
-
         GLFWWindow window = root.window();
         int width = window.getWidth();
         int height = window.getHeight();
         float ratio = (float) width / height;
-
         Camera camera = root.camera();
+        Matrix4f projectionMatrix = camera.getProjectionMatrix(ratio);
+        Matrix4f viewMatrix = new Matrix4f().setLookAt(
+                camera.getEye(),
+                camera.getFocus(),
+                camera.getUpVector()
+        );
+
+        NodeMesh.Node candidate = null;
+        float lowestZ = 1; // z values higher than this are not visible
+
+        Vector3fc right = new Vector3f(camera.vectorToFocus())
+                .cross(camera.getUpVector())
+                .normalize(NodeShader.NODE_RADIUS);
+
+        float xvp = (2.0f * xRel / width) - 1;
+        float yvp = 1 - (2.0f * yRel / height);
+
+        for (NodeMesh.Node node : getNodeMesh().nodeList()) {
+            Vector3f viewPos = new Vector3f(node.position).mulPosition(viewMatrix); // cache viewPos
+            Vector3f scrPos = new Vector3f(viewPos).mulPosition(projectionMatrix);
+
+            if (scrPos.z > -1 && scrPos.z < lowestZ) {
+                Vector3f scrSide = viewPos.add(right).mulPosition(projectionMatrix);
+                // radius
+                float dxr = scrPos.x - scrSide.x;
+                float dyr = scrPos.y - scrSide.y;
+                float radius = Math.sqrt(dxr * dxr + dyr * dyr);
+                // mouse distance
+                float dxp = scrPos.x - xvp;
+                float dyp = scrPos.y - yvp;
+                float mouseDistance = Math.sqrt(dxp * dxp + dyp * dyp);
+
+                if (mouseDistance < radius) {
+                    candidate = node;
+                    lowestZ = scrPos.z;
+                }
+            }
+        }
+        if (candidate == null) return false;
 
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
             selectedNode = candidate;
+            selectedNodeZPlane = lowestZ;
             candidate.isFixed = true;
-            // calculate z-coordinate in view plane
-            selectedNodeZPlane = new Vector3f(candidate.position)
-                    .mulPosition(camera.getViewProjection(ratio)).z;
 
         } else { // button == GLFW_MOUSE_BUTTON_RIGHT
             if (!candidate.stayFixed) {
@@ -74,41 +110,6 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
         }
 
         return true;
-    }
-
-    public NodeMesh.Node getNode(int xPixel, int yPixel) {
-        GLFWWindow window = root.window();
-        int width = window.getWidth();
-        int height = window.getHeight();
-        float ratio = (float) width / height;
-
-        Camera camera = root.camera();
-
-        float xvp = (2.0f * xPixel / width) - 1;
-        float yvp = 1 - (2.0f * yPixel / height);
-        Matrix4f invViewProjection = camera.getViewProjection(ratio).invert();
-        Vector3fc cameraOrigin = new Vector3f(xvp, yvp, 1).mulPosition(invViewProjection);
-        Vector3fc cameraDirection = new Vector3f(0, 0, -1).mulDirection(invViewProjection).normalize();
-
-        NodeMesh.Node candidate = null;
-        float closestIntersect = Float.NEGATIVE_INFINITY;
-
-        for (NodeMesh.Node node : getNodeMesh().nodeList()) {
-            Vector2f result = new Vector2f();
-            boolean doIntersect = Intersectionf.intersectRaySphere(
-                    cameraOrigin, cameraDirection,
-                    node.position, NodeShader.NODE_RADIUS * NodeShader.NODE_RADIUS,
-                    result
-            );
-            float intersect = (result.x + result.y) / 2; // results are assuming an orb, we assume a perpendicular disc
-
-            if (doIntersect && intersect > closestIntersect) {
-                candidate = node;
-                closestIntersect = intersect;
-            }
-        }
-
-        return candidate;
     }
 
     @Override
