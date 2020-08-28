@@ -1,13 +1,16 @@
 package NG.Core;
 
 import NG.Camera.Camera;
+import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
 import NG.Graph.*;
+import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.EdgeShader;
+import NG.Graph.Rendering.NodeMesh;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
@@ -15,10 +18,9 @@ import NG.Rendering.GLFWWindow;
 import NG.Rendering.MatrixStack.SGL;
 import NG.Rendering.RenderLoop;
 import NG.Settings.Settings;
-import NG.Tools.AutoLock;
-import NG.Tools.Directory;
-import NG.Tools.Logger;
-import NG.Tools.Vectors;
+import NG.Tools.*;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,15 +34,16 @@ import java.io.IOException;
  */
 public class Main implements Root {
     private static final Version GAME_VERSION = new Version(0, 1);
+    public static final int INITIAL_VIEW_DIST = 100;
 
     public final RenderLoop renderer;
     public final UIFrameManager frameManager;
-    private final SpringLayout updateLoop;
+    private final SpringLayout springLayout;
     private final Settings settings;
     private final GLFWWindow window;
     private final MouseToolCallbacks inputHandler;
     private final KeyControl keyControl;
-    private final Camera camera;
+    private Camera camera;
     private final Thread mainThread;
 
     public NodeClustering nodeCluster;
@@ -78,7 +81,7 @@ public class Main implements Root {
         nodeCluster = new NodeClustering();
 
         graph = new SourceGraph(0, 0);
-        updateLoop = new SpringLayout();
+        springLayout = new SpringLayout();
     }
 
     /**
@@ -91,7 +94,7 @@ public class Main implements Root {
         renderer.init(this);
         inputHandler.init(this);
         frameManager.init(this);
-        updateLoop.init(this);
+        springLayout.init(this);
         camera.init(this);
         graph.init(this);
 
@@ -109,7 +112,7 @@ public class Main implements Root {
         SComponent menu = new Menu(this);
         frameManager.setMainGUI(menu);
 
-        updateLoop.addUpdateListeners(this::onNodePositionChange);
+        springLayout.addUpdateListeners(this::onNodePositionChange);
 
         Logger.INFO.print("Finished initialisation\n");
     }
@@ -119,12 +122,12 @@ public class Main implements Root {
         Logger.INFO.print("Starting tool...\n");
 
         window.open();
-        updateLoop.start();
+        springLayout.start();
 
         renderer.run();
 
         window.close();
-        updateLoop.stopLoop();
+        springLayout.stopLoop();
 
         cleanup();
     }
@@ -182,8 +185,8 @@ public class Main implements Root {
     }
 
     @Override
-    public SpringLayout getUpdateLoop() {
-        return updateLoop;
+    public SpringLayout getSpringLayout() {
+        return springLayout;
     }
 
     @Override
@@ -215,7 +218,7 @@ public class Main implements Root {
                 graph = ltsParser.get();
                 graph.init(this);
 
-                updateLoop.setGraph(graph);
+                springLayout.setGraph(graph);
 
                 nodeCluster = new NodeClustering();
                 nodeCluster.init(this);
@@ -232,7 +235,7 @@ public class Main implements Root {
     public void doSourceLayout(boolean doSource) {
         doComputeSourceLayout = doSource;
 
-        updateLoop.setGraph(doComputeSourceLayout ? graph : nodeCluster);
+        springLayout.setGraph(doComputeSourceLayout ? graph : nodeCluster);
     }
 
     public void setClusterMethod(ClusterMethod method) {
@@ -258,5 +261,42 @@ public class Main implements Root {
     @Override
     public Graph getVisibleGraph() {
         return (clusterMethod == ClusterMethod.NO_CLUSTERING) ? graph : nodeCluster;
+    }
+
+    public void set3DView(boolean on) {
+        if (!on) {
+            Graph graph = doComputeSourceLayout ? this.graph : nodeCluster;
+
+            // flatten graph in view direction
+            Matrix4f viewMatrix = new Matrix4f().lookAt(
+                    camera.getEye(),
+                    camera.getFocus(),
+                    camera.getUpVector()
+            );
+            for (NodeMesh.Node node : graph.getNodeMesh().nodeList()) {
+                node.position.mulPosition(viewMatrix);
+                node.position.z = 0;
+            }
+            for (EdgeMesh.Edge edge : graph.getEdgeMesh().edgeList()) {
+                edge.handlePos.mulPosition(viewMatrix);
+                edge.handlePos.z = 0;
+            }
+            float viewDist = camera.vectorToFocus().length();
+            camera = new FlatCamera(new Vector3f(0, 0, viewDist));
+            camera.init(this);
+
+            springLayout.setAllow3D(false);
+
+        } else {
+            springLayout.setAllow3D(true);
+            camera = new PointCenteredCamera(camera.getFocus(), camera.getEye());
+            camera.init(this);
+
+            for (NodeMesh.Node node : graph.getNodeMesh().nodeList()) {
+                node.position.z += Toolbox.randomBetween(-1, 1);
+            }
+        }
+
+        onNodePositionChange();
     }
 }

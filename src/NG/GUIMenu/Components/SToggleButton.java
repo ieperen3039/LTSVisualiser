@@ -57,6 +57,7 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
     public SToggleButton(String text, SComponentProperties properties, boolean initial) {
         this(text, properties);
         this.state = initial;
+        this.isPressed = initial;
     }
 
     @Override

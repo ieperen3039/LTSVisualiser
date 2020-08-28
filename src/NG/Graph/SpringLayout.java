@@ -41,6 +41,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private float speed = 0;
     private float edgeRepulsion = 0.5f;
     private Graph graph;
+    private boolean allow3D = true;
 
     public SpringLayout() {
         super("layout", 200);
@@ -98,7 +99,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         // edge handle centering
         for (EdgeMesh.Edge edge : edges) {
             Vector3f target = new Vector3f(edge.aPosition).lerp(edge.bPosition, 0.5f);
-            Vector3f force = getAttractionQuadratic(edge.handle, target, EDGE_HANDLE_FORCE_FACTOR, EDGE_HANDLE_DISTANCE);
+            Vector3f force = getAttractionQuadratic(edge.handlePos, target, EDGE_HANDLE_FORCE_FACTOR, EDGE_HANDLE_DISTANCE);
             assert !Vectors.isNaN(force) : force;
 
             edgeHandleForces.put(edge, force);
@@ -114,7 +115,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
                 for (int j = i + 1; j < neighbours.size(); j++) {
                     EdgeMesh.Edge b = neighbours.left(j);
 
-                    Vector3f force = getRepulsion(a.handle, b.handle, EDGE_HANDLE_DISTANCE, edgeRepulsion);
+                    Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
                     assert !Vectors.isNaN(force) : force;
 
                     edgeHandleForces.get(a).add(force);
@@ -160,9 +161,12 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
                 movement.normalize(MAX_NODE_MOVEMENT);
             }
+            if (!allow3D) {
+                movement.z = 0;
+            }
 
-            edge.handle.add(movement);
-            assert !Vectors.isNaN(edge.handle) : movement;
+            edge.handlePos.add(movement);
+            assert !Vectors.isNaN(edge.handlePos) : movement;
         }
 
         for (NodeMesh.Node node : nodes) {
@@ -173,6 +177,9 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
                 movement.normalize(MAX_NODE_MOVEMENT);
+            }
+            if (!allow3D) {
+                movement.z = 0;
             }
 
             node.position.add(movement);
@@ -249,6 +256,14 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     public synchronized void cleanup() {
         executor.shutdownNow();
         updateListeners.clear();
+    }
+
+    public boolean doAllow3D() {
+        return allow3D;
+    }
+
+    public void setAllow3D(boolean allow3D) {
+        this.allow3D = allow3D;
     }
 
     private static Vector3f getAttractionQuadratic(Vector3fc a, Vector3fc b, float attraction, float natLength) {

@@ -1,5 +1,6 @@
 package NG.Camera;
 
+import NG.Core.Root;
 import NG.Core.ToolElement;
 import NG.InputHandling.MouseListener;
 import NG.Settings.Settings;
@@ -19,6 +20,9 @@ public interface Camera extends ToolElement, MouseListener {
      */
     Vector3fc vectorToFocus();
 
+    @Override
+    void init(Root root);
+
     /**
      * updates the state of this camera according to the given passed time.
      * @param deltaTime the number of seconds passed since last update. This may be real-time or in-game time
@@ -34,7 +38,7 @@ public interface Camera extends ToolElement, MouseListener {
     /** a copy of the direction of up, the length of this vector is undetermined. */
     Vector3fc getUpVector();
 
-    void set(Vector3fc focus, Vector3fc eye);
+    void set(Vector3fc focus, Vector3fc eye, Vector3fc up);
 
     /**
      * Calculates a projection matrix based on a camera position and the given parameters of the viewport
@@ -45,6 +49,10 @@ public interface Camera extends ToolElement, MouseListener {
      */
     default Matrix4f getViewProjection(float aspectRatio) {
         Matrix4f vpMatrix = getProjectionMatrix(aspectRatio);
+        return getViewMatrix(vpMatrix);
+    }
+
+    default Matrix4f getViewMatrix(Matrix4f vpMatrix) {
         return vpMatrix.lookAt(
                 getEye(),
                 getFocus(),

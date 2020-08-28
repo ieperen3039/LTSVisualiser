@@ -37,7 +37,7 @@ public class MovableCamera implements Camera {
      * @param initialFocus the position of the camera focus
      * @param dist
      */
-    public MovableCamera(Vector3fc initialFocus, int dist) {
+    public MovableCamera(Vector3fc initialFocus, float dist) {
         this.eyeOffset = new Vector3f(dist, dist, dist);
         focus.set(initialFocus);
     }
@@ -120,7 +120,7 @@ public class MovableCamera implements Camera {
     }
 
     @Override
-    public void set(Vector3fc focus, Vector3fc eye) {
+    public void set(Vector3fc focus, Vector3fc eye, Vector3fc up) {
         this.focus.set(focus);
         Vector3f offset = new Vector3f(eye).sub(focus);
         this.eyeOffset.set(offset);

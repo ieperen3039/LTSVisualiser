@@ -156,7 +156,7 @@ public class EdgeMesh implements Mesh {
             Edge p = bulk.get(i);
 
             p.aPosition.get(i * 3, aPosBuffer);
-            p.handle.get(i * 3, handleBuffer);
+            p.handlePos.get(i * 3, handleBuffer);
             p.bPosition.get(i * 3, bPosBuffer);
             p.color.put(colorBuffer);
         }
@@ -180,7 +180,7 @@ public class EdgeMesh implements Mesh {
 
         public final Vector3fc aPosition;
         public final Vector3fc bPosition;
-        public final Vector3f handle;
+        public final Vector3f handlePos;
 
         public Color4f color = EDGE_BASE_COLOR;
 
@@ -189,7 +189,7 @@ public class EdgeMesh implements Mesh {
             this.b = b;
             this.aPosition = a.position;
             this.bPosition = b.position;
-            this.handle = new Vector3f();
+            this.handlePos = new Vector3f();
             this.label = label;
         }
     }

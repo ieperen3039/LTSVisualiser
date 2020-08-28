@@ -2,8 +2,6 @@ package NG.Camera;
 
 import NG.Core.Root;
 import NG.Settings.Settings;
-import NG.Tools.Vectors;
-import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -13,34 +11,29 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
  * @author Geert van Ieperen created on 5-11-2017. The standard camera that rotates using dragging some of the code
  * originates from the RobotRace sample code of the TU/e
  */
-public class PointCenteredCamera implements Camera {
+public class FlatCamera implements Camera {
     private static final float ZOOM_SPEED = -0.1f;
-    private static final float DRAG_ROTATE_SPEED = -0.005f;
-    private static final float DRAG_MOVE_SPEED = 0.0005f;
 
     private final Vector3f focus;
-    private final Quaternionf rotation;
 
     private float vDist;
 
     private boolean isHeld = false;
     private Root root;
+    private float xMoveScalar;
+    private float yMoveScalar;
 
-    public PointCenteredCamera(Vector3fc focus) {
-        this.focus = new Vector3f(focus);
-        this.rotation = new Quaternionf();
-        this.vDist = 100f;
-    }
-
-    public PointCenteredCamera(Vector3fc focus, Vector3fc eye) {
-        this.vDist = eye.distance(focus);
-        this.focus = new Vector3f(focus);
-        this.rotation = new Quaternionf().lookAlong(new Vector3f(focus).sub(eye), Vectors.Y);
+    public FlatCamera(Vector3fc eye) {
+        this.focus = new Vector3f(eye.x(), eye.y(), 0);
+        vDist = eye.z();
     }
 
     @Override
     public void init(Root root) {
         this.root = root;
+
+        xMoveScalar = -1.0f / 32;
+        yMoveScalar = 1.0f / 32;
     }
 
     @Override
@@ -66,17 +59,7 @@ public class PointCenteredCamera implements Camera {
     public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
         if (!isHeld) return;
 
-        if (root.keyControl().isShiftPressed()) {
-            Vector3f right = new Vector3f(0, 1, 0).rotate(rotation);
-            focus.add(right.mul(xDelta * -DRAG_MOVE_SPEED * vDist));
-
-            Vector3f up = new Vector3f(0, 0, 1).rotate(rotation);
-            focus.add(up.mul(yDelta * DRAG_MOVE_SPEED * vDist));
-
-        } else {
-            rotation.rotateY(xDelta * DRAG_ROTATE_SPEED);
-            rotation.rotateX(yDelta * DRAG_ROTATE_SPEED);
-        }
+        focus.add(xDelta * xMoveScalar, yDelta * yMoveScalar, 0);
     }
 
     @Override
@@ -86,7 +69,7 @@ public class PointCenteredCamera implements Camera {
 
     @Override
     public Vector3fc vectorToFocus() {
-        return new Vector3f(0, 0, 1).rotate(rotation).mul(-vDist);
+        return new Vector3f(0, 0, -vDist);
     }
 
     @Override
@@ -95,8 +78,7 @@ public class PointCenteredCamera implements Camera {
 
     @Override
     public Vector3fc getEye() {
-        Vector3f vecToEye = new Vector3f(0, 0, 1).rotate(rotation).mul(vDist);
-        return vecToEye.add(focus);
+        return new Vector3f(focus).add(0, 0, vDist);
     }
 
     @Override
@@ -106,13 +88,12 @@ public class PointCenteredCamera implements Camera {
 
     @Override
     public Vector3fc getUpVector() {
-        return new Vector3f(0, 1, 0).rotate(rotation);
+        return new Vector3f(0, 1, 0);
     }
 
     @Override
     public void set(Vector3fc focus, Vector3fc eye, Vector3fc up) {
         this.focus.set(focus);
-        rotation.identity().lookAlong(new Vector3f(focus).sub(eye), up);
         vDist = eye.distance(focus);
     }
 

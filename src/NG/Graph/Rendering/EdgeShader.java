@@ -74,11 +74,7 @@ public class EdgeShader implements ShaderProgram {
         writeMatrix(projection, projectionMatrixUID);
 
         // set the view
-        Matrix4f view = new Matrix4f().setLookAt(
-                camera.getEye(),
-                camera.getFocus(),
-                camera.getUpVector()
-        );
+        Matrix4f view = camera.getViewMatrix(new Matrix4f());
         writeMatrix(view, viewMatrixUID);
 
         glUniform1f(radiusUID, NODE_RADIUS);

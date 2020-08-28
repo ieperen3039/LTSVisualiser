@@ -54,7 +54,7 @@ public class SourceGraph extends Graph {
             getNodeMesh().addParticle(node);
         }
         for (EdgeMesh.Edge edge : edges) {
-            edge.handle.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
     }

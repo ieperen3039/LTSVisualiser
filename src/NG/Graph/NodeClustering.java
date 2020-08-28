@@ -97,7 +97,7 @@ public class NodeClustering extends Graph {
             for (NodeMesh.Node other : clusterEdgeMap.get(node)) {
                 assert other != null;
                 EdgeMesh.Edge edge = new EdgeMesh.Edge(node, other, "");
-                edge.handle.set(node.position).lerp(other.position, 0.5f);
+                edge.handlePos.set(node.position).lerp(other.position, 0.5f);
 
                 clusterEdges.addParticle(edge);
                 neighbours.add(edge, other);
@@ -126,7 +126,7 @@ public class NodeClustering extends Graph {
         });
 
         for (EdgeMesh.Edge edge : clusterEdges.edgeList()) {
-            edge.handle.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
         }
     }
 
@@ -146,7 +146,7 @@ public class NodeClustering extends Graph {
         });
 
         for (EdgeMesh.Edge edge : sourceGraph.getEdgeMesh().edgeList()) {
-            edge.handle.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
         }
     }
 

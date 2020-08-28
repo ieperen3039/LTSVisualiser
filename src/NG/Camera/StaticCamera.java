@@ -21,7 +21,7 @@ public class StaticCamera implements Camera {
     }
 
     @Override
-    public void init(Root root) throws Exception {
+    public void init(Root root) {
 
     }
 
@@ -51,7 +51,7 @@ public class StaticCamera implements Camera {
     }
 
     @Override
-    public void set(Vector3fc focus, Vector3fc eye) {
+    public void set(Vector3fc focus, Vector3fc eye, Vector3fc up) {
         this.focus = new Vector3f(focus);
         this.eye = new Vector3f(eye);
     }

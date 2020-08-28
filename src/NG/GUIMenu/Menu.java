@@ -45,7 +45,7 @@ public class Menu extends SDecorator {
     public void reloadUI() {
         Graph graph = main.graph();
         NodeClustering nodeCluster = main.nodeCluster;
-        SpringLayout updateLoop = main.getUpdateLoop();
+        SpringLayout updateLoop = main.getSpringLayout();
         UIFrameManager frameManager = main.frameManager;
         RenderLoop renderLoop = main.renderer;
 
@@ -58,6 +58,9 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         new SimulationSliderUI(updateLoop),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D()).addStateChangeListener(main::set3DView),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         new ClusterMethodSelector(frameManager, nodeCluster, main),
@@ -171,7 +174,7 @@ public class Menu extends SDecorator {
     }
 
     private static class SimulationSliderUI extends SPanel {
-        public static final float SPEED_MAXIMUM = 1f / (1 << 11);
+        public static final float SPEED_MAXIMUM = 2f / (1 << 11);
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{

@@ -18,7 +18,7 @@ public class Settings {
     public static float FOV = (float) Math.toRadians(20);
 
     // camera settings
-    public boolean ISOMETRIC_VIEW = true;
+    public boolean ISOMETRIC_VIEW = false;
     public float CAMERA_ZOOM_SPEED = 0.1f;
     public float MAX_CAMERA_DIST = Z_FAR / 2f;
     public float MIN_CAMERA_DIST = Z_NEAR * 2f;

@@ -37,7 +37,7 @@ public interface Root {
 
     Graph graph();
 
-    SpringLayout getUpdateLoop();
+    SpringLayout getSpringLayout();
 
     /**
      * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed
