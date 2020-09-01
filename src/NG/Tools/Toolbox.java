@@ -16,7 +16,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import static org.lwjgl.openal.AL10.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.GL_INVALID_FRAMEBUFFER_OPERATION;
 import static org.lwjgl.opengl.GL45.GL_CONTEXT_LOST;
@@ -76,22 +75,6 @@ public final class Toolbox {
 
     public static String asHex(int decimal) {
         return "0x" + Integer.toHexString(decimal).toUpperCase();
-    }
-
-
-    public static void checkALError() {
-        checkALError("");
-    }
-
-    public static void checkALError(String args) {
-        int error;
-        int i = 0;
-        while ((error = alGetError()) != AL_NO_ERROR) {
-            Logger.WARN.printFrom(2, "alError " + asHex(error) + ": " + alGetString(error), args);
-            if (++i == 10) {
-                throw new IllegalStateException("Context is probably not current for this thread");
-            }
-        }
     }
 
     /**
@@ -324,7 +307,7 @@ public final class Toolbox {
 
     public static <T> Iterator<T> singletonIterator(T action) {
         // from Collections.singletonIterator
-        return new Iterator<>() {
+        return new Iterator<T>() {
             private boolean hasNext = true;
 
             public boolean hasNext() {
@@ -348,7 +331,7 @@ public final class Toolbox {
     }
 
     public static <T> List<T> combinedList(List<T> a, List<T> b) {
-        return new AbstractList<>() {
+        return new AbstractList<T>() {
             final List<T> aList = a;
             final List<T> bList = b;
 

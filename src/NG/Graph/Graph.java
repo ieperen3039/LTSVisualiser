@@ -122,7 +122,7 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
             // move node
             GLFWWindow window = root.window();
             float ratio = (float) window.getWidth() / window.getHeight();
-            Matrix4f invViewProjection = root.camera().getViewProjection(ratio).invert();
+            Matrix4f invViewProjection = root.camera().getViewProjection(window).invert();
             float x = (2 * xPos) / window.getWidth() - 1;
             float y = 1 - (2 * yPos) / window.getHeight();
 

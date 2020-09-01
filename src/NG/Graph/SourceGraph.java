@@ -5,9 +5,9 @@ import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -84,6 +84,6 @@ public class SourceGraph extends Graph {
 
     @Override
     public Collection<String> getEdgeAttributes() {
-        return List.of(actionLabels);
+        return Arrays.asList(actionLabels);
     }
 }

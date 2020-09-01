@@ -3,8 +3,11 @@ package NG.Camera;
 import NG.Core.Root;
 import NG.Core.ToolElement;
 import NG.InputHandling.MouseListener;
+import NG.Rendering.GLFWWindow;
 import NG.Settings.Settings;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 /**
@@ -42,13 +45,13 @@ public interface Camera extends ToolElement, MouseListener {
 
     /**
      * Calculates a projection matrix based on a camera position and the given parameters of the viewport
-     * @param aspectRatio the ratio between width and height of the projection. For screen this is width / height, both
-     *                    in pixels.
+     * @param window the window used to visualise the current space
      * @return a projection matrix, such that modelspace vectors multiplied with this matrix will be transformed to
      * viewspace.
      */
-    default Matrix4f getViewProjection(float aspectRatio) {
-        Matrix4f vpMatrix = getProjectionMatrix(aspectRatio);
+    default Matrix4f getViewProjection(GLFWWindow window) {
+        float ratio = (float) window.getWidth() / window.getHeight();
+        Matrix4f vpMatrix = getProjectionMatrix(ratio);
         return getViewMatrix(vpMatrix);
     }
 
@@ -73,4 +76,16 @@ public interface Camera extends ToolElement, MouseListener {
     }
 
     boolean isIsometric();
+
+    default Vector2f project(Vector3fc vector, GLFWWindow window) {
+        // view + projection transform
+        Vector3f scPos = new Vector3f(vector).mulPosition(getViewProjection(window));
+        // window transform
+        float xPix = (scPos.x + 1) * window.getWidth() * 0.5f;
+        float yPix = (scPos.y - 1) * window.getHeight() * -0.5f;
+
+        return new Vector2f(xPix, yPix);
+    }
+
+    ;
 }

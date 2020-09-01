@@ -203,7 +203,7 @@ public abstract class AStarGrid implements Callable<Iterable<Vector2i>> {
 
         @Override
         public Iterator<Vector2i> iterator() {
-            return new Iterator<>() {
+            return new Iterator<Vector2i>() {
                 private int i = path.size();
 
                 @Override

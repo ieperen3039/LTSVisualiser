@@ -219,14 +219,15 @@ public enum Logger {
      * If DEBUG == false, return an empty string
      */
     public static String getCallingMethod(int level) {
-        // the better way of getting the top of the stack
-        StackWalker.StackFrame frame = StackWalker.getInstance()
-                .walk(s -> s.skip(level + 1)
-                        .findFirst()
-                        .orElseThrow()
-                );
+        StackTraceElement caller;
+        Exception exception = new Exception();
+        StackTraceElement[] stackTrace = exception.getStackTrace();
+        level++;
+        do {
+            caller = stackTrace[level++]; // level + 1
+        } while (caller.isNativeMethod() && level < stackTrace.length);
 
-        return String.format("%-100s ", frame);
+        return String.format("%-100s ", caller);
     }
 
     /**

@@ -1,6 +1,7 @@
 package NG.Graph.Rendering;
 
 import NG.DataStructures.Generic.Color4f;
+import NG.GUIMenu.Components.SPanel;
 import NG.Rendering.MatrixStack.SGL;
 import NG.Rendering.MeshLoading.Mesh;
 import NG.Tools.Toolbox;
@@ -32,7 +33,7 @@ public class EdgeMesh implements Mesh {
     private boolean isLoaded = false;
     private int nrOfParticles = 0;
 
-    public void addParticle(NodeMesh.Node a, NodeMesh.Node b, String label){
+    public void addParticle(NodeMesh.Node a, NodeMesh.Node b, String label) {
         addParticle(new Edge(a, b, label));
     }
 
@@ -77,7 +78,7 @@ public class EdgeMesh implements Mesh {
         return bulk;
     }
 
-    public void reload(){
+    public void reload() {
         if (isLoaded) {
             FloatBuffer aPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
             FloatBuffer handlePosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
@@ -177,6 +178,8 @@ public class EdgeMesh implements Mesh {
         public final NodeMesh.Node a;
         public final NodeMesh.Node b;
         public final String label;
+        public Vector3fc labelPos;
+        public SPanel labelPanel = null;
 
         public final Vector3fc aPosition;
         public final Vector3fc bPosition;
@@ -192,5 +195,6 @@ public class EdgeMesh implements Mesh {
             this.handlePos = new Vector3f();
             this.label = label;
         }
+
     }
 }

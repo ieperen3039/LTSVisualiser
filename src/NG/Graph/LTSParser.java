@@ -38,7 +38,7 @@ public class LTSParser {
      * @param ltsFile
      */
     public LTSParser(File ltsFile) throws IOException {
-        this(new Scanner(ltsFile));
+        this(new Scanner(ltsFile, "UTF8"));
     }
 
     /** @see #LTSParser(File) */

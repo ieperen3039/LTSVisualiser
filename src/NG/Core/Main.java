@@ -106,7 +106,6 @@ public class Main implements Root {
         renderer.renderSequence(new NodeShader())
                 .add(this::renderNodes);
 
-        // GUIs
         renderer.addHudItem(frameManager::draw);
 
         SComponent menu = new Menu(this);
@@ -225,10 +224,12 @@ public class Main implements Root {
                 onNodePositionChange();
             }
 
+            springLayout.setGraph(graph);
+
             Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
 
         } catch (IOException e) {
-            Logger.ERROR.print(e);
+            Logger.ERROR.print(newGraph.getName(), e);
         }
     }
 

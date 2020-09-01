@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Scanner;
 
@@ -83,7 +82,7 @@ public interface ShaderProgram {
         String result;
         try (
                 InputStream in = new FileInputStream(path.toFile());
-                Scanner scanner = new Scanner(in, StandardCharsets.UTF_8)
+                Scanner scanner = new Scanner(in, "UTF8")
         ) {
             result = scanner.useDelimiter("\\A").next();
 

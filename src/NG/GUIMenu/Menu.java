@@ -23,20 +23,21 @@ public class Menu extends SDecorator {
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(240, 190, 0);
     public static final int SPACE_BETWEEN_UI_SECTIONS = 20;
 
-    // private static final List<File> files = getFiles(Directory.graphs.getFile(), ".aut");
-    private static final List<File> files = List.of(
-            Directory.graphs.getFile("railway", "RailwaySafetySystem_spec.aut"),
-            Directory.graphs.getFile("industrial", "lift", "lift3-init.aut"),
-            Directory.graphs.getFile("industrial", "lift", "lift3-final.aut"),
-            Directory.graphs.getFile("industrial", "DIRAC", "SMS.aut")
-    );
+    private static final List<File> files = GraphFileSelector.getFiles(Directory.graphs.getFile("probabilistic"), ".aut");
+//     private static final List<File> files = GraphFileSelector.getFiles(Directory.workDirectory().toFile(), ".aut");
+//    private static final List<File> files = List.of(
+//            Directory.graphs.getFile("railway", "RailwaySafetySystem_spec.aut"),
+//            Directory.graphs.getFile("industrial", "lift", "lift3-init.aut"),
+//            Directory.graphs.getFile("industrial", "lift", "lift3-final.aut"),
+//            Directory.graphs.getFile("industrial", "DIRAC", "SMS.aut")
+//    );
 
     private final Main main;
     private final GraphFileSelector graphFileSelector;
 
     public Menu(Main main) {
         this.main = main;
-        graphFileSelector = new GraphFileSelector(main, this);
+        this.graphFileSelector = new GraphFileSelector(main, this);
 
         main.setGraphSafe(files.get(0));
         reloadUI();
@@ -85,7 +86,8 @@ public class Menu extends SDecorator {
         public GraphFileSelector(Main main, Menu menu) {
             super(SContainer.column(
                     new STextArea("Graph Selector", BUTTON_PROPS),
-                    new SDropDown(main.gui(), BUTTON_PROPS, 0, files, File::getName)
+                    new SDropDown(main.gui(), BUTTON_PROPS, 0, files, file -> file.getParentFile()
+                            .getName() + "/" + file.getName())
                             .addStateChangeListener((i) -> {
                                 main.setGraphSafe(files.get(i));
                                 menu.reloadUI();
@@ -148,7 +150,7 @@ public class Menu extends SDecorator {
     }
 
     private static class ClusterMethodSelector extends SPanel {
-        private static final List<Main.ClusterMethod> CLUSTER_METHODS = List.of(Main.ClusterMethod.values());
+        private static final List<Main.ClusterMethod> CLUSTER_METHODS = Arrays.asList(Main.ClusterMethod.values());
 
         public ClusterMethodSelector(UIFrameManager frameManager, NodeClustering nodeCluster, Main main) {
             super(SContainer.column(

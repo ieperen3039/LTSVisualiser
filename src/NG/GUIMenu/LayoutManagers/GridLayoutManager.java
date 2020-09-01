@@ -122,7 +122,7 @@ public class GridLayoutManager implements SLayoutManager {
     @Override
     public Collection<SComponent> getComponents() {
         if (nrOfElements == 0) return Collections.emptySet();
-        return new AbstractCollection<>() {
+        return new AbstractCollection<SComponent>() {
             @Override
             public Iterator<SComponent> iterator() {
                 return new GridIterator();

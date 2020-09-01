@@ -250,4 +250,39 @@ public abstract class SComponent {
     public void setHovered(boolean hovered) {
         isHovered = hovered;
     }
+
+    public Vector2i getMiddle() {
+        return new Vector2i(position).add(dimensions.x / 2, dimensions.y / 2);
+    }
+
+    /**
+     * @param other
+     * @return the vector from the furthest corner of other inside this object, or null if these do not overlap
+     */
+    public Vector2i getOverlapWith(SComponent other) {
+        Vector2i thisMid = getMiddle();
+        Vector2i otherMid = other.getMiddle();
+
+        Vector2i thisPosition = this.position;
+        Vector2i otherPosition = other.position;
+
+        Vector2i thisToOther = otherMid.sub(thisMid);
+        if (thisToOther.x > 0) {
+            thisPosition.x += getWidth();
+            if (thisPosition.x < otherPosition.x) return null;
+        } else {
+            otherPosition.x += other.getWidth();
+            if (thisPosition.x > otherPosition.x) return null;
+        }
+
+        if (thisToOther.y > 0) {
+            thisPosition.y += getHeight();
+            if (thisPosition.y < otherPosition.y) return null;
+        } else {
+            otherPosition.y += other.getHeight();
+            if (thisPosition.y > otherPosition.y) return null;
+        }
+
+        return thisPosition.sub(otherPosition);
+    }
 }

@@ -102,7 +102,6 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         int windowWidth = window.getWidth();
         int windowHeight = window.getHeight();
         if (accurateTiming) timer.startTiming("GUI");
-        root.settings();
         overlay.draw(windowWidth, windowHeight, 10, 10, 12);
 
         if (accurateTiming) {

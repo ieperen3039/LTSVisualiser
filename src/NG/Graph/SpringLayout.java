@@ -58,136 +58,139 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     @Override
-    protected synchronized void update(float deltaTime) throws Exception {
+    protected void update(float deltaTime) throws Exception {
         if (speed == 0) return;
         timer.startNewLoop();
 
-        List<NodeMesh.Node> nodes = graph.getNodeMesh().nodeList();
-        List<EdgeMesh.Edge> edges = graph.getEdgeMesh().edgeList();
+        synchronized (this) {
+            List<NodeMesh.Node> nodes = graph.getNodeMesh().nodeList();
+            List<EdgeMesh.Edge> edges = graph.getEdgeMesh().edgeList();
 
-        int batchSize = (nodes.size() / NUM_THREADS) + 1;
-        List<Future<Vector3f[]>> futureResults = new ArrayList<>();
-        Map<NodeMesh.Node, Vector3f> nodeForces = new HashMap<>();
+            int batchSize = (nodes.size() / NUM_THREADS) + 1;
+            List<Future<Vector3f[]>> futureResults = new ArrayList<>();
+            Map<NodeMesh.Node, Vector3f> nodeForces = new HashMap<>();
 
-        // start node repulsion computations
-        timer.startTiming("node scheduling");
-        int index = 0;
-        while (index < nodes.size()) {
-            int startIndex = index;
-            int endIndex = Math.min(index + batchSize, nodes.size());
+            // start node repulsion computations
+            timer.startTiming("node scheduling");
+            int index = 0;
+            while (index < nodes.size()) {
+                int startIndex = index;
+                int endIndex = Math.min(index + batchSize, nodes.size());
 
-            Callable<Vector3f[]> task = () -> computeRepulsions(nodes, startIndex, endIndex);
+                Callable<Vector3f[]> task = () -> computeRepulsions(nodes, startIndex, endIndex);
 
-            Future<Vector3f[]> future = executor.submit(task);
-            futureResults.add(future);
+                Future<Vector3f[]> future = executor.submit(task);
+                futureResults.add(future);
 
-            index = endIndex;
-        }
+                index = endIndex;
+            }
 
-        timer.endTiming("node scheduling");
-        timer.startTiming("node attraction computation");
-        // node edge attraction
-        for (EdgeMesh.Edge edge : edges) {
-            computeNodeAttractionForces(nodeForces, edge);
-        }
+            timer.endTiming("node scheduling");
+            timer.startTiming("node attraction computation");
+            // node edge attraction
+            for (EdgeMesh.Edge edge : edges) {
+                computeNodeAttractionForces(nodeForces, edge);
+            }
 
-        timer.endTiming("node attraction computation");
-        timer.startTiming("edge handle computation");
+            timer.endTiming("node attraction computation");
+            timer.startTiming("edge handle computation");
 
-        Map<EdgeMesh.Edge, Vector3f> edgeHandleForces = new HashMap<>();
+            Map<EdgeMesh.Edge, Vector3f> edgeHandleForces = new HashMap<>();
 
-        // edge handle centering
-        for (EdgeMesh.Edge edge : edges) {
-            Vector3f target = new Vector3f(edge.aPosition).lerp(edge.bPosition, 0.5f);
-            Vector3f force = getAttractionQuadratic(edge.handlePos, target, EDGE_HANDLE_FORCE_FACTOR, EDGE_HANDLE_DISTANCE);
-            assert !Vectors.isNaN(force) : force;
+            // edge handle centering
+            for (EdgeMesh.Edge edge : edges) {
+                Vector3f target = new Vector3f(edge.aPosition).lerp(edge.bPosition, 0.5f);
+                Vector3f force = getAttractionQuadratic(edge.handlePos, target, EDGE_HANDLE_FORCE_FACTOR, EDGE_HANDLE_DISTANCE);
+                assert !Vectors.isNaN(force) : force;
 
-            edgeHandleForces.put(edge, force);
-        }
+                edgeHandleForces.put(edge, force);
+            }
 
-        // edge handle repulsion
-        for (NodeMesh.Node node : nodes) {
-            PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
+            // edge handle repulsion
+            for (NodeMesh.Node node : nodes) {
+                PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
 
-            for (int i = 0; i < neighbours.size(); i++) {
-                EdgeMesh.Edge a = neighbours.left(i);
+                for (int i = 0; i < neighbours.size(); i++) {
+                    EdgeMesh.Edge a = neighbours.left(i);
 
-                for (int j = i + 1; j < neighbours.size(); j++) {
-                    EdgeMesh.Edge b = neighbours.left(j);
+                    for (int j = i + 1; j < neighbours.size(); j++) {
+                        EdgeMesh.Edge b = neighbours.left(j);
 
-                    Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
-                    assert !Vectors.isNaN(force) : force;
+                        Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
+                        assert !Vectors.isNaN(force) : force;
 
-                    edgeHandleForces.get(a).add(force);
-                    edgeHandleForces.get(b).add(force.negate());
+                        edgeHandleForces.get(a).add(force);
+                        edgeHandleForces.get(b).add(force.negate());
+                    }
                 }
             }
+
+            timer.endTiming("edge handle computation");
+            timer.startTiming("node force collection");
+
+            // collect node repulsion computations
+            int i = 0;
+            for (Future<Vector3f[]> future : futureResults) {
+                Vector3f[] batch = future.get();
+
+                for (int j = 0; j < batch.length; j++) {
+                    assert !Vectors.isNaN(batch[j]);
+                    NodeMesh.Node node = nodes.get(i + j);
+                    Vector3f nodeForce = nodeForces.computeIfAbsent(node, k -> new Vector3f());
+                    nodeForce.add(batch[j]);
+                }
+
+                i += batch.length;
+            }
+            timer.endTiming("node force collection");
+            timer.startTiming("position update");
+
+            // apply forces
+            for (EdgeMesh.Edge edge : edges) {
+                Vector3f force = edgeHandleForces.get(edge);
+
+                // also include forces of the parent nodes to have edges move along with the parents
+                Vector3f parentForces = new Vector3f();
+                if (!edge.a.isFixed) parentForces.add(nodeForces.get(edge.a));
+                if (!edge.b.isFixed) parentForces.add(nodeForces.get(edge.b));
+                parentForces.div(2);
+
+                force.add(parentForces);
+
+                Vector3f movement = force.mul(speed); // modifies edgeHandleForces
+
+                if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
+                    movement.normalize(MAX_NODE_MOVEMENT);
+                }
+                if (!allow3D) {
+                    movement.z = 0;
+                }
+
+                edge.handlePos.add(movement);
+                assert !Vectors.isNaN(edge.handlePos) : movement;
+            }
+
+            for (NodeMesh.Node node : nodes) {
+                if (node.isFixed) continue;
+
+                Vector3f force = nodeForces.get(node);
+                Vector3f movement = force.mul(speed); // modifies nodeForces
+
+                if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
+                    movement.normalize(MAX_NODE_MOVEMENT);
+                }
+                if (!allow3D) {
+                    movement.z = 0;
+                }
+
+                node.position.add(movement);
+                assert !Vectors.isNaN(node.position) : movement;
+            }
+
+            timer.endTiming("position update");
         }
 
-        timer.endTiming("edge handle computation");
-        timer.startTiming("node force collection");
-
-        // collect node repulsion computations
-        int i = 0;
-        for (Future<Vector3f[]> future : futureResults) {
-            Vector3f[] batch = future.get();
-
-            for (int j = 0; j < batch.length; j++) {
-                assert !Vectors.isNaN(batch[j]);
-                NodeMesh.Node node = nodes.get(i + j);
-                Vector3f nodeForce = nodeForces.computeIfAbsent(node, k -> new Vector3f());
-                nodeForce.add(batch[j]);
-            }
-
-            i += batch.length;
-        }
-        timer.endTiming("node force collection");
-        timer.startTiming("position update");
-
-        // apply forces
-        for (EdgeMesh.Edge edge : edges) {
-            Vector3f force = edgeHandleForces.get(edge);
-
-            // also include forces of the parent nodes to have edges move along with the parents
-            Vector3f parentForces = new Vector3f();
-            if (!edge.a.isFixed) parentForces.add(nodeForces.get(edge.a));
-            if (!edge.b.isFixed) parentForces.add(nodeForces.get(edge.b));
-            parentForces.div(2);
-
-            force.add(parentForces);
-
-            Vector3f movement = force.mul(speed); // modifies edgeHandleForces
-
-            if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
-                movement.normalize(MAX_NODE_MOVEMENT);
-            }
-            if (!allow3D) {
-                movement.z = 0;
-            }
-
-            edge.handlePos.add(movement);
-            assert !Vectors.isNaN(edge.handlePos) : movement;
-        }
-
-        for (NodeMesh.Node node : nodes) {
-            if (node.isFixed) continue;
-
-            Vector3f force = nodeForces.get(node);
-            Vector3f movement = force.mul(speed); // modifies nodeForces
-
-            if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
-                movement.normalize(MAX_NODE_MOVEMENT);
-            }
-            if (!allow3D) {
-                movement.z = 0;
-            }
-
-            node.position.add(movement);
-            assert !Vectors.isNaN(node.position) : movement;
-        }
-
-        timer.endTiming("position update");
-
+        // notifying listeners must not be synchronized on this
         updateListeners.forEach(Runnable::run);
 
 //        if (tension < 1f) stopLoop();
