@@ -24,9 +24,10 @@ import org.joml.Vector3f;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+
+import static org.lwjgl.opengl.GL11.glDepthMask;
 
 /**
  * A game of planning and making money.
@@ -109,7 +110,11 @@ public class Main {
                 .add(this::renderNodes);
 
         renderer.renderSequence(new EdgeShader())
-                .add(this::renderEdges);
+                .add((gl1, root) -> {
+                    glDepthMask(false);
+                    renderEdges(gl1, root);
+                    glDepthMask(true);
+                });
 
         renderer.addHudItem(frameManager::draw);
 
@@ -257,13 +262,7 @@ public class Main {
     }
 
     public int getClickShaderResult() {
-        try {
-            return computeOnRenderThread(renderer::getClickShaderResult).get();
-
-        } catch (InterruptedException | ExecutionException e) {
-            Logger.ERROR.print(e);
-            return -1;
-        }
+        return renderer.getClickShaderResult();
     }
 
     public Graph getVisibleGraph() {

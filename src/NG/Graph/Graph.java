@@ -24,12 +24,14 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
  * @author Geert van Ieperen created on 26-8-2020.
  */
 public abstract class Graph implements ToolElement, MouseClickListener, MouseMoveListener, MouseReleaseListener {
+    public static final Color4f BLUISH = Color4f.rgb(44, 58, 190);
     protected Main root;
     // the node that the mouse is holding
     private NodeMesh.Node selectedNode = null;
     private float selectedNodeZPlane = 0;
 
-    private GraphElement hovered = null;
+    private EdgeMesh.Edge hoveredEdge = null;
+    private NodeMesh.Node hoveredNode = null;
 
     @Override
     public void init(Main root) {
@@ -54,12 +56,12 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
                         if (!node.stayFixed) {
                             node.isFixed = true;
                             node.stayFixed = true;
-                            node.color = Color4f.GREY;
+                            node.addColor(Color4f.GREY, GraphElement.Priority.FIXATE_POSITION);
 
                         } else {
                             node.isFixed = false;
                             node.stayFixed = false;
-                            node.resetColor();
+                            node.resetColor(GraphElement.Priority.FIXATE_POSITION);
                         }
 
                         root.onNodePositionChange();
@@ -93,13 +95,39 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
     @Override
     public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
         if (selectedNode == null) {
+            EdgeMesh.Edge oldHoveredEdge = hoveredEdge;
+            NodeMesh.Node oldHoveredNode = hoveredNode;
+            boolean reloadNodes = false;
+
+            hoveredEdge = null;
+            hoveredNode = null;
             // highlight nodes
             boolean doHover = doOnMouseSelection(
-                    node -> hovered = node,
-                    edge -> hovered = edge
+                    node -> hoveredNode = node,
+                    edge -> hoveredEdge = edge
             );
 
-            if (!doHover) hovered = null;
+            if (oldHoveredNode != null) {
+                if (oldHoveredNode != hoveredNode) {
+                    oldHoveredNode.resetColor(GraphElement.Priority.HOVER);
+                    reloadNodes = true;
+                }
+
+            } else if (oldHoveredEdge != null) {
+                if (oldHoveredEdge != hoveredEdge) {
+                    forEachAttribute(oldHoveredEdge.label, e -> e.resetColor(GraphElement.Priority.HOVER));
+                }
+            }
+
+            if (hoveredNode != null) {
+                hoveredNode.addColor(BLUISH, GraphElement.Priority.HOVER);
+                reloadNodes = true;
+
+            } else if (hoveredEdge != null) {
+                setAttributeColor(hoveredEdge.label, BLUISH, GraphElement.Priority.HOVER);
+            }
+
+            if (reloadNodes) root.executeOnRenderThread(getNodeMesh()::reload);
 
         } else {
             // move node
@@ -146,12 +174,16 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
 
     public abstract Collection<String> getEdgeAttributes();
 
-    public void setAttributeColor(String label, Color4f color) {
+    public void setAttributeColor(String label, Color4f color, GraphElement.Priority priority) {
+        forEachAttribute(label, edge -> edge.addColor(color, priority));
+    }
+
+    public void forEachAttribute(String label, Consumer<EdgeMesh.Edge> action) {
         EdgeMesh edges = getEdgeMesh();
 
         for (EdgeMesh.Edge edge : edges.edgeList()) {
             if (edge.label.equals(label)) {
-                edge.color = color;
+                action.accept(edge);
             }
         }
 
@@ -159,6 +191,6 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
     }
 
     public GraphElement getHovered() {
-        return hovered;
+        return hoveredNode != null ? hoveredNode : hoveredEdge;
     }
 }

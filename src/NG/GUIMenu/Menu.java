@@ -7,7 +7,6 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.Graph.Graph;
 import NG.Graph.GraphElement;
 import NG.Graph.NodeClustering;
-import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.SpringLayout;
 import NG.Rendering.RenderLoop;
 import NG.Tools.Directory;
@@ -88,7 +87,7 @@ public class Menu extends SDecorator {
 
                         SContainer.column(
                                 new STextArea("Color selection", BUTTON_PROPS),
-                                new SScrollableList(6, clusterButtons)
+                                new SScrollableList(10, clusterButtons)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -99,7 +98,12 @@ public class Menu extends SDecorator {
     }
 
     private static void selectAttribute(Graph sourceGraph, NodeClustering nodeCluster, String label, boolean on) {
-        sourceGraph.setAttributeColor(label, on ? EDGE_MARK_COLOR : EdgeMesh.EDGE_BASE_COLOR);
+        if (on) {
+            sourceGraph.setAttributeColor(label, EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE);
+        } else {
+            sourceGraph.forEachAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
+        }
+
         nodeCluster.clusterEdgeAttribute(label, on);
     }
 
@@ -200,7 +204,7 @@ public class Menu extends SDecorator {
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
                     }, {
                             new SActiveTextArea(() -> String.format("Handle Repulsion %5.03f", updateLoop.getEdgeRepulsionFactor()), BUTTON_PROPS),
-                            new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
+                    new SSlider(0, 2f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
                     }}
             ));
             setGrowthPolicy(true, false);

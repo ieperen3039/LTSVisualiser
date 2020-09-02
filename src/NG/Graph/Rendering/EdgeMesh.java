@@ -23,7 +23,7 @@ import static org.lwjgl.opengl.GL30.*;
  * @author Geert van Ieperen created on 16-5-2018.
  */
 public class EdgeMesh implements Mesh {
-    public static final Color4f EDGE_BASE_COLOR = new Color4f(0, 0, 0, 0.5f);
+    public static final Color4f BASE_COLOR = new Color4f(0, 0, 0, 0.5f);
     private final List<Edge> bulk = new ArrayList<>();
     private int vaoId = -1;
     private int aPositionVBO;
@@ -159,7 +159,7 @@ public class EdgeMesh implements Mesh {
             p.aPosition.get(i * 3, aPosBuffer);
             p.handlePos.get(i * 3, handleBuffer);
             p.bPosition.get(i * 3, bPosBuffer);
-            p.color.put(colorBuffer);
+            p.getColor().put(colorBuffer);
         }
 
         colorBuffer.flip();
@@ -174,7 +174,7 @@ public class EdgeMesh implements Mesh {
         return vboID;
     }
 
-    public static class Edge implements GraphElement {
+    public static class Edge extends GraphElement {
         public final NodeMesh.Node a;
         public final NodeMesh.Node b;
         public String label;
@@ -183,8 +183,6 @@ public class EdgeMesh implements Mesh {
         public final Vector3fc bPosition;
         public final Vector3f handlePos;
 
-        public Color4f color = EDGE_BASE_COLOR;
-
         public Edge(NodeMesh.Node a, NodeMesh.Node b, String label) {
             this.a = a;
             this.b = b;
@@ -192,6 +190,7 @@ public class EdgeMesh implements Mesh {
             this.bPosition = b.position;
             this.handlePos = new Vector3f();
             this.label = label;
+            colors.add(GraphElement.Priority.BASE, BASE_COLOR);
         }
 
         @Override

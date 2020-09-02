@@ -139,10 +139,6 @@ public final class NVGOverlay {
 
         // End NanoVG frame
         nvgEndFrame(vg);
-
-        // restore window state
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_STENCIL_TEST);
     }
 
     public class Painter {
@@ -401,7 +397,6 @@ public final class NVGOverlay {
         public void render(Runnable action) {
             nvgEndFrame(vg);
             glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
 
             action.run();
 

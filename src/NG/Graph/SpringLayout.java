@@ -40,6 +40,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private float attraction = 5f; // 1/100th of what LTSGraph uses
     private float speed = 0;
     private float edgeRepulsion = 0.5f;
+
     private Graph graph;
     private boolean allow3D = true;
 
@@ -101,26 +102,34 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             for (EdgeMesh.Edge edge : edges) {
                 Vector3f target = new Vector3f(edge.aPosition).lerp(edge.bPosition, 0.5f);
                 Vector3f force = getAttractionQuadratic(edge.handlePos, target, EDGE_HANDLE_FORCE_FACTOR, EDGE_HANDLE_DISTANCE);
-                assert !Vectors.isNaN(force) : force;
 
-                edgeHandleForces.put(edge, force);
+                if (!Vectors.isNaN(force)) {
+                    edgeHandleForces.put(edge, force);
+                } else {
+                    assert false : force;
+                }
             }
 
-            // edge handle repulsion
-            for (NodeMesh.Node node : nodes) {
-                PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
+            if (edgeRepulsion > 0) {
+                // edge handle repulsion
+                for (NodeMesh.Node node : nodes) {
+                    PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
 
-                for (int i = 0; i < neighbours.size(); i++) {
-                    EdgeMesh.Edge a = neighbours.left(i);
+                    for (int i = 0; i < neighbours.size(); i++) {
+                        EdgeMesh.Edge a = neighbours.left(i);
 
-                    for (int j = i + 1; j < neighbours.size(); j++) {
-                        EdgeMesh.Edge b = neighbours.left(j);
+                        for (int j = i + 1; j < neighbours.size(); j++) {
+                            EdgeMesh.Edge b = neighbours.left(j);
 
-                        Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
-                        assert !Vectors.isNaN(force) : force;
+                            Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
 
-                        edgeHandleForces.get(a).add(force);
-                        edgeHandleForces.get(b).add(force.negate());
+                            if (!Vectors.isNaN(force)) {
+                                edgeHandleForces.get(a).add(force);
+                                edgeHandleForces.get(b).add(force.negate());
+                            } else {
+                                assert false : force;
+                            }
+                        }
                     }
                 }
             }
@@ -159,7 +168,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
                 Vector3f movement = force.mul(speed); // modifies edgeHandleForces
 
-                if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
+                if (movement.length() > MAX_NODE_MOVEMENT) {
                     movement.normalize(MAX_NODE_MOVEMENT);
                 }
                 if (!allow3D) {
@@ -176,7 +185,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
                 Vector3f force = nodeForces.get(node);
                 Vector3f movement = force.mul(speed); // modifies nodeForces
 
-                if (movement.lengthSquared() > MAX_NODE_MOVEMENT) {
+                if (movement.length() > MAX_NODE_MOVEMENT) {
                     movement.normalize(MAX_NODE_MOVEMENT);
                 }
                 if (!allow3D) {
@@ -269,15 +278,6 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         this.allow3D = allow3D;
     }
 
-    private static Vector3f getAttractionQuadratic(Vector3fc a, Vector3fc b, float attraction, float natLength) {
-        Vector3f aToB = new Vector3f(b).sub(a);
-
-        float length = aToB.length() * attraction + 1f;
-        float factor = length * length * natLength;
-
-        return aToB.mul(factor);
-    }
-
     public float getSpeed() {
         return speed;
     }
@@ -292,6 +292,15 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
     public void setNatLength(float natLength) {
         this.natLength = Math.max(natLength, 0.01f);
+    }
+
+    private static Vector3f getAttractionQuadratic(Vector3fc a, Vector3fc b, float attraction, float natLength) {
+        Vector3f aToB = new Vector3f(b).sub(a);
+
+        float length = aToB.length() * attraction + 1f;
+        float factor = length * length * natLength - 0.1f;
+
+        return aToB.mul(factor);
     }
 
     private static Vector3f getAttractionLTS(Vector3fc a, Vector3fc b, float attraction, float natLength) {

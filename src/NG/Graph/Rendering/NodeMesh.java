@@ -128,7 +128,7 @@ public class NodeMesh implements Mesh {
             Node p = bulk.get(i);
 
             p.position.get(i * 3, positionBuffer);
-            p.color.put(colorBuffer);
+            p.getColor().put(colorBuffer);
         }
         colorBuffer.flip();
     }
@@ -142,28 +142,24 @@ public class NodeMesh implements Mesh {
         return vboID;
     }
 
-    public static class Node implements GraphElement {
+    public static class Node extends GraphElement {
         public static final Color4f BASE_COLOR = Color4f.WHITE;
 
         public final Vector3f position;
         public String label; // the node label, if any
 
-        public Color4f color = BASE_COLOR;
         public boolean isFixed = false;
         public boolean stayFixed = false;
 
         public Node(Vector3fc position, String label) {
             this.position = new Vector3f(position);
             this.label = label;
+            colors.add(GraphElement.Priority.BASE, BASE_COLOR);
         }
 
         @Override
         public String toString() {
             return "Node " + label;
-        }
-
-        public void resetColor() {
-            color = BASE_COLOR;
         }
     }
 }

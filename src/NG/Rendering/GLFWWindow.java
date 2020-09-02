@@ -106,17 +106,6 @@ public class GLFWWindow {
             GLUtil.setupDebugMessageCallback();
         }
 
-        // Enable Depth Test
-        glEnable(GL_DEPTH_TEST);
-        // Enable Stencil Test
-//        glEnable(GL_STENCIL_TEST);
-        // Support transparencies
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        // set polygons to fill
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
         Toolbox.checkGLError("window");
     }
 

@@ -135,13 +135,26 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
         }
     }
 
-    @SuppressWarnings("SuspiciousMethodCalls")
-    public int indexOfLeft(Object o) {
+    /**
+     * Returns the index of the first occurrence of the specified element in the left side of this list, or -1 if the
+     * left side of this list does not contain the element.
+     * @param o element to search for
+     * @return the index of the first occurrence of the specified element in this list, or -1 if this list does not
+     * contain the element
+     */
+    public int indexOfLeft(L o) {
         return leftList.indexOf(o);
     }
 
-    @SuppressWarnings("SuspiciousMethodCalls")
-    public int indexOfRight(Object o) {
+
+    /**
+     * Returns the index of the first occurrence of the specified element in the right side of this list, or -1 if the
+     * right side of this list does not contain the element.
+     * @param o element to search for
+     * @return the index of the first occurrence of the specified element in this list, or -1 if this list does not
+     * contain the element
+     */
+    public int indexOfRight(R o) {
         return rightList.indexOf(o);
     }
 

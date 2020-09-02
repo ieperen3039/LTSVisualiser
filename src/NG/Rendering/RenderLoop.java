@@ -14,9 +14,7 @@ import NG.Tools.Toolbox;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -30,9 +28,10 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
     public final TimeObserver timer;
     private final NVGOverlay overlay;
     public boolean accurateTiming = false;
-    private final Map<ShaderProgram, RenderBundle> renders;
+    private final List<RenderBundle> renders;
     private final ClickShader clickShader;
     private Main root;
+    private int clickShaderResult;
 
     /**
      * creates a new, paused gameloop
@@ -41,7 +40,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
     public RenderLoop(int targetFPS) {
         super("Renderloop", targetFPS);
         overlay = new NVGOverlay();
-        renders = new HashMap<>();
+        renders = new ArrayList<>();
         clickShader = new ClickShader();
 
         timer = new TimeObserver((targetFPS / 4) + 1, true);
@@ -70,29 +69,39 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
      * @return a bundle that allows adding rendering options.
      */
     public RenderBundle renderSequence(ShaderProgram shader) {
-        return renders.computeIfAbsent(shader, RenderBundle::new);
+        RenderBundle r = new RenderBundle(shader);
+        renders.add(r);
+        return r;
     }
 
     @Override
     protected void update(float deltaTime) {
         Toolbox.checkGLError("Pre-loop");
         timer.startNewLoop();
+        if (accurateTiming) timer.startTiming("loop init");
 
         GLFWWindow window = root.window();
         if (window.getWidth() == 0 || window.getHeight() == 0) return;
         // camera
         root.camera().updatePosition(deltaTime); // real-time deltatime
 
+        // restore window state
+        glEnable(GL_DEPTH_TEST);
+
         glClearColor(1f, 1f, 1f, 0f); // white
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         glViewport(0, 0, window.getWidth(), window.getHeight());
-        glEnable(GL_LINE_SMOOTH);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         Toolbox.checkGLError(window.toString());
 
         clickShader.init(root);
 
-        for (RenderBundle renderBundle : renders.values()) {
+        if (accurateTiming) timer.endTiming("loop init");
+        for (RenderBundle renderBundle : renders) {
             String identifier = renderBundle.shader.getClass().getSimpleName();
             if (accurateTiming) timer.startTiming(identifier);
 
@@ -104,6 +113,8 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
             }
             Toolbox.checkGLError(identifier);
         }
+
+        clickShaderResult = clickShader.getValue() - 1;
 
         int windowWidth = window.getWidth();
         int windowHeight = window.getHeight();
@@ -124,8 +135,6 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         // loop clean
         Toolbox.checkGLError("Render loop");
         if (window.shouldClose()) stopLoop();
-
-        timer.startTiming("Loop Overhead");
     }
 
     public void addHudItem(Consumer<NVGOverlay.Painter> draw) {
@@ -134,7 +143,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
     public int getClickShaderResult() {
         // the background is black, thus entities start at index 1
-        return clickShader.getValue() - 1;
+        return clickShaderResult;
     }
 
     @Override
@@ -146,7 +155,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         private final ShaderProgram shader;
         private final List<BiConsumer<SGL, Main>> targets;
 
-        public RenderBundle(ShaderProgram shader) {
+        private RenderBundle(ShaderProgram shader) {
             this.shader = shader;
             this.targets = new ArrayList<>();
         }
