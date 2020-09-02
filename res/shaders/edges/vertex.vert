@@ -9,10 +9,14 @@ out vec3 a;// start
 out vec3 b;// middle
 out vec3 c;// end
 out vec4 geoColor;
+out int geoID;
+
+uniform int edgeIndexOffset;
 
 void main(){
     a = a_in;
     b = b_in;
     c = c_in;
     geoColor = color_in;
+    geoID = gl_VertexID + edgeIndexOffset + 1;
 }

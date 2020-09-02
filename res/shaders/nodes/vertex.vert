@@ -10,9 +10,11 @@ uniform mat4 projectionMatrix;
 out vec4 geoMiddle;// position of middle
 out float nodeSizeScalar;
 out vec4 geoColor;
+out int geoID;
 
 void main(){
     // exciting
     geoMiddle = projectionMatrix * viewMatrix * vec4(center, 1.0);
     geoColor = color;
+    geoID = gl_VertexID + 1;
 }

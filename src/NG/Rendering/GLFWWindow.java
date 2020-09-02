@@ -106,10 +106,6 @@ public class GLFWWindow {
             GLUtil.setupDebugMessageCallback();
         }
 
-        // Set clear color
-//        glClearColor(0f, 0f, 0f, 0f); // black
-        glClearColor(1f, 1f, 1f, 0f); // white
-
         // Enable Depth Test
         glEnable(GL_DEPTH_TEST);
         // Enable Stencil Test

@@ -1,6 +1,6 @@
 package NG.Rendering.MeshLoading;
 
-import NG.Rendering.MatrixStack.SGL;
+import NG.Rendering.Shaders.SGL;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;

@@ -1,7 +1,7 @@
 package NG.Camera;
 
 
-import NG.Core.Root;
+import NG.Core.Main;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -21,7 +21,7 @@ public class StaticCamera implements Camera {
     }
 
     @Override
-    public void init(Root root) {
+    public void init(Main root) {
 
     }
 

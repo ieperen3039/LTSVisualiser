@@ -1,6 +1,6 @@
 package NG.GUIMenu.FrameManagers;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.Version;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.Components.SFiller;
@@ -25,7 +25,7 @@ import java.util.*;
  */
 public class FrameManagerImpl implements UIFrameManager {
     private final Deque<SFrame> frames; // the first element in this list has focus
-    protected Root root;
+    protected Main root;
     protected MouseDragListener dragListener = null;
     protected MouseReleaseListener releaseListener = null;
     protected KeyTypeListener typeListener = null;
@@ -43,7 +43,7 @@ public class FrameManagerImpl implements UIFrameManager {
     }
 
     @Override
-    public void init(Root root) throws Version.MisMatchException {
+    public void init(Main root) throws Version.MisMatchException {
         if (this.root != null) return;
         this.root = root;
 

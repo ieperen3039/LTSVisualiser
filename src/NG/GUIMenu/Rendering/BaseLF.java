@@ -1,6 +1,6 @@
 package NG.GUIMenu.Rendering;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.Version;
 import NG.DataStructures.Generic.Color4f;
 import NG.Tools.Logger;
@@ -35,7 +35,7 @@ public class BaseLF implements SFrameLookAndFeel {
     private NVGOverlay.Painter hud;
 
     @Override
-    public void init(Root root) {
+    public void init(Main root) {
         if (!root.getVersionNumber().isLessThan(2, 0)) {
             Logger.ASSERT.print(this + " is ugly. Please install something better");
         }

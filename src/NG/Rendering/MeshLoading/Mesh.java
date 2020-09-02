@@ -1,11 +1,9 @@
 package NG.Rendering.MeshLoading;
 
-import NG.Rendering.MatrixStack.SGL;
+import NG.Rendering.Shaders.SGL;
 import NG.Resources.GeneratorResource;
 import NG.Resources.Resource;
-import NG.Tools.Vectors;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 
 /**
@@ -38,17 +36,6 @@ public interface Mesh {
      * removes this mesh from the GPU. This method must be called exactly once before it is disposed
      */
     void dispose();
-
-    /** creates a resource that cleans the meshfile it used whenever it reloads */
-    static Resource<Mesh> createResource(Path path) {
-        Resource<MeshFile> meshFile = MeshFile.createResource(Vectors.Scaling.UNIFORM, path);
-
-        return new GeneratorResource<>(() -> {
-            Mesh target = meshFile.get().getMesh();
-            meshFile.drop();
-            return target;
-        }, Mesh::dispose);
-    }
 
     static Resource<Mesh> emptyMesh() {
         return new GeneratorResource<>(() -> EMPTY_MESH, null);

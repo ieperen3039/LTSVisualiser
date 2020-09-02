@@ -1,14 +1,14 @@
 package NG.Graph.Rendering;
 
 import NG.DataStructures.Generic.Color4f;
-import NG.Rendering.MatrixStack.SGL;
+import NG.Graph.GraphElement;
 import NG.Rendering.MeshLoading.Mesh;
+import NG.Rendering.Shaders.SGL;
 import NG.Tools.Toolbox;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
 
-import java.io.Serializable;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -142,11 +142,11 @@ public class NodeMesh implements Mesh {
         return vboID;
     }
 
-    public static class Node implements Serializable {
+    public static class Node implements GraphElement {
         public static final Color4f BASE_COLOR = Color4f.WHITE;
 
         public final Vector3f position;
-        public final String label; // the node label, if any
+        public String label; // the node label, if any
 
         public Color4f color = BASE_COLOR;
         public boolean isFixed = false;
@@ -159,7 +159,7 @@ public class NodeMesh implements Mesh {
 
         @Override
         public String toString() {
-            return label;
+            return "Node " + label;
         }
 
         public void resetColor() {

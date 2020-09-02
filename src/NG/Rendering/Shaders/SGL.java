@@ -1,18 +1,16 @@
-package NG.Rendering.MatrixStack;
+package NG.Rendering.Shaders;
 
 import NG.Rendering.MeshLoading.Mesh;
-import NG.Rendering.Shaders.ShaderProgram;
 
 /**
  * This resembles the {@link org.lwjgl.opengl.GL} object.
  * @author Geert van Ieperen created on 15-11-2017.
  */
-public interface SGL extends MatrixStack {
+public interface SGL {
 
     /**
      * instructs the graphical card to render the specified mesh
-     * @param object       A Mesh that has not been disposed.
-     *
+     * @param object A Mesh that has not been disposed.
      */
     void render(Mesh object);
 

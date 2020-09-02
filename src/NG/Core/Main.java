@@ -3,7 +3,6 @@ package NG.Core;
 import NG.Camera.Camera;
 import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
-import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
@@ -15,8 +14,8 @@ import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.GLFWWindow;
-import NG.Rendering.MatrixStack.SGL;
 import NG.Rendering.RenderLoop;
+import NG.Rendering.Shaders.SGL;
 import NG.Settings.Settings;
 import NG.Tools.*;
 import org.joml.Matrix4f;
@@ -24,20 +23,24 @@ import org.joml.Vector3f;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 /**
  * A game of planning and making money.
  * <p>
  * This class initializes all gameAspects, allow for starting a game, loading mods and cleaning up afterwards. It
- * provides all aspects of the game engine through the {@link Root} interface.
+ * provides all aspects of the game engine through the {@link Main} interface.
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
-public class Main implements Root {
+public class Main {
     private static final Version GAME_VERSION = new Version(0, 1);
     public static final int INITIAL_VIEW_DIST = 100;
 
     public final RenderLoop renderer;
-    public final UIFrameManager frameManager;
+    private final UIFrameManager frameManager;
     private final SpringLayout springLayout;
     private final Settings settings;
     private final GLFWWindow window;
@@ -51,6 +54,7 @@ public class Main implements Root {
     private SourceGraph graph;
     private boolean doComputeSourceLayout = true;
     private ClusterMethod clusterMethod = ClusterMethod.NO_CLUSTERING;
+    private Menu menu;
 
     public enum ClusterMethod {
         NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
@@ -101,14 +105,15 @@ public class Main implements Root {
         // read graph
         nodeCluster.init(this);
 
-        renderer.renderSequence(new EdgeShader())
-                .add(this::renderEdges);
         renderer.renderSequence(new NodeShader())
                 .add(this::renderNodes);
 
+        renderer.renderSequence(new EdgeShader())
+                .add(this::renderEdges);
+
         renderer.addHudItem(frameManager::draw);
 
-        SComponent menu = new Menu(this);
+        menu = new Menu(this);
         frameManager.setMainGUI(menu);
 
         springLayout.addUpdateListeners(this::onNodePositionChange);
@@ -131,14 +136,11 @@ public class Main implements Root {
         cleanup();
     }
 
-    @Override
     public void onNodePositionChange() {
-        try (AutoLock.Section section = graphLock.open()) {
-            if (doComputeSourceLayout) {
-                nodeCluster.pullClusterPositions();
-            } else {
-                nodeCluster.pushClusterPositions();
-            }
+        if (doComputeSourceLayout) {
+            nodeCluster.pullClusterPositions();
+        } else {
+            nodeCluster.pushClusterPositions();
         }
 
         executeOnRenderThread(() -> {
@@ -148,47 +150,43 @@ public class Main implements Root {
         });
     }
 
-    @Override
     public Camera camera() {
         return camera;
     }
 
-    @Override
     public Settings settings() {
         return settings;
     }
 
-    @Override
     public GLFWWindow window() {
         return window;
     }
 
-    @Override
     public MouseToolCallbacks inputHandling() {
         return inputHandler;
     }
 
-    @Override
     public KeyControl keyControl() {
         return keyControl;
     }
 
-    @Override
     public Version getVersionNumber() {
         return GAME_VERSION;
     }
 
-    @Override
     public Graph graph() {
         return graph;
     }
 
-    @Override
     public SpringLayout getSpringLayout() {
         return springLayout;
     }
 
-    @Override
+    /**
+     * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed
+     * before two frames have been rendered.
+     * @param action the action to execute
+     */
     public void executeOnRenderThread(Runnable action) {
         if (Thread.currentThread() == mainThread) {
             action.run();
@@ -197,7 +195,6 @@ public class Main implements Root {
         }
     }
 
-    @Override
     public UIFrameManager gui() {
         return frameManager;
     }
@@ -245,21 +242,30 @@ public class Main implements Root {
         onNodePositionChange();
     }
 
-    private void renderEdges(SGL gl, Root root) {
+    private void renderEdges(SGL gl, Main root) {
         try (AutoLock.Section section = graphLock.open()) {
             Graph target = getVisibleGraph();
             gl.render(target.getEdgeMesh());
         }
     }
 
-    private void renderNodes(SGL gl, Root root) {
+    private void renderNodes(SGL gl, Main root) {
         try (AutoLock.Section section = graphLock.open()) {
             Graph target = getVisibleGraph();
             gl.render(target.getNodeMesh());
         }
     }
 
-    @Override
+    public int getClickShaderResult() {
+        try {
+            return computeOnRenderThread(renderer::getClickShaderResult).get();
+
+        } catch (InterruptedException | ExecutionException e) {
+            Logger.ERROR.print(e);
+            return -1;
+        }
+    }
+
     public Graph getVisibleGraph() {
         return (clusterMethod == ClusterMethod.NO_CLUSTERING) ? graph : nodeCluster;
     }
@@ -299,5 +305,36 @@ public class Main implements Root {
         }
 
         onNodePositionChange();
+    }
+
+    public void toggleClusterAttribute(String label) {
+        String[] actionLabels = menu.actionLabels;
+        for (int i = 0; i < actionLabels.length; i++) {
+            if (label.equals(actionLabels[i])) {
+                menu.clusterButtons[i].toggle();
+            }
+        }
+    }
+
+    /**
+     * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed
+     * before two frames have been rendered.
+     * @param action the action to execute
+     * @param <V>    the return type of action
+     * @return a reference to obtain the result of the execution, or null if it threw an exception
+     */
+    public <V> Future<V> computeOnRenderThread(Callable<V> action) {
+        FutureTask<V> task = new FutureTask<>(() -> {
+            try {
+                return action.call();
+
+            } catch (Exception ex) {
+                Logger.ERROR.print(ex);
+                return null;
+            }
+        });
+
+        executeOnRenderThread(task);
+        return task;
     }
 }

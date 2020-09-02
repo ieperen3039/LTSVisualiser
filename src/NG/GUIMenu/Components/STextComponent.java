@@ -59,8 +59,9 @@ public abstract class STextComponent extends SComponent {
      * returns a longer string, the string is cut, and the last characters are shown as ...
      * @param maximumCharacters the upper limit on the number of characters
      */
-    public void setMaximumCharacters(int maximumCharacters) {
+    public STextComponent setMaximumCharacters(int maximumCharacters) {
         this.maximumCharacters = maximumCharacters;
+        return this;
     }
 
     public void setText(String text) {

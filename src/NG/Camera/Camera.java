@@ -1,6 +1,6 @@
 package NG.Camera;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.InputHandling.MouseListener;
 import NG.Rendering.GLFWWindow;
@@ -24,7 +24,7 @@ public interface Camera extends ToolElement, MouseListener {
     Vector3fc vectorToFocus();
 
     @Override
-    void init(Root root);
+    void init(Main root);
 
     /**
      * updates the state of this camera according to the given passed time.

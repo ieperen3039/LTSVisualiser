@@ -1,7 +1,7 @@
 package NG.Rendering.Shaders;
 
-import NG.Core.Root;
-import NG.Rendering.MatrixStack.SGL;
+import NG.Core.Main;
+import NG.Rendering.MeshLoading.Mesh;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -42,9 +42,30 @@ public interface ShaderProgram {
      * initialize the uniforms for this shader. Must be called before rendering.
      * @param root the source of information
      */
-    void initialize(Root root);
+    void initialize(Main root);
 
-    SGL getGL(Root root);
+    SGL getGL(Main root);
+
+    void setClickShading(boolean setTrue);
+
+    class BaseSGL implements SGL {
+        private static final Painter LOCK = new Painter();
+        private final ShaderProgram shader;
+
+        public BaseSGL(ShaderProgram shader) {
+            this.shader = shader;
+        }
+
+        @Override
+        public void render(Mesh object) {
+            object.render(LOCK);
+        }
+
+        @Override
+        public ShaderProgram getShader() {
+            return shader;
+        }
+    }
 
     /**
      * Create a new shader and return the id of the newly created shader.

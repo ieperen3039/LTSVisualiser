@@ -1,6 +1,6 @@
 package NG.Camera;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Rendering.GLFWWindow;
 import NG.Settings.Settings;
 import NG.Tools.Vectors;
@@ -25,7 +25,7 @@ public class MovableCamera implements Camera {
     private final Vector3f focus = new Vector3f();
     private final Vector3f eyeOffset;
 
-    private Root root;
+    private Main root;
     private float mouseXPos;
     private float mouseYPos;
     private boolean isBeingRotated = false;
@@ -43,7 +43,7 @@ public class MovableCamera implements Camera {
     }
 
     @Override
-    public void init(Root root) {
+    public void init(Main root) {
         this.root = root;
 
         Vector2i mousePosition = root.window().getMousePosition();

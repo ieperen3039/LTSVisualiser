@@ -1,10 +1,8 @@
 package NG.Graph.Rendering;
 
 import NG.Camera.Camera;
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Rendering.GLFWWindow;
-import NG.Rendering.MatrixStack.AbstractSGL;
-import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.ShaderException;
 import NG.Rendering.Shaders.ShaderProgram;
 import NG.Tools.Directory;
@@ -20,6 +18,8 @@ import static NG.Graph.Rendering.NodeShader.NODE_RADIUS;
 import static NG.Rendering.Shaders.ShaderProgram.createShader;
 import static NG.Rendering.Shaders.ShaderProgram.loadText;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
+import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 import static org.lwjgl.opengl.GL32.GL_GEOMETRY_SHADER;
 
 /**
@@ -42,6 +42,8 @@ public class EdgeShader implements ShaderProgram {
     private final int radiusUID;
     private final int edgeSizeUID;
     private final int headSizeUID;
+    private final int doClickUID;
+    private final int edgeIndexOffsetUID;
 
     public EdgeShader() throws IOException {
         programID = glCreateProgram();
@@ -62,10 +64,12 @@ public class EdgeShader implements ShaderProgram {
         radiusUID = glGetUniformLocation(programID, "nodeRadius");
         edgeSizeUID = glGetUniformLocation(programID, "edgeSize");
         headSizeUID = glGetUniformLocation(programID, "headSize");
+        doClickUID = glGetUniformLocation(programID, "doUniqueColor");
+        edgeIndexOffsetUID = glGetUniformLocation(programID, "edgeIndexOffset");
     }
 
     @Override
-    public void initialize(Root root) {
+    public void initialize(Main root) {
         GLFWWindow window = root.window();
         float ratio = (float) window.getWidth() / window.getHeight();
         Camera camera = root.camera();
@@ -77,9 +81,12 @@ public class EdgeShader implements ShaderProgram {
         Matrix4f view = camera.getViewMatrix(new Matrix4f());
         writeMatrix(view, viewMatrixUID);
 
+        int nrOfNodes = root.getVisibleGraph().getNodeMesh().nodeList().size();
         glUniform1f(radiusUID, NODE_RADIUS);
         glUniform1f(edgeSizeUID, EDGE_SIZE);
         glUniform1f(headSizeUID, HEAD_SIZE);
+        glUniform1i(edgeIndexOffsetUID, nrOfNodes);
+        glUniform1i(doClickUID, 0);
     }
 
     private void writeMatrix(Matrix4f view, int transformUID) {
@@ -92,6 +99,7 @@ public class EdgeShader implements ShaderProgram {
     }
 
     public void bind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(programID);
     }
 
@@ -122,21 +130,12 @@ public class EdgeShader implements ShaderProgram {
         }
     }
 
-    public ParticleGL getGL(Root root) {
-        return new ParticleGL();
+    public BaseSGL getGL(Main root) {
+        return new BaseSGL(this);
     }
 
-    public class ParticleGL extends AbstractSGL {
-        public ParticleGL() {}
-
-        @Override
-        public void render(Mesh object) {
-            object.render(LOCK);
-        }
-
-        @Override
-        public ShaderProgram getShader() {
-            return EdgeShader.this;
-        }
+    @Override
+    public void setClickShading(boolean setTrue) {
+        glUniform1i(doClickUID, setTrue ? 1 : 0);
     }
 }

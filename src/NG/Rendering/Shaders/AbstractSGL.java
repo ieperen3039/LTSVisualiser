@@ -1,5 +1,6 @@
-package NG.Rendering.MatrixStack;
+package NG.Rendering.Shaders;
 
+import NG.Rendering.MatrixStack.MatrixStack;
 import org.joml.*;
 
 import java.util.ArrayDeque;
@@ -10,7 +11,7 @@ import java.util.Deque;
  * operations are covered.
  * @author Geert van Ieperen created on 30-1-2019.
  */
-public abstract class AbstractSGL implements SGL {
+public abstract class AbstractSGL implements SGL, MatrixStack {
     protected static final Painter LOCK = new Painter();
     private static final Matrix4fc QUARTER_X = new Matrix4f(
             1, 0, 0, 0,

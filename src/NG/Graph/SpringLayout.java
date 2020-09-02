@@ -1,7 +1,7 @@
 package NG.Graph;
 
 import NG.Core.AbstractGameLoop;
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
@@ -49,7 +49,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     @Override
-    public void init(Root root) throws Exception {
+    public void init(Main root) throws Exception {
         graph = root.graph();
     }
 

@@ -1,10 +1,8 @@
 package NG.Graph.Rendering;
 
 import NG.Camera.Camera;
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Rendering.GLFWWindow;
-import NG.Rendering.MatrixStack.AbstractSGL;
-import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.ShaderException;
 import NG.Rendering.Shaders.ShaderProgram;
 import NG.Tools.Directory;
@@ -19,6 +17,8 @@ import java.nio.file.Path;
 import static NG.Rendering.Shaders.ShaderProgram.createShader;
 import static NG.Rendering.Shaders.ShaderProgram.loadText;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
+import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 import static org.lwjgl.opengl.GL32.GL_GEOMETRY_SHADER;
 
 /**
@@ -37,6 +37,7 @@ public class NodeShader implements ShaderProgram {
     private final int viewMatrixUID;
     private final int projectionMatrixUID;
     private final int radiusUID;
+    private final int doClickUID;
 
     public NodeShader() throws IOException {
         programID = glCreateProgram();
@@ -55,10 +56,11 @@ public class NodeShader implements ShaderProgram {
         viewMatrixUID = glGetUniformLocation(programID, "viewMatrix");
         projectionMatrixUID = glGetUniformLocation(programID, "projectionMatrix");
         radiusUID = glGetUniformLocation(programID, "nodeRadius");
+        doClickUID = glGetUniformLocation(programID, "doUniqueColor");
     }
 
     @Override
-    public void initialize(Root root) {
+    public void initialize(Main root) {
         GLFWWindow window = root.window();
         float ratio = (float) window.getWidth() / window.getHeight();
         Camera camera = root.camera();
@@ -75,6 +77,7 @@ public class NodeShader implements ShaderProgram {
         writeMatrix(view, viewMatrixUID);
 
         glUniform1f(radiusUID, NODE_RADIUS);
+        glUniform1i(doClickUID, 0);
     }
 
     private void writeMatrix(Matrix4f view, int transformUID) {
@@ -87,6 +90,7 @@ public class NodeShader implements ShaderProgram {
     }
 
     public void bind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(programID);
     }
 
@@ -117,21 +121,12 @@ public class NodeShader implements ShaderProgram {
         }
     }
 
-    public ParticleGL getGL(Root root) {
-        return new ParticleGL();
+    public BaseSGL getGL(Main root) {
+        return new BaseSGL(this);
     }
 
-    public class ParticleGL extends AbstractSGL {
-        public ParticleGL() {}
-
-        @Override
-        public void render(Mesh object) {
-            object.render(LOCK);
-        }
-
-        @Override
-        public ShaderProgram getShader() {
-            return NodeShader.this;
-        }
+    @Override
+    public void setClickShading(boolean setTrue) {
+        glUniform1i(doClickUID, setTrue ? 1 : 0);
     }
 }

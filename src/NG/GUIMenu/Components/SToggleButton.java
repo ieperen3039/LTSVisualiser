@@ -104,4 +104,8 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
     public String toString() {
         return this.getClass().getSimpleName() + " (" + getText() + ")";
     }
+
+    public void toggle() {
+        setActive(!state);
+    }
 }

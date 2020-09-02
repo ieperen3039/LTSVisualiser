@@ -1,6 +1,6 @@
 package NG.InputHandling.MouseTools;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.InputHandling.KeyControl;
 import NG.Rendering.GLFWWindow;
@@ -22,11 +22,11 @@ public class MouseToolCallbacks implements ToolElement {
     private final ExecutorService taskScheduler = Executors.newSingleThreadExecutor();
     private final KeyControl keyControl = new KeyControl();
     private MouseTool DEFAULT_MOUSE_TOOL;
-    private Root root;
+    private Main root;
     private MouseTool currentTool;
 
     @Override
-    public void init(Root root) {
+    public void init(Main root) {
         if (this.root != null) return;
         this.root = root;
 

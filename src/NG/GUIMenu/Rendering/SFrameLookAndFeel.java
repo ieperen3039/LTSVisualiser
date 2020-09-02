@@ -1,6 +1,6 @@
 package NG.GUIMenu.Rendering;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.Version;
 import org.joml.Vector2ic;
 
@@ -47,7 +47,7 @@ public interface SFrameLookAndFeel {
             Vector2ic pos, Vector2ic dim, String text, NGFonts.TextType type, Alignment align
     );
 
-    void init(Root root);
+    void init(Main root);
 
     /**
      * @return the used painter instance

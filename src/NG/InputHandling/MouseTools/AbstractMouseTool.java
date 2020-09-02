@@ -1,13 +1,13 @@
 package NG.InputHandling.MouseTools;
 
 import NG.Camera.Camera;
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.Graph.Graph;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseScrollListener;
-import NG.Rendering.MatrixStack.SGL;
+import NG.Rendering.Shaders.SGL;
 import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFW;
 
@@ -15,7 +15,7 @@ import org.lwjgl.glfw.GLFW;
  * @author Geert van Ieperen created on 24-4-2020.
  */
 public abstract class AbstractMouseTool implements MouseTool {
-    protected Root root;
+    protected Main root;
 
     private MouseReleaseListener releaseListener;
 
@@ -23,7 +23,7 @@ public abstract class AbstractMouseTool implements MouseTool {
         PRESS_ACTIVATE, PRESS_DEACTIVATE, DRAG_ACTIVATE, DRAG_DEACTIVATE, HOVER
     }
 
-    public AbstractMouseTool(Root root) {
+    public AbstractMouseTool(Main root) {
         this.root = root;
         releaseListener = root.camera();
     }
@@ -48,10 +48,10 @@ public abstract class AbstractMouseTool implements MouseTool {
         }
 
         Graph graph = root.getVisibleGraph();
-        boolean didClickGraph = graph.checkMouseClick(button, x, y);
+        boolean didClickGraph = graph.checkMouseClick(button);
 
         if (didClickGraph) {
-            releaseListener = graph;
+            releaseListener = root.getVisibleGraph();
 
         } else {
             Camera camera = root.camera();
@@ -99,7 +99,7 @@ public abstract class AbstractMouseTool implements MouseTool {
     public final void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
         root.gui().mouseMoved(xDelta, yDelta, xPos, yPos);
         root.camera().mouseMoved(xDelta, yDelta, xPos, yPos);
-        root.graph().mouseMoved(xDelta, yDelta, xPos, yPos);
+        root.getVisibleGraph().mouseMoved(xDelta, yDelta, xPos, yPos);
     }
 
     @Override

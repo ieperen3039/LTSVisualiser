@@ -1,6 +1,6 @@
 package NG.InputHandling.MouseTools;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import org.joml.Vector3fc;
 
 /**
@@ -16,7 +16,7 @@ import org.joml.Vector3fc;
  */
 public class DefaultMouseTool extends AbstractMouseTool {
 
-    public DefaultMouseTool(Root root) {
+    public DefaultMouseTool(Main root) {
         super(root);
     }
 

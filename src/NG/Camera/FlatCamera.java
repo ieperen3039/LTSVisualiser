@@ -1,6 +1,6 @@
 package NG.Camera;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Settings.Settings;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -19,7 +19,7 @@ public class FlatCamera implements Camera {
     private float vDist;
 
     private boolean isHeld = false;
-    private Root root;
+    private Main root;
     private float xMoveScalar;
     private float yMoveScalar;
 
@@ -29,7 +29,7 @@ public class FlatCamera implements Camera {
     }
 
     @Override
-    public void init(Root root) {
+    public void init(Main root) {
         this.root = root;
 
         xMoveScalar = -1.0f / 32;

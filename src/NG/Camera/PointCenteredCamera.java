@@ -1,6 +1,6 @@
 package NG.Camera;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Settings.Settings;
 import NG.Tools.Vectors;
 import org.joml.Quaternionf;
@@ -24,7 +24,7 @@ public class PointCenteredCamera implements Camera {
     private float vDist;
 
     private boolean isHeld = false;
-    private Root root;
+    private Main root;
 
     public PointCenteredCamera(Vector3fc focus) {
         this.focus = new Vector3f(focus);
@@ -39,7 +39,7 @@ public class PointCenteredCamera implements Camera {
     }
 
     @Override
-    public void init(Root root) {
+    public void init(Main root) {
         this.root = root;
     }
 

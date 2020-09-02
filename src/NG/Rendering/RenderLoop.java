@@ -1,16 +1,16 @@
 package NG.Rendering;
 
 import NG.Core.AbstractGameLoop;
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.GUIMenu.Rendering.NVGOverlay;
-import NG.Rendering.MatrixStack.SGL;
+import NG.Rendering.Shaders.ClickShader;
+import NG.Rendering.Shaders.SGL;
 import NG.Rendering.Shaders.ShaderProgram;
 import NG.Settings.Settings;
 import NG.Tools.Logger;
 import NG.Tools.TimeObserver;
 import NG.Tools.Toolbox;
-import org.joml.Vector3f;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,15 +23,16 @@ import java.util.function.Consumer;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
- * Repeatedly renders a frame of the main camera of the game given by {@link #init(Root)}
+ * Repeatedly renders a frame of the main camera of the game given by {@link #init(Main)}
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
 public class RenderLoop extends AbstractGameLoop implements ToolElement {
     public final TimeObserver timer;
     private final NVGOverlay overlay;
     public boolean accurateTiming = false;
-    private Root root;
-    private Map<ShaderProgram, RenderBundle> renders;
+    private final Map<ShaderProgram, RenderBundle> renders;
+    private final ClickShader clickShader;
+    private Main root;
 
     /**
      * creates a new, paused gameloop
@@ -41,11 +42,12 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         super("Renderloop", targetFPS);
         overlay = new NVGOverlay();
         renders = new HashMap<>();
+        clickShader = new ClickShader();
 
         timer = new TimeObserver((targetFPS / 4) + 1, true);
     }
 
-    public void init(Root root) throws IOException {
+    public void init(Main root) throws IOException {
         if (this.root != null) return;
         this.root = root;
 
@@ -58,6 +60,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
                 Logger.putOnlinePrint(hud::printRoll);
             }
         });
+        Logger.printOnline(() -> "Index: " + clickShader.getValue());
     }
 
     /**
@@ -77,14 +80,17 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
         GLFWWindow window = root.window();
         if (window.getWidth() == 0 || window.getHeight() == 0) return;
-// camera
+        // camera
         root.camera().updatePosition(deltaTime); // real-time deltatime
 
+        glClearColor(1f, 1f, 1f, 0f); // white
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, window.getWidth(), window.getHeight());
         glEnable(GL_LINE_SMOOTH);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         Toolbox.checkGLError(window.toString());
+
+        clickShader.init(root);
 
         for (RenderBundle renderBundle : renders.values()) {
             String identifier = renderBundle.shader.getClass().getSimpleName();
@@ -126,6 +132,11 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         overlay.addHudItem(draw);
     }
 
+    public int getClickShaderResult() {
+        // the background is black, thus entities start at index 1
+        return clickShader.getValue() - 1;
+    }
+
     @Override
     public void cleanup() {
         overlay.cleanup();
@@ -133,7 +144,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
     public class RenderBundle {
         private final ShaderProgram shader;
-        private final List<BiConsumer<SGL, Root>> targets;
+        private final List<BiConsumer<SGL, Main>> targets;
 
         public RenderBundle(ShaderProgram shader) {
             this.shader = shader;
@@ -144,7 +155,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
          * appends the given consumer to the end of the render sequence
          * @return this
          */
-        public RenderBundle add(BiConsumer<SGL, Root> drawable) {
+        public RenderBundle add(BiConsumer<SGL, Main> drawable) {
             targets.add(drawable);
             return this;
         }
@@ -157,15 +168,22 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
             {
                 shader.initialize(root);
 
-                // GL object
                 SGL gl = shader.getGL(root);
-
-                for (BiConsumer<SGL, Root> tgt : targets) {
+                shader.setClickShading(false);
+                // draw everything on screen
+                for (BiConsumer<SGL, Main> tgt : targets) {
                     tgt.accept(gl, root);
-
-                    assert gl.getPosition(new Vector3f(1, 1, 1))
-                            .equals(new Vector3f(1, 1, 1)) : "GL object has not been properly restored";
                 }
+
+                clickShader.bind();
+                {
+                    shader.setClickShading(true);
+                    // draw everything in frame buffer
+                    for (BiConsumer<SGL, Main> tgt : targets) {
+                        tgt.accept(gl, root);
+                    }
+                }
+                clickShader.unbind();
             }
             shader.unbind();
         }

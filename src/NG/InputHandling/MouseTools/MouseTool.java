@@ -1,7 +1,7 @@
 package NG.InputHandling.MouseTools;
 
 import NG.InputHandling.MouseListener;
-import NG.Rendering.MatrixStack.SGL;
+import NG.Rendering.Shaders.SGL;
 import org.joml.Vector3fc;
 
 /**

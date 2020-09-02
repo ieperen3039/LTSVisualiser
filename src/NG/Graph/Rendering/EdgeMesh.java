@@ -1,9 +1,9 @@
 package NG.Graph.Rendering;
 
 import NG.DataStructures.Generic.Color4f;
-import NG.GUIMenu.Components.SPanel;
-import NG.Rendering.MatrixStack.SGL;
+import NG.Graph.GraphElement;
 import NG.Rendering.MeshLoading.Mesh;
+import NG.Rendering.Shaders.SGL;
 import NG.Tools.Toolbox;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -174,12 +174,10 @@ public class EdgeMesh implements Mesh {
         return vboID;
     }
 
-    public static class Edge {
+    public static class Edge implements GraphElement {
         public final NodeMesh.Node a;
         public final NodeMesh.Node b;
-        public final String label;
-        public Vector3fc labelPos;
-        public SPanel labelPanel = null;
+        public String label;
 
         public final Vector3fc aPosition;
         public final Vector3fc bPosition;
@@ -196,5 +194,9 @@ public class EdgeMesh implements Mesh {
             this.label = label;
         }
 
+        @Override
+        public String toString() {
+            return "Action " + label;
+        }
     }
 }

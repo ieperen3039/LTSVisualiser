@@ -8,8 +8,11 @@ in vec3[1] a;
 in vec3[1] b;
 in vec3[1] c;
 in vec4[1] geoColor;
+in int[1] geoID;
 
 out vec4 fragColor;
+
+vec4 color;
 
 const int NUM_TAIL_SECTIONS = 6;
 const int NUM_HEAD_SECTIONS = 4;
@@ -21,6 +24,7 @@ uniform mat4 projectionMatrix;
 uniform float nodeRadius;
 uniform float edgeSize;
 uniform float headSize;
+uniform bool doUniqueColor;
 
 vec3 bezier(vec3 A, vec3 B, vec3 C, float u){
     float uinv = 1 - u;
@@ -29,6 +33,15 @@ vec3 bezier(vec3 A, vec3 B, vec3 C, float u){
 vec3 bezierDerivative(vec3 A, vec3 B, vec3 C, float u){
     float uinv = 1 - u;
     return (B - A) * 2 * uinv + (C - B) * 2 * u;
+}
+
+vec4 numberToColor(int i) {
+    int bitSize = (1 << 6);
+    int r = (i % bitSize) << 2;
+    int g = (((i >> 6) % bitSize) << 2);
+    int b = (((i >> 12) % bitSize) << 2);
+
+    return vec4(r / 255.0, g / 255.0, b / 255.0, 1.0);
 }
 
 void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, int i){
@@ -41,16 +54,16 @@ void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, int i){
     vec4 perpendicular = vec4(normalize(vec2(scDir.y, -scDir.x)) * width, 0, 0);
 
     gl_Position = projectionMatrix * (scPos + perpendicular);
-    fragColor = geoColor[0];
+    fragColor = color;
     EmitVertex();
 
     gl_Position = projectionMatrix * (scPos - perpendicular);
-    fragColor = geoColor[0];
+    fragColor = color;
     EmitVertex();
 }
 
 void main() {
-    //    mat4 viewProjection = projectionMatrix * viewMatrix;
+    color = doUniqueColor ? numberToColor(geoID) : geoColor[0];
 
     float headHSize = 0.5 * headSize;
     float tailHSize = 0.5 * edgeSize;
@@ -90,7 +103,7 @@ void main() {
     }
 
     gl_Position = projectionMatrix * cViewPos;
-    fragColor = geoColor[0];
+    fragColor = color;
     EmitVertex();
 
     EndPrimitive();

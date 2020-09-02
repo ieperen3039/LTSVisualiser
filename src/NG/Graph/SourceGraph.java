@@ -1,6 +1,6 @@
 package NG.Graph;
 
-import NG.Core.Root;
+import NG.Core.Main;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
@@ -34,7 +34,7 @@ public class SourceGraph extends Graph {
         this.actionLabels = new String[numTransitions];
     }
 
-    public void init(Root root) {
+    public void init(Main root) {
         super.init(root);
 
         if (edges.length < 1) return;
