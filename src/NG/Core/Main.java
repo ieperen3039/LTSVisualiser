@@ -38,7 +38,7 @@ import static org.lwjgl.opengl.GL11.glDepthMask;
  */
 public class Main {
     private static final Version GAME_VERSION = new Version(0, 1);
-    public static final int INITIAL_VIEW_DIST = 100;
+    private final Thread mainThread;
 
     public final RenderLoop renderer;
     private final UIFrameManager frameManager;
@@ -48,17 +48,19 @@ public class Main {
     private final MouseToolCallbacks inputHandler;
     private final KeyControl keyControl;
     private Camera camera;
-    private final Thread mainThread;
-
-    public NodeClustering nodeCluster;
-    private final AutoLock graphLock = new AutoLock.Instance();
-    private SourceGraph graph;
-    private boolean doComputeSourceLayout = true;
-    private ClusterMethod clusterMethod = ClusterMethod.NO_CLUSTERING;
     private Menu menu;
 
-    public enum ClusterMethod {
-        NO_CLUSTERING, TAU, EDGE_ATTRIBUTE
+    private boolean doComputeSourceLayout = false;
+    private DisplayMethod displayMethod = DisplayMethod.PRIMARY_GRAPH;
+
+    private final AutoLock graphLock = new AutoLock.Instance();
+    private SourceGraph graph;
+    private SourceGraph secondGraph;
+    private GraphComparator graphComparator;
+    private NodeClustering nodeCluster;
+
+    public enum DisplayMethod {
+        PRIMARY_GRAPH, SECONDARY_GRAPH, COMPARE_GRAPHS, CLUSTER_ON_SELECTED
     }
 
     public Main() throws IOException {
@@ -83,10 +85,12 @@ public class Main {
         frameManager = new FrameManagerImpl();
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
-        nodeCluster = new NodeClustering();
 
         graph = new SourceGraph(0, 0);
-        springLayout = new SpringLayout();
+        secondGraph = new SourceGraph(0, 0);
+        graphComparator = new GraphComparator(graph, secondGraph);
+        nodeCluster = new NodeClustering(graph);
+        springLayout = new SpringLayout(50);
     }
 
     /**
@@ -101,9 +105,11 @@ public class Main {
         frameManager.init(this);
         springLayout.init(this);
         camera.init(this);
-        graph.init(this);
 
-        // read graph
+        // init graphs
+        graph.init(this);
+        secondGraph.init(this);
+        graphComparator.init(this);
         nodeCluster.init(this);
 
         renderer.renderSequence(new NodeShader())
@@ -142,10 +148,17 @@ public class Main {
     }
 
     public void onNodePositionChange() {
-        if (doComputeSourceLayout) {
-            nodeCluster.pullClusterPositions();
-        } else {
-            nodeCluster.pushClusterPositions();
+        if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED) {
+            if (doComputeSourceLayout) {
+                nodeCluster.pullClusterPositions();
+
+            } else {
+                nodeCluster.pushClusterPositions();
+            }
+        }
+
+        if (displayMethod == DisplayMethod.COMPARE_GRAPHS) {
+            graphComparator.updateEdges();
         }
 
         executeOnRenderThread(() -> {
@@ -187,19 +200,6 @@ public class Main {
         return springLayout;
     }
 
-    /**
-     * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed
-     * before two frames have been rendered.
-     * @param action the action to execute
-     */
-    public void executeOnRenderThread(Runnable action) {
-        if (Thread.currentThread() == mainThread) {
-            action.run();
-        } else {
-            renderer.defer(action);
-        }
-    }
-
     public UIFrameManager gui() {
         return frameManager;
     }
@@ -210,40 +210,67 @@ public class Main {
         window.cleanup();
     }
 
-    public void setGraphSafe(File newGraph) {
+    public void setGraph(File newGraphFile) {
         try {
-            LTSParser ltsParser = new LTSParser(newGraph);
+            LTSParser ltsParser = new LTSParser(newGraphFile);
+            setGraph(ltsParser.get());
 
-            try (AutoLock.Section section = graphLock.open()) {
-                graph.cleanup();
-                graph = ltsParser.get();
-                graph.init(this);
+        } catch (IOException e) {
+            Logger.ERROR.print(newGraphFile.getName(), e);
+        }
+    }
 
-                springLayout.setGraph(graph);
-
-                nodeCluster = new NodeClustering();
-                nodeCluster.init(this);
-                onNodePositionChange();
-            }
+    public void setGraph(SourceGraph newGraph) {
+        try (AutoLock.Section section = graphLock.open()) {
+            graph.cleanup();
+            graph = newGraph;
+            graph.init(this);
 
             springLayout.setGraph(graph);
 
-            Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
+            nodeCluster = new NodeClustering(graph);
+            nodeCluster.init(this);
+
+            graphComparator = new GraphComparator(graph, secondGraph);
+            graphComparator.init(this);
+
+            onNodePositionChange();
+        }
+
+        springLayout.setGraph(graph);
+
+        Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
+    }
+
+    public void setSecondaryGraph(File newGraphFile) {
+        try {
+            LTSParser ltsParser = new LTSParser(newGraphFile);
+            setSecondaryGraph(ltsParser.get());
 
         } catch (IOException e) {
-            Logger.ERROR.print(newGraph.getName(), e);
+            Logger.ERROR.print(newGraphFile.getName(), e);
         }
+    }
+
+    private void setSecondaryGraph(SourceGraph newGraph) {
+        secondGraph.cleanup();
+        secondGraph = newGraph;
+        secondGraph.init(this);
+
+        graphComparator = new GraphComparator(graph, secondGraph);
+        graphComparator.init(this);
     }
 
     public void doSourceLayout(boolean doSource) {
         doComputeSourceLayout = doSource;
 
-        springLayout.setGraph(doComputeSourceLayout ? graph : nodeCluster);
+        springLayout.setGraph(doSource ? graph : getVisibleGraph());
     }
 
-    public void setClusterMethod(ClusterMethod method) {
-        this.clusterMethod = method;
+    public void setDisplayMethod(DisplayMethod method) {
+        this.displayMethod = method;
 
+        springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
         onNodePositionChange();
     }
 
@@ -266,12 +293,28 @@ public class Main {
     }
 
     public Graph getVisibleGraph() {
-        return (clusterMethod == ClusterMethod.NO_CLUSTERING) ? graph : nodeCluster;
+        switch (displayMethod) {
+            case PRIMARY_GRAPH:
+                return graph;
+
+            case SECONDARY_GRAPH:
+                return secondGraph;
+
+            case CLUSTER_ON_SELECTED:
+                return nodeCluster;
+
+            case COMPARE_GRAPHS:
+                return graphComparator;
+
+            default:
+                assert false : displayMethod;
+                return graph;
+        }
     }
 
     public void set3DView(boolean on) {
         if (!on) {
-            Graph graph = doComputeSourceLayout ? this.graph : nodeCluster;
+            Graph graph = doComputeSourceLayout ? this.graph : getVisibleGraph();
 
             // flatten graph in view direction
             Matrix4f viewMatrix = new Matrix4f().lookAt(
@@ -310,7 +353,7 @@ public class Main {
         String[] actionLabels = menu.actionLabels;
         for (int i = 0; i < actionLabels.length; i++) {
             if (label.equals(actionLabels[i])) {
-                menu.clusterButtons[i].toggle();
+                menu.attributeButtons[i].toggle();
             }
         }
     }
@@ -335,5 +378,22 @@ public class Main {
 
         executeOnRenderThread(task);
         return task;
+    }
+
+    /**
+     * Schedules the specified action to be executed in the OpenGL context. The action is guaranteed to be executed
+     * before two frames have been rendered.
+     * @param action the action to execute
+     */
+    public void executeOnRenderThread(Runnable action) {
+        if (Thread.currentThread() == mainThread) {
+            action.run();
+        } else {
+            renderer.defer(action);
+        }
+    }
+
+    public NodeClustering getNodeCluster() {
+        return nodeCluster;
     }
 }

@@ -112,6 +112,7 @@ public class NodeMesh implements Mesh {
     }
 
     public void dispose() {
+        if (!isLoaded) return;
         // Delete the VBOs
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDeleteBuffers(new int[]{posMidVboID, colorVboID});
@@ -154,6 +155,12 @@ public class NodeMesh implements Mesh {
         public Node(Vector3fc position, String label) {
             this.position = new Vector3f(position);
             this.label = label;
+            colors.add(GraphElement.Priority.BASE, BASE_COLOR);
+        }
+
+        public Node(Node other, String newLabel) {
+            this.position = other.position;
+            this.label = newLabel;
             colors.add(GraphElement.Priority.BASE, BASE_COLOR);
         }
 

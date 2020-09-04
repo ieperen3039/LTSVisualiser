@@ -82,7 +82,6 @@ public class LTSParser {
             graph.actionLabels[edgeIndex] = label;
             graph.edges[edgeIndex] = edge;
             graph.mapping.computeIfAbsent(startState, s -> new PairList<>()).add(edge, endState);
-            graph.mapping.computeIfAbsent(endState, s -> new PairList<>()).add(edge, startState);
 
             edgeIndex++;
         }

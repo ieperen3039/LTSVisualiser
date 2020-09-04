@@ -17,15 +17,17 @@ public class NodeClustering extends Graph {
     // maps a new cluster node to the set of elements representing that cluster
     private final Map<NodeMesh.Node, Collection<NodeMesh.Node>> clusterMapping = new HashMap<>();
     private final Set<String> edgeAttributeCluster = new HashSet<>();
-    private Graph sourceGraph;
-    private NodeMesh clusterNodes = null;
-    private EdgeMesh clusterEdges = null;
+    private final Graph sourceGraph;
+    private NodeMesh clusterNodes = new NodeMesh();
+    private EdgeMesh clusterEdges = new EdgeMesh();
+
+    public NodeClustering(Graph sourceGraph) {
+        this.sourceGraph = sourceGraph;
+    }
 
     @Override
     public void init(Main root) {
         super.init(root);
-        this.sourceGraph = root.graph();
-
         createCluster(Collections.emptyMap());
     }
 
@@ -35,6 +37,10 @@ public class NodeClustering extends Graph {
         pushClusterPositions();
     }
 
+    /**
+     * sets this graph to a cluster based on the given cluster map
+     * @param clusterLeaderMap maps each node to a 'leader' node where all nodes in one cluster refer to
+     */
     public synchronized void createCluster(Map<NodeMesh.Node, NodeMesh.Node> clusterLeaderMap) {
         clusterMapping.clear();
         neighbourMapping.clear();
@@ -42,7 +48,6 @@ public class NodeClustering extends Graph {
         NodeMesh nodes = sourceGraph.getNodeMesh();
         EdgeMesh edges = sourceGraph.getEdgeMesh();
 
-        // maps each node to a 'leader' node where all nodes in one cluster refer to
 
         // maps a cluster leader to a new node representing the cluster
         Map<NodeMesh.Node, NodeMesh.Node> newNodes = new HashMap<>();
@@ -94,12 +99,10 @@ public class NodeClustering extends Graph {
         // schedule disposal
         NodeMesh oldNodes = this.clusterNodes;
         EdgeMesh oldEdges = this.clusterEdges;
-        if (oldNodes != null && oldEdges != null) {
-            root.executeOnRenderThread(() -> {
-                oldNodes.dispose();
-                oldEdges.dispose();
-            });
-        }
+        root.executeOnRenderThread(() -> {
+            oldNodes.dispose();
+            oldEdges.dispose();
+        });
 
         // create new cluster nodes
         clusterNodes = new NodeMesh();
@@ -220,11 +223,11 @@ public class NodeClustering extends Graph {
     public void cleanup() {
         NodeMesh oldNodes = this.clusterNodes;
         EdgeMesh oldEdges = this.clusterEdges;
-        if (oldNodes != null && oldEdges != null) {
-            root.executeOnRenderThread(() -> {
-                oldNodes.dispose();
-                oldEdges.dispose();
-            });
-        }
+        root.executeOnRenderThread(() -> {
+            oldNodes.dispose();
+            oldEdges.dispose();
+        });
+        clusterNodes = null;
+        clusterEdges = null;
     }
 }

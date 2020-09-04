@@ -103,6 +103,12 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
         return old;
     }
 
+    public void removeVoid(int index) {
+        leftList.remove(index);
+        rightList.remove(index);
+    }
+
+
     @Override
     public Pair<L, R> remove(int index) {
         return new Pair<>(

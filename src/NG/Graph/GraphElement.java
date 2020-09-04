@@ -5,6 +5,8 @@ import NG.DataStructures.Generic.PairList;
 
 import java.util.Comparator;
 
+import static NG.Graph.GraphElement.Priority.BASE;
+
 /**
  * @author Geert van Ieperen created on 1-9-2020.
  */
@@ -32,6 +34,7 @@ public abstract class GraphElement {
     }
 
     public void resetColor(Priority priority) {
+        if (priority == BASE) throw new IllegalArgumentException("Cannot remove priority " + BASE);
         int index = colors.indexOfLeft(priority);
         assert index != -1 : priority;
         colors.remove(index);

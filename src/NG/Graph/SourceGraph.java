@@ -86,4 +86,10 @@ public class SourceGraph extends Graph {
     public Collection<String> getEdgeAttributes() {
         return Arrays.asList(actionLabels);
     }
+
+    @Override
+    public NodeMesh.Node getInitialState() {
+        if (nodes.length == 0) return null;
+        return nodes[initialState];
+    }
 }

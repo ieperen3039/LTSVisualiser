@@ -375,19 +375,6 @@ public final class Toolbox {
         return (target - a) / (b - a);
     }
 
-    public static <T> Map<T, Integer> getIntersection(Map<T, Integer> a, Map<T, Integer> b) {
-        Map<T, Integer> intersection = new HashMap<>();
-        for (T type : a.keySet()) {
-            if (b.containsKey(type)) {
-                int amount = Math.min(a.get(type), b.get(type));
-                if (amount > 0) {
-                    intersection.put(type, amount);
-                }
-            }
-        }
-        return intersection;
-    }
-
     public Vector3f bezier(Vector3fc A, Vector3fc B, Vector3fc C, float u) {
         Vector3f temp = new Vector3f();
         final float uinv = 1 - u;

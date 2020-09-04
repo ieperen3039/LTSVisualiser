@@ -4,6 +4,8 @@ import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.GUIMenu.Components.*;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
+import NG.GUIMenu.Rendering.NGFonts;
+import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.Graph;
 import NG.Graph.GraphElement;
 import NG.Graph.NodeClustering;
@@ -12,82 +14,113 @@ import NG.Rendering.RenderLoop;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
 
+import java.awt.*;
 import java.io.File;
-import java.util.*;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * @author Geert van Ieperen created on 7-8-2020.
  */
 public class Menu extends SDecorator {
-    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 30);
+    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 30, true, false);
+    public static final SComponentProperties WAILA_TEXT_PROPERTIES = new SComponentProperties(
+            150, 50, false, true, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
+    );
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(240, 190, 0);
     public static final int SPACE_BETWEEN_UI_SECTIONS = 20;
-    private static final int MAX_CHARACTERS_ACTION_LABELS = 35;
-
-    private static final List<File> files = GraphFileSelector.getFiles(Directory.graphs.getFile("academic"), ".aut");
-//     private static final List<File> files = GraphFileSelector.getFiles(Directory.workDirectory().toFile(), ".aut");
-//    private static final List<File> files = List.of(
-//            Directory.graphs.getFile("railway", "RailwaySafetySystem_spec.aut"),
-//            Directory.graphs.getFile("industrial", "lift", "lift3-init.aut"),
-//            Directory.graphs.getFile("industrial", "lift", "lift3-final.aut"),
-//            Directory.graphs.getFile("industrial", "DIRAC", "SMS.aut")
-//    );
-
-    public String[] actionLabels = new String[0];
-    public SToggleButton[] clusterButtons = new SToggleButton[0];
+    public static final int MAX_CHARACTERS_ACTION_LABELS = 35;
+    public static final File BASE_FILE_CHOOSER_DIRECTORY = Directory.graphs.getDirectory();
+    public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
 
     private final Main main;
-    private final GraphFileSelector graphFileSelector;
+
+    public String[] actionLabels = new String[0];
+    public SToggleButton[] attributeButtons = new SToggleButton[0];
+    private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
 
     public Menu(Main main) {
         this.main = main;
-        this.graphFileSelector = new GraphFileSelector(main, this);
-
-        main.setGraphSafe(files.get(0));
         reloadUI();
     }
 
     public void reloadUI() {
         Graph graph = main.graph();
-        NodeClustering nodeCluster = main.nodeCluster;
+        NodeClustering nodeCluster = main.getNodeCluster();
         SpringLayout updateLoop = main.getSpringLayout();
         UIFrameManager frameManager = main.gui();
         RenderLoop renderLoop = main.renderer;
 
         actionLabels = graph.getEdgeAttributes().stream().distinct().sorted().toArray(String[]::new);
-        clusterButtons = getButtons(nodeCluster, graph, actionLabels);
+        attributeButtons = getButtons(nodeCluster, graph, actionLabels);
+
+        SDropDown displayMethodDropdown = new SDropDown(
+                frameManager, BUTTON_PROPS, 0, DISPLAY_METHOD_LIST,
+                displayMethod -> displayMethod.name().replace("_", " ")
+        )
+                .addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)));
 
         setMainPanel(SContainer.row(
                 new SFiller(),
                 new SPanel(SContainer.column(
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        graphFileSelector,
+                        // graph file selector
+                        new SButton(
+                                "Select Graph", () -> openFileDialog(
+                                file -> {
+                                    this.currentGraphFile = file;
+                                    main.setGraph(file);
+                                    reloadUI();
+                                }), BUTTON_PROPS
+                        ),
+                        new SButton(
+                                "Compare with second graph", () -> openFileDialog(
+                                file -> {
+                                    main.setSecondaryGraph(file);
+                                    displayMethodDropdown.setCurrent(
+                                            DISPLAY_METHOD_LIST.indexOf(Main.DisplayMethod.COMPARE_GRAPHS)
+                                    );
+                                }), BUTTON_PROPS
+                        ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
+                        // graph information panel
                         new SPanel(SContainer.column(
                                 new STextArea(String.format(
-                                        "%d nodes, %d edges", graph.getNrOfNodes(), graph.getNrOfEdges()
+                                        currentGraphFile.getName() + ": %d nodes, %d edges",
+                                        graph.getNrOfNodes(), graph.getNrOfEdges()
                                 ), BUTTON_PROPS),
                                 new SActiveTextArea(() -> {
                                     GraphElement element = main.getVisibleGraph().getHovered();
-                                    return String.format("Hovered: %-32s |", element == null ? "" : element);
-                                }, BUTTON_PROPS).setMaximumCharacters(45)
+                                    return element == null ? "-" : element.toString();
+                                }, WAILA_TEXT_PROPERTIES)
+                                        .setMaximumCharacters(150)
                         )),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
+                        // simulation sliders
                         new SimulationSliderUI(updateLoop),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D()).addStateChangeListener(main::set3DView),
+                        // Display manipulation
+                        new SPanel(SContainer.column(
+                                new STextArea("Display method", BUTTON_PROPS),
+                                displayMethodDropdown,
+
+                                new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
+                                        .addStateChangeListener(main::set3DView)
+                        )),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        new ClusterMethodSelector(frameManager, nodeCluster, main),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
+                        // attribute coloring
                         SContainer.column(
-                                new STextArea("Color selection", BUTTON_PROPS),
-                                new SScrollableList(10, clusterButtons)
+                                new STextArea("Attribute markings", BUTTON_PROPS),
+                                new SScrollableList(10, attributeButtons),
+                                new SToggleButton("Only compute layout of primary graph", BUTTON_PROPS, false)
+                                        .addStateChangeListener(main::doSourceLayout)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -95,6 +128,25 @@ public class Menu extends SDecorator {
                         new SFiller()
                 )).setGrowthPolicy(false, true)
         ));
+    }
+
+    private void openFileDialog(Consumer<File> action) {
+        Frame parent = new Frame();
+        try {
+            FileDialog fd = new FileDialog(parent, "Choose a file", FileDialog.LOAD);
+            fd.setDirectory(BASE_FILE_CHOOSER_DIRECTORY.getAbsolutePath());
+            fd.setFile("*.aut");
+            fd.setVisible(true);
+            parent.requestFocus();
+            String filename = fd.getFile();
+            if (filename != null) {
+                String directory = fd.getDirectory();
+                action.accept(Paths.get(directory, filename).toFile());
+            }
+
+        } finally {
+            parent.dispose();
+        }
     }
 
     private static void selectAttribute(Graph sourceGraph, NodeClustering nodeCluster, String label, boolean on) {
@@ -105,45 +157,6 @@ public class Menu extends SDecorator {
         }
 
         nodeCluster.clusterEdgeAttribute(label, on);
-    }
-
-    private static class GraphFileSelector extends SPanel {
-
-        public GraphFileSelector(Main main, Menu menu) {
-            super(SContainer.column(
-                    new STextArea("Graph Selector", BUTTON_PROPS),
-                    new SDropDown(main.gui(), BUTTON_PROPS, 0, files, file -> file.getParentFile()
-                            .getName() + "/" + file.getName())
-                            .addStateChangeListener((i) -> {
-                                main.setGraphSafe(files.get(i));
-                                menu.reloadUI();
-                            })
-            ));
-            setGrowthPolicy(false, false);
-        }
-
-        /** recursively finds all files under the given directory with the given suffix */
-        private static List<File> getFiles(File directory, String suffix) {
-            List<File> files = new ArrayList<>();
-            Deque<File> open = new ArrayDeque<>();
-            open.add(directory);
-
-            while (!open.isEmpty()) {
-                File file = open.remove();
-
-                if (file.isDirectory()) {
-                    // add all underlying files
-                    File[] newFiles = file.listFiles();
-                    assert newFiles != null;
-                    open.addAll(Arrays.asList(newFiles));
-
-                } else if (file.getName().endsWith(suffix)) {
-                    files.add(file);
-                }
-            }
-
-            return files;
-        }
     }
 
     private SToggleButton[] getButtons(NodeClustering nodeCluster, Graph graph, String[] actionLabels) {
@@ -158,21 +171,6 @@ public class Menu extends SDecorator {
         }
 
         return buttons;
-    }
-
-    private static class ClusterMethodSelector extends SPanel {
-        private static final List<Main.ClusterMethod> CLUSTER_METHODS = Arrays.asList(Main.ClusterMethod.values());
-
-        public ClusterMethodSelector(UIFrameManager frameManager, NodeClustering nodeCluster, Main main) {
-            super(SContainer.column(
-                    new STextArea("Cluster method", BUTTON_PROPS),
-                    new SDropDown(frameManager, BUTTON_PROPS, 0, CLUSTER_METHODS, Enum::name)
-                            .addStateChangeListener(i -> main.setClusterMethod(CLUSTER_METHODS.get(i))),
-                    new SToggleButton("Compute layout of Cluster", BUTTON_PROPS)
-                            .addStateChangeListener(on -> main.doSourceLayout(!on))
-            ));
-            setGrowthPolicy(true, false);
-        }
     }
 
     private static class TimingUI extends SContainer.GhostContainer {

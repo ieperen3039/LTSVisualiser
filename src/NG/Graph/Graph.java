@@ -193,4 +193,8 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
     public GraphElement getHovered() {
         return hoveredNode != null ? hoveredNode : hoveredEdge;
     }
+
+    protected NodeMesh.Node getInitialState() {
+        return getNodeMesh().nodeList().get(0);
+    }
 }
