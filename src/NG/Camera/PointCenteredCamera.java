@@ -67,10 +67,10 @@ public class PointCenteredCamera implements Camera {
         if (!isHeld) return;
 
         if (root.keyControl().isShiftPressed()) {
-            Vector3f right = new Vector3f(0, 1, 0).rotate(rotation);
+            Vector3f right = new Vector3f(1, 0, 0).rotate(rotation);
             focus.add(right.mul(xDelta * -DRAG_MOVE_SPEED * vDist));
 
-            Vector3f up = new Vector3f(0, 0, 1).rotate(rotation);
+            Vector3f up = new Vector3f(0, 1, 0).rotate(rotation);
             focus.add(up.mul(yDelta * DRAG_MOVE_SPEED * vDist));
 
         } else {

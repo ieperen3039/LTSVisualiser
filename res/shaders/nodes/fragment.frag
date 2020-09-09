@@ -16,6 +16,6 @@ void main()
 
     } else {
         // black
-        outputColor = vec4(0.0, 0.0, 0.0, 1.0);
+        outputColor = vec4(0.0, 0.0, 0.0, 0.5 + 0.5 * fragColor.a);
     }
 }

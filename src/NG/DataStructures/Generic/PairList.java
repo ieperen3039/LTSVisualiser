@@ -9,6 +9,10 @@ import java.util.function.Consumer;
  * @author Geert van Ieperen created on 29-6-2018.
  */
 public class PairList<L, R> extends AbstractList<Pair<L, R>> {
+    public static final PairList EMPTY_LIST = new PairList<>(
+            Collections.emptyList(), Collections.emptyList()
+    );
+
     private final List<L> leftList;
     private final List<R> rightList;
 
@@ -251,9 +255,7 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
     }
 
     public static <L, R> PairList<L, R> empty() {
-        return new PairList<>(
-                Collections.emptyList(), Collections.emptyList()
-        );
+        return (PairList<L, R>) EMPTY_LIST;
     }
 
     /**

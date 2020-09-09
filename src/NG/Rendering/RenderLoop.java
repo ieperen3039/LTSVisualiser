@@ -78,7 +78,10 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
     protected void update(float deltaTime) {
         Toolbox.checkGLError("Pre-loop");
         timer.startNewLoop();
-        if (accurateTiming) timer.startTiming("loop init");
+        // cache value of accurateTiming for this loop
+        boolean accurateTimingThisLoop = this.accurateTiming;
+
+        if (accurateTimingThisLoop) timer.startTiming("loop init");
 
         GLFWWindow window = root.window();
         if (window.getWidth() == 0 || window.getHeight() == 0) return;
@@ -100,14 +103,14 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
         clickShader.init(root);
 
-        if (accurateTiming) timer.endTiming("loop init");
+        if (accurateTimingThisLoop) timer.endTiming("loop init");
         for (RenderBundle renderBundle : renders) {
             String identifier = renderBundle.shader.getClass().getSimpleName();
-            if (accurateTiming) timer.startTiming(identifier);
+            if (accurateTimingThisLoop) timer.startTiming(identifier);
 
             renderBundle.draw();
 
-            if (accurateTiming) {
+            if (accurateTimingThisLoop) {
                 glFinish();
                 timer.endTiming(identifier);
             }
@@ -118,10 +121,10 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
         int windowWidth = window.getWidth();
         int windowHeight = window.getHeight();
-        if (accurateTiming) timer.startTiming("GUI");
+        if (accurateTimingThisLoop) timer.startTiming("GUI");
         overlay.draw(windowWidth, windowHeight, 10, 10, 12);
 
-        if (accurateTiming) {
+        if (accurateTimingThisLoop) {
             glFinish();
             timer.endTiming("GUI");
         }

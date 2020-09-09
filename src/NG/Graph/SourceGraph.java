@@ -1,6 +1,7 @@
 package NG.Graph;
 
 import NG.Core.Main;
+import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
@@ -57,11 +58,13 @@ public class SourceGraph extends Graph {
             edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
+
+        getInitialState().addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
     }
 
     @Override
     public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
-        return mapping.get(node);
+        return mapping.getOrDefault(node, PairList.empty());
     }
 
     @Override

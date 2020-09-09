@@ -55,7 +55,7 @@ public class NodeMesh implements Mesh {
             glBindVertexArray(vaoId);
 
             posMidVboID = loadToGL(positionBuffer, 0, 3, GL_STREAM_DRAW);
-            colorVboID = loadToGL(colorBuffer, 1, 4, GL_DYNAMIC_DRAW);
+            colorVboID = loadToGL(colorBuffer, 1, 4, GL_STREAM_DRAW);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -80,7 +80,7 @@ public class NodeMesh implements Mesh {
             glBufferData(GL_ARRAY_BUFFER, positionBuffer, GL_STREAM_DRAW);
 
             glBindBuffer(GL_ARRAY_BUFFER, colorVboID);
-            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STREAM_DRAW);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 

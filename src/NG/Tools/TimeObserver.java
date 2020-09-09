@@ -72,7 +72,7 @@ public class TimeObserver {
     }
 
     public void endTiming(String identifier) {
-        if (!currentMeasure.equals(identifier)) throw new IllegalStateException("Was timing " + currentMeasure);
+        assert currentMeasure.equals(identifier) : "Was timing " + currentMeasure;
         endTiming();
     }
 

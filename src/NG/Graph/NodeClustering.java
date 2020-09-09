@@ -1,6 +1,7 @@
 package NG.Graph;
 
 import NG.Core.Main;
+import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
@@ -20,6 +21,7 @@ public class NodeClustering extends Graph {
     private final Graph sourceGraph;
     private NodeMesh clusterNodes = new NodeMesh();
     private EdgeMesh clusterEdges = new EdgeMesh();
+    private NodeMesh.Node clusterInitialState;
 
     public NodeClustering(Graph sourceGraph) {
         this.sourceGraph = sourceGraph;
@@ -48,7 +50,6 @@ public class NodeClustering extends Graph {
         NodeMesh nodes = sourceGraph.getNodeMesh();
         EdgeMesh edges = sourceGraph.getEdgeMesh();
 
-
         // maps a cluster leader to a new node representing the cluster
         Map<NodeMesh.Node, NodeMesh.Node> newNodes = new HashMap<>();
         for (NodeMesh.Node node : nodes.nodeList()) {
@@ -58,9 +59,13 @@ public class NodeClustering extends Graph {
             // map the leader to the clusterNode, or create when absent
             NodeMesh.Node clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new NodeMesh.Node(old.position, old.label));
 
+            if (node == sourceGraph.getInitialState()) {
+                clusterInitialState = clusterNode;
+                clusterNode.addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
+            }
+
             // we create a new cluster if necessary, and add this node
-            clusterMapping.computeIfAbsent(clusterNode, k -> new HashSet<>())
-                    .add(node);
+            clusterMapping.computeIfAbsent(clusterNode, k -> new HashSet<>()).add(node);
         }
         // maps a node representing a cluster to connected nodes representing clusters
         Map<NodeMesh.Node, Collection<EdgeMesh.Edge>> clusterEdgeMap = new HashMap<>();
@@ -74,6 +79,8 @@ public class NodeClustering extends Graph {
             for (NodeMesh.Node element : cluster) {
                 // for each node connected to this element
                 PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = sourceGraph.connectionsOf(element);
+                assert neighbours != null : element;
+
                 for (int i = 0; i < neighbours.size(); i++) {
                     NodeMesh.Node other = neighbours.right(i);
                     EdgeMesh.Edge edge = neighbours.left(i);
@@ -187,7 +194,7 @@ public class NodeClustering extends Graph {
 
     @Override
     public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
-        return neighbourMapping.get(node);
+        return neighbourMapping.getOrDefault(node, PairList.empty());
     }
 
     public synchronized NodeMesh getNodeMesh() {
@@ -229,5 +236,10 @@ public class NodeClustering extends Graph {
         });
         clusterNodes = null;
         clusterEdges = null;
+    }
+
+    @Override
+    protected NodeMesh.Node getInitialState() {
+        return clusterInitialState;
     }
 }

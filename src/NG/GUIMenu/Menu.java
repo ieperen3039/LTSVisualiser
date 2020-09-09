@@ -111,16 +111,16 @@ public class Menu extends SDecorator {
                                 displayMethodDropdown,
 
                                 new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
-                                        .addStateChangeListener(main::set3DView)
+                                        .addStateChangeListener(main::set3DView),
+                                new SToggleButton("Only compute layout of primary graph", BUTTON_PROPS, false)
+                                        .addStateChangeListener(main::doSourceLayout)
                         )),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // attribute coloring
                         SContainer.column(
                                 new STextArea("Attribute markings", BUTTON_PROPS),
-                                new SScrollableList(10, attributeButtons),
-                                new SToggleButton("Only compute layout of primary graph", BUTTON_PROPS, false)
-                                        .addStateChangeListener(main::doSourceLayout)
+                                new SScrollableList(10, attributeButtons)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -137,7 +137,7 @@ public class Menu extends SDecorator {
             fd.setDirectory(BASE_FILE_CHOOSER_DIRECTORY.getAbsolutePath());
             fd.setFile("*.aut");
             fd.setVisible(true);
-            parent.requestFocus();
+
             String filename = fd.getFile();
             if (filename != null) {
                 String directory = fd.getDirectory();
@@ -202,7 +202,7 @@ public class Menu extends SDecorator {
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
                     }, {
                             new SActiveTextArea(() -> String.format("Handle Repulsion %5.03f", updateLoop.getEdgeRepulsionFactor()), BUTTON_PROPS),
-                    new SSlider(0, 2f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
+                    new SSlider(0, 5f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
                     }}
             ));
             setGrowthPolicy(true, false);

@@ -12,20 +12,25 @@ import java.util.*;
  * @author Geert van Ieperen created on 3-9-2020.
  */
 public class GraphComparator extends Graph {
-    public static final Color4f A_COLOR = Color4f.rgb(200, 83, 0, 0.2f);
+    public static final Color4f A_COLOR = Color4f.rgb(200, 83, 0, 0.1f);
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.2f);
+    public static final Color4f COMBINED_COLOR = Color4f.rgb(0, 0, 0, 0.8f);
 
     private final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> mapping;
     private final Collection<String> attributes;
     private final NodeMesh nodeMesh = new NodeMesh();
     private final EdgeMesh edgeMesh = new EdgeMesh();
+    private final NodeMesh.Node initialState;
 
     public GraphComparator(Graph a, Graph b) {
         this.mapping = new HashMap<>();
         this.attributes = new ArrayList<>(a.getEdgeAttributes());
 
         // edge case: trivial graphs
-        if (a.getNrOfEdges() < 1 || b.getNrOfEdges() < 1) return;
+        if (a.getNrOfEdges() < 1 || b.getNrOfEdges() < 1) {
+            initialState = null;
+            return;
+        }
 
         for (String attribute : b.getEdgeAttributes()) {
             if (!attributes.contains(attribute)) attributes.add(attribute);
@@ -34,10 +39,11 @@ public class GraphComparator extends Graph {
         HashMap<NodeMesh.Node, Map<NodeMesh.Node, Integer>> similarityMap = new HashMap<>();
         findMatching(a, a.getInitialState(), b, b.getInitialState(), similarityMap);
 
-        NodeMesh.Node initial = new NodeMesh.Node(a.getInitialState().position, "initial");
-        nodeMesh.addParticle(initial);
+        this.initialState = new NodeMesh.Node(a.getInitialState().position, "initial");
+        initialState.addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
+        nodeMesh.addParticle(initialState);
 
-        addMatching(initial, a, a.getInitialState(), b, b.getInitialState(), similarityMap, new HashMap<>());
+        addMatching(initialState, a, a.getInitialState(), b, b.getInitialState(), similarityMap, new HashMap<>());
     }
 
     /**
@@ -139,7 +145,6 @@ public class GraphComparator extends Graph {
             bNonMatching.add(i);
         }
 
-        // greedy. to improve: use min-flow
         for (int i = 0; i < aConnections.size(); i++) {
             NodeMesh.Node aNode = aConnections.right(i);
 
@@ -166,15 +171,16 @@ public class GraphComparator extends Graph {
                 bNonMatching.remove(index);
 
                 boolean exists = seen.containsKey(aNode);
-                EdgeMesh.Edge aEdge = aConnections.left(index);
+                EdgeMesh.Edge aEdge = aConnections.left(i);
                 NodeMesh.Node newNode = exists ? seen.get(aNode) : new NodeMesh.Node(aNode.position, "A" + aNode.label + "|B" + bNode.label);
                 EdgeMesh.Edge newEdge = new EdgeMesh.Edge(generatedNode, newNode, aEdge.label);
 
-                nodeMesh.addParticle(newNode);
                 edgeMesh.addParticle(newEdge);
+                newEdge.addColor(COMBINED_COLOR, GraphElement.Priority.BASE);
                 mapping.computeIfAbsent(generatedNode, s -> new PairList<>()).add(newEdge, newNode);
 
                 if (!exists) {
+                    nodeMesh.addParticle(newNode);
                     addMatching(newNode, aGraph, aNode, bGraph, bNode, similarityMap, seen);
                 }
             }
@@ -218,17 +224,22 @@ public class GraphComparator extends Graph {
         NodeMesh.Node newNode = exists ? seen.get(node) : new NodeMesh.Node(node.position, prefix + node.label);
         EdgeMesh.Edge newEdge = new EdgeMesh.Edge(parentNode, newNode, edge.label);
 
-        nodeMesh.addParticle(newNode);
         edgeMesh.addParticle(newEdge);
+        newEdge.addColor(color, GraphElement.Priority.BASE);
         mapping.computeIfAbsent(parentNode, s -> new PairList<>()).add(newEdge, newNode);
 
         if (!exists) {
+            nodeMesh.addParticle(newNode);
             newNode.addColor(color, GraphElement.Priority.BASE);
-            newEdge.addColor(color, GraphElement.Priority.BASE);
 
             seen.put(node, newNode);
             addChildren(newNode, node, prefix, color, seen, graph);
         }
+    }
+
+    @Override
+    protected NodeMesh.Node getInitialState() {
+        return initialState;
     }
 
     @Override

@@ -85,6 +85,7 @@ public class ClickShader {
         glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
         glClearColor(0f, 0f, 0f, 0f); // black
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         Toolbox.checkGLError(this.toString());
     }
 

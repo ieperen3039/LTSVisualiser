@@ -109,11 +109,11 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             }
         }
 
-        if (edgeRepulsion > 0) {
+        if (edgeRepulsion != 0) {
             // edge handle repulsion
             for (NodeMesh.Node node : nodes) {
                 PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
-                assert neighbours != null;
+                assert neighbours != null : node;
 
                 for (int i = 0; i < neighbours.size(); i++) {
                     EdgeMesh.Edge a = neighbours.left(i);

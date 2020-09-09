@@ -117,7 +117,7 @@ public class Main {
 
         renderer.renderSequence(new EdgeShader())
                 .add((gl1, root) -> {
-                    glDepthMask(false);
+                    glDepthMask(false); // read but not write
                     renderEdges(gl1, root);
                     glDepthMask(true);
                 });
@@ -239,7 +239,7 @@ public class Main {
 
         springLayout.setGraph(graph);
 
-        Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes");
+        Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes and " + graph.edges.length + " edges");
     }
 
     public void setSecondaryGraph(File newGraphFile) {
