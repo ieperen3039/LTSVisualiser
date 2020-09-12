@@ -113,7 +113,7 @@ public class PointCenteredCamera implements Camera {
     @Override
     public void set(Vector3fc focus, Vector3fc eye, Vector3fc up) {
         this.focus.set(focus);
-        rotation.identity().lookAlong(new Vector3f(focus).sub(eye), up);
+        rotation.identity().lookAlong(new Vector3f(eye).sub(focus), up);
         vDist = eye.distance(focus);
     }
 

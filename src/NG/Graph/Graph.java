@@ -7,9 +7,8 @@ import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
-import NG.InputHandling.MouseTools.AbstractMouseTool;
+import NG.InputHandling.MouseTools.MouseTool;
 import NG.Rendering.GLFWWindow;
-import NG.Rendering.Shaders.SGL;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -160,7 +159,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
     public abstract void cleanup();
 
-    public static class ManipulationTool extends AbstractMouseTool {
+    public static class ManipulationTool extends MouseTool {
         public ManipulationTool(Main root) {
             super(root);
         }
@@ -196,9 +195,5 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             }
         }
 
-        @Override
-        public void draw(SGL gl) {
-
-        }
     }
 }

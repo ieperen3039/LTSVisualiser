@@ -1,5 +1,6 @@
 package NG.GUIMenu;
 
+import NG.Camera.Camera;
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
@@ -10,11 +11,16 @@ import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.Graph;
 import NG.Graph.GraphColorTool;
 import NG.Graph.GraphElement;
+import NG.Graph.Rendering.EdgeMesh;
+import NG.Graph.Rendering.NodeMesh;
 import NG.Graph.SpringLayout;
+import NG.InputHandling.MouseTools.MouseTool;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.RenderLoop;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
+import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
 import java.io.File;
@@ -151,11 +157,16 @@ public class Menu extends SDecorator {
                         // attribute coloring
                         SContainer.column(
                                 new STextArea("Attribute markings", BUTTON_PROPS),
-                                new SScrollableList(10, attributeButtons)
+                                new SScrollableList(9, attributeButtons)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        new TimingUI(updateLoop, renderLoop),
+                        new SButton("Center camera on...",
+                                () -> main.inputHandling().setMouseTool(new CameraCenterTool(main)), BUTTON_PROPS
+                        ),
+                        new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
+                        new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
+                        new SToggleButton("Accurate Render Timing", BUTTON_PROPS).addStateChangeListener(s -> renderLoop.accurateTiming = s),
                         new SFiller()
                 )).setGrowthPolicy(false, true)
         ));
@@ -180,15 +191,33 @@ public class Menu extends SDecorator {
         }
     }
 
-    private static class TimingUI extends SContainer.GhostContainer {
-        public TimingUI(SpringLayout updateLoop, RenderLoop renderLoop) {
-            super(SContainer.column(
-                    new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
-                    new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
-                    new SToggleButton("Accurate Render Timing", BUTTON_PROPS).addStateChangeListener(s -> renderLoop.accurateTiming = s)
-            ));
-            setGrowthPolicy(true, false);
+    private class CameraCenterTool extends MouseTool {
+        public CameraCenterTool(Main root) {
+            super(root);
         }
+
+        @Override
+        public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                Camera camera = main.camera();
+                Vector3f newFocus = node.position;
+                Vector3f newEye = new Vector3f(newFocus).sub(camera.vectorToFocus());
+                camera.set(newFocus, newEye, camera.getUpVector());
+            }
+            main.inputHandling().setMouseTool(null);
+        }
+
+        @Override
+        public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                Camera camera = main.camera();
+                Vector3f newFocus = edge.handlePos;
+                Vector3f newEye = new Vector3f(newFocus).sub(camera.vectorToFocus());
+                camera.set(newFocus, newEye, camera.getUpVector());
+            }
+            main.inputHandling().setMouseTool(null);
+        }
+
     }
 
     private static class SimulationSliderUI extends SPanel {
@@ -196,8 +225,8 @@ public class Menu extends SDecorator {
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{
-                            new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttractionFactor()), BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
+                    new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttractionFactor()), BUTTON_PROPS),
+                    new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
                     }, {
                             new SActiveTextArea(() -> String.format("Repulsion %5.03f", updateLoop.getRepulsionFactor()), BUTTON_PROPS),
                             new SSlider(0, 10f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)

@@ -4,7 +4,6 @@ import NG.Core.Main;
 import NG.Graph.Graph;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
-import NG.Rendering.Shaders.SGL;
 import NG.Tools.Logger;
 
 /**
@@ -18,7 +17,7 @@ import NG.Tools.Logger;
  * </dl>
  * @author Geert van Ieperen. Created on 26-11-2018.
  */
-public class DefaultMouseTool extends AbstractMouseTool {
+public class DefaultMouseTool extends MouseTool {
 
     public DefaultMouseTool(Main root) {
         super(root);
@@ -34,7 +33,4 @@ public class DefaultMouseTool extends AbstractMouseTool {
         Logger.DEBUG.print(edge);
     }
 
-    @Override
-    public void draw(SGL gl) {
-    }
 }

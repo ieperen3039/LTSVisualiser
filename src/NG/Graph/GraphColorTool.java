@@ -4,8 +4,7 @@ import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
-import NG.InputHandling.MouseTools.AbstractMouseTool;
-import NG.Rendering.Shaders.SGL;
+import NG.InputHandling.MouseTools.MouseTool;
 import org.lwjgl.glfw.GLFW;
 
 import static NG.Graph.GraphElement.Priority.USER_COLOR;
@@ -13,7 +12,7 @@ import static NG.Graph.GraphElement.Priority.USER_COLOR;
 /**
  * @author Geert van Ieperen created on 10-9-2020.
  */
-public class GraphColorTool extends AbstractMouseTool {
+public class GraphColorTool extends MouseTool {
     private Color4f color;
     private Runnable onLeftClick;
 
@@ -50,11 +49,6 @@ public class GraphColorTool extends AbstractMouseTool {
         } else {
             super.onAirClick(button, x, y);
         }
-    }
-
-    @Override
-    public void draw(SGL gl) {
-
     }
 
     public void setColor(Color4f color) {
