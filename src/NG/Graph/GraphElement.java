@@ -14,14 +14,16 @@ public abstract class GraphElement {
     protected final PairList<Priority, Color4f> colors = new PairList<>();
 
     public enum Priority {
-        MAXIMUM, HOVER, INITIAL_STATE, ATTRIBUTE, FIXATE_POSITION, BASE
+        MAXIMUM, IGNORE, HOVER, USER_COLOR, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
     }
 
     public Color4f getColor() {
+        assert !colors.isEmpty();
         return colors.right(0);
     }
 
     public void addColor(Color4f color, Priority priority) {
+        assert color != null;
         int index = colors.indexOfLeft(priority);
 
         if (index < 0) {

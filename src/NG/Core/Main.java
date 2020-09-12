@@ -3,6 +3,7 @@ package NG.Core;
 import NG.Camera.Camera;
 import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
+import NG.GUIMenu.Components.SToggleButton;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
@@ -16,6 +17,7 @@ import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.GLFWWindow;
 import NG.Rendering.RenderLoop;
 import NG.Rendering.Shaders.SGL;
+import NG.Resources.LazyInit;
 import NG.Settings.Settings;
 import NG.Tools.*;
 import org.joml.Matrix4f;
@@ -23,6 +25,10 @@ import org.joml.Vector3f;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -51,16 +57,17 @@ public class Main {
     private Menu menu;
 
     private boolean doComputeSourceLayout = false;
-    private DisplayMethod displayMethod = DisplayMethod.PRIMARY_GRAPH;
+    private final LazyInit<GraphComparator> graphComparator;
 
     private final AutoLock graphLock = new AutoLock.Instance();
     private SourceGraph graph;
     private SourceGraph secondGraph;
-    private GraphComparator graphComparator;
-    private NodeClustering nodeCluster;
+    private final LazyInit<NodeClustering> nodeCluster;
+    private final LazyInit<IgnoringGraph> subGraph;
+    private DisplayMethod displayMethod = DisplayMethod.HIGHLIGHT_ACTIONS;
 
     public enum DisplayMethod {
-        PRIMARY_GRAPH, SECONDARY_GRAPH, COMPARE_GRAPHS, CLUSTER_ON_SELECTED
+        HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, HIDE_ACTIONS, COMPARE_GRAPHS, CLUSTER_ON_SELECTED
     }
 
     public Main() throws IOException {
@@ -86,11 +93,13 @@ public class Main {
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
 
-        graph = new SourceGraph(0, 0);
-        secondGraph = new SourceGraph(0, 0);
-        graphComparator = new GraphComparator(graph, secondGraph);
-        nodeCluster = new NodeClustering(graph);
+        graph = new SourceGraph(this, 0, 0);
+        secondGraph = new SourceGraph(this, 0, 0);
         springLayout = new SpringLayout(50);
+
+        nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
+        graphComparator = new LazyInit<>(() -> new GraphComparator(graph, secondGraph), Graph::cleanup);
+        subGraph = new LazyInit<>(() -> new IgnoringGraph(graph, getMarkedLabels()), Graph::cleanup);
     }
 
     /**
@@ -107,10 +116,8 @@ public class Main {
         camera.init(this);
 
         // init graphs
-        graph.init(this);
-        secondGraph.init(this);
-        graphComparator.init(this);
-        nodeCluster.init(this);
+        graph.init();
+        secondGraph.init();
 
         renderer.renderSequence(new NodeShader())
                 .add(this::renderNodes);
@@ -150,15 +157,19 @@ public class Main {
     public void onNodePositionChange() {
         if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED) {
             if (doComputeSourceLayout) {
-                nodeCluster.pullClusterPositions();
+                nodeCluster.ifPresent(NodeClustering::pullClusterPositions);
 
             } else {
-                nodeCluster.pushClusterPositions();
+                nodeCluster.ifPresent(NodeClustering::pushClusterPositions);
             }
         }
 
-        if (displayMethod == DisplayMethod.COMPARE_GRAPHS) {
-            graphComparator.updateEdges();
+        if (displayMethod == DisplayMethod.COMPARE_GRAPHS && doComputeSourceLayout) {
+            graphComparator.ifPresent(GraphComparator::updateEdges);
+        }
+
+        if (displayMethod == DisplayMethod.HIDE_ACTIONS && doComputeSourceLayout) {
+            subGraph.ifPresent(IgnoringGraph::updateEdges);
         }
 
         executeOnRenderThread(() -> {
@@ -212,7 +223,7 @@ public class Main {
 
     public void setGraph(File newGraphFile) {
         try {
-            LTSParser ltsParser = new LTSParser(newGraphFile);
+            LTSParser ltsParser = new LTSParser(newGraphFile, this);
             setGraph(ltsParser.get());
 
         } catch (IOException e) {
@@ -224,27 +235,23 @@ public class Main {
         try (AutoLock.Section section = graphLock.open()) {
             graph.cleanup();
             graph = newGraph;
-            graph.init(this);
+            graph.init();
 
-            springLayout.setGraph(graph);
+            springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
 
-            nodeCluster = new NodeClustering(graph);
-            nodeCluster.init(this);
-
-            graphComparator = new GraphComparator(graph, secondGraph);
-            graphComparator.init(this);
+            nodeCluster.drop();
+            graphComparator.drop();
+            subGraph.drop();
 
             onNodePositionChange();
         }
-
-        springLayout.setGraph(graph);
 
         Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes and " + graph.edges.length + " edges");
     }
 
     public void setSecondaryGraph(File newGraphFile) {
         try {
-            LTSParser ltsParser = new LTSParser(newGraphFile);
+            LTSParser ltsParser = new LTSParser(newGraphFile, this);
             setSecondaryGraph(ltsParser.get());
 
         } catch (IOException e) {
@@ -255,10 +262,9 @@ public class Main {
     private void setSecondaryGraph(SourceGraph newGraph) {
         secondGraph.cleanup();
         secondGraph = newGraph;
-        secondGraph.init(this);
+        secondGraph.init();
 
-        graphComparator = new GraphComparator(graph, secondGraph);
-        graphComparator.init(this);
+        graphComparator.drop();
     }
 
     public void doSourceLayout(boolean doSource) {
@@ -270,8 +276,41 @@ public class Main {
     public void setDisplayMethod(DisplayMethod method) {
         this.displayMethod = method;
 
+        if (method == DisplayMethod.CLUSTER_ON_SELECTED) {
+            String[] actionLabels = menu.actionLabels;
+            SToggleButton[] attributeButtons = menu.attributeButtons;
+            for (int i = 0; i < actionLabels.length; i++) {
+                nodeCluster.get().clusterEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
+            }
+        }
+
         springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
         onNodePositionChange();
+    }
+
+    public Collection<String> getMarkedLabels() {
+        Collection<String> markedActionLabels = new HashSet<>();
+        String[] actionLabels = menu.actionLabels;
+        SToggleButton[] attributeButtons = menu.attributeButtons;
+        for (int i = 0; i < actionLabels.length; i++) {
+            if (attributeButtons[i].isActive()) {
+                markedActionLabels.add(actionLabels[i]);
+            }
+        }
+        return markedActionLabels;
+    }
+
+    public List<EdgeMesh.Edge> getMarkedEdges() {
+        Collection<String> markedActionLabels = getMarkedLabels();
+
+        List<EdgeMesh.Edge> markedEdges = new ArrayList<>();
+        for (EdgeMesh.Edge edge : graph.getEdgeMesh().edgeList()) {
+            if (markedActionLabels.contains(edge.label)) {
+                markedEdges.add(edge);
+            }
+        }
+
+        return markedEdges;
     }
 
     private void renderEdges(SGL gl, Main root) {
@@ -294,17 +333,20 @@ public class Main {
 
     public Graph getVisibleGraph() {
         switch (displayMethod) {
-            case PRIMARY_GRAPH:
+            case HIGHLIGHT_ACTIONS:
                 return graph;
 
-            case SECONDARY_GRAPH:
+            case SHOW_SECONDARY_GRAPH:
                 return secondGraph;
 
+            case HIDE_ACTIONS:
+                return subGraph.get();
+
             case CLUSTER_ON_SELECTED:
-                return nodeCluster;
+                return nodeCluster.get();
 
             case COMPARE_GRAPHS:
-                return graphComparator;
+                return graphComparator.get();
 
             default:
                 assert false : displayMethod;
@@ -393,7 +435,14 @@ public class Main {
         }
     }
 
-    public NodeClustering getNodeCluster() {
-        return nodeCluster;
+    public void selectAttribute(String label, boolean on) {
+        if (on) {
+            graph.setAttributeColor(label, Menu.EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE);
+        } else {
+            graph.forEachAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
+        }
+
+        nodeCluster.ifPresent(g -> g.clusterEdgeAttribute(label, on));
+        subGraph.ifPresent(g -> g.update(getMarkedLabels()));
     }
 }

@@ -156,9 +156,9 @@ public class EdgeMesh implements Mesh {
         for (int i = 0; i < bulk.size(); i++) {
             Edge p = bulk.get(i);
 
-            p.aPosition.get(i * 3, aPosBuffer);
+            p.fromPosition.get(i * 3, aPosBuffer);
             p.handlePos.get(i * 3, handleBuffer);
-            p.bPosition.get(i * 3, bPosBuffer);
+            p.toPosition.get(i * 3, bPosBuffer);
             p.getColor().put(colorBuffer);
         }
 
@@ -175,20 +175,20 @@ public class EdgeMesh implements Mesh {
     }
 
     public static class Edge extends GraphElement {
-        public final NodeMesh.Node a;
-        public final NodeMesh.Node b;
+        public final NodeMesh.Node from;
+        public final NodeMesh.Node to;
         public String label;
 
-        public final Vector3fc aPosition;
-        public final Vector3fc bPosition;
+        public final Vector3fc fromPosition;
+        public final Vector3fc toPosition;
         public final Vector3f handlePos;
 
-        public Edge(NodeMesh.Node a, NodeMesh.Node b, String label) {
-            this.a = a;
-            this.b = b;
-            this.aPosition = a.position;
-            this.bPosition = b.position;
-            this.handlePos = new Vector3f();
+        public Edge(NodeMesh.Node from, NodeMesh.Node to, String label) {
+            this.from = from;
+            this.to = to;
+            this.fromPosition = from.position;
+            this.toPosition = to.position;
+            this.handlePos = new Vector3f(fromPosition).lerp(toPosition, 0.5f);
             this.label = label;
             colors.add(GraphElement.Priority.BASE, BASE_COLOR);
         }

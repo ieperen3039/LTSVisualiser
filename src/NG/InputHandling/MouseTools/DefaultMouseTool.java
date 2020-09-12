@@ -1,7 +1,11 @@
 package NG.InputHandling.MouseTools;
 
 import NG.Core.Main;
-import org.joml.Vector3fc;
+import NG.Graph.Graph;
+import NG.Graph.Rendering.EdgeMesh;
+import NG.Graph.Rendering.NodeMesh;
+import NG.Rendering.Shaders.SGL;
+import NG.Tools.Logger;
 
 /**
  * A mouse tool that implements the standard behaviour of the pointer user input.
@@ -21,6 +25,16 @@ public class DefaultMouseTool extends AbstractMouseTool {
     }
 
     @Override
-    public void apply(Vector3fc position, Vector3fc origin, Vector3fc direction) {
+    public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+        Logger.DEBUG.print(node);
+    }
+
+    @Override
+    public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+        Logger.DEBUG.print(edge);
+    }
+
+    @Override
+    public void draw(SGL gl) {
     }
 }

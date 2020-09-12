@@ -23,6 +23,7 @@ public class GraphComparator extends Graph {
     private final NodeMesh.Node initialState;
 
     public GraphComparator(Graph a, Graph b) {
+        super(a.root);
         this.mapping = new HashMap<>();
         this.attributes = new ArrayList<>(a.getEdgeAttributes());
 
@@ -77,13 +78,22 @@ public class GraphComparator extends Graph {
         Map<String, Collection<NodeMesh.Node>> bLabelIndices = new HashMap<>(bSize);
 
         for (int i = 0; i < aSize; i++) {
-            String aLabel = aConnections.left(i).label;
-            aLabelIndices.computeIfAbsent(aLabel, s -> new HashSet<>()).add(aConnections.right(i));
+            EdgeMesh.Edge left = aConnections.left(i);
+
+            if (left.from == a) {
+                String aLabel = left.label;
+                aLabelIndices.computeIfAbsent(aLabel, s -> new HashSet<>()).add(aConnections.right(i));
+            }
+
         }
 
         for (int i = 0; i < bSize; i++) {
-            String bLabel = bConnections.left(i).label;
-            bLabelIndices.computeIfAbsent(bLabel, s -> new HashSet<>()).add(bConnections.right(i));
+            EdgeMesh.Edge left = bConnections.left(i);
+
+            if (left.from == b) {
+                String bLabel = left.label;
+                bLabelIndices.computeIfAbsent(bLabel, s -> new HashSet<>()).add(bConnections.right(i));
+            }
         }
 
         ArrayList<String> intersect = new ArrayList<>(aLabelIndices.keySet());
@@ -146,6 +156,7 @@ public class GraphComparator extends Graph {
         }
 
         for (int i = 0; i < aConnections.size(); i++) {
+            if (aConnections.left(i).from != a) continue;
             NodeMesh.Node aNode = aConnections.right(i);
 
             Map<NodeMesh.Node, Integer> bSimilarities = similarityMap.get(aNode);
@@ -153,6 +164,7 @@ public class GraphComparator extends Graph {
             if (bSimilarities != null && !bSimilarities.isEmpty()) {
                 int maxValue = -1;
                 for (int j = 0; j < bConnections.size(); j++) {
+                    if (bConnections.left(j).from != b) continue;
                     NodeMesh.Node bCandidate = bConnections.right(j);
                     int value = bSimilarities.getOrDefault(bCandidate, -1);
                     if (value > maxValue) {
@@ -204,6 +216,7 @@ public class GraphComparator extends Graph {
     ) {
         PairList<EdgeMesh.Edge, NodeMesh.Node> connections = graph.connectionsOf(targetNode);
         for (int i = 0; i < connections.size(); i++) {
+            if (connections.left(i).from != targetNode) continue;
             add(parentNode, graph, prefix, color, seen, connections, i);
         }
     }
@@ -274,7 +287,7 @@ public class GraphComparator extends Graph {
 
     public void updateEdges() {
         for (EdgeMesh.Edge edge : edgeMesh.edgeList()) {
-            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             assert !Vectors.isNaN(edge.handlePos) : edge;
         }
     }

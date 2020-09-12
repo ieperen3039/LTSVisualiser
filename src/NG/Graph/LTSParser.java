@@ -1,5 +1,6 @@
 package NG.Graph;
 
+import NG.Core.Main;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
@@ -36,13 +37,14 @@ public class LTSParser {
      * <li>end_state            ::=  number</li>
      * </ul>
      * @param ltsFile
+     * @param root
      */
-    public LTSParser(File ltsFile) throws IOException {
-        this(new Scanner(ltsFile, "UTF8"));
+    public LTSParser(File ltsFile, Main root) throws IOException {
+        this(new Scanner(ltsFile, "UTF8"), root);
     }
 
-    /** @see #LTSParser(File) */
-    public LTSParser(Scanner scanner) throws IOException {
+    /** @see #LTSParser(File, Main) */
+    public LTSParser(Scanner scanner, Main root) throws IOException {
         // parse header
         String header = scanner.nextLine();
 
@@ -54,7 +56,7 @@ public class LTSParser {
         int nrOfTransitions = Integer.parseInt(matcher.group(2));
         int nrOfStates = Integer.parseInt(matcher.group(3));
 
-        graph = new SourceGraph(nrOfStates, nrOfTransitions);
+        graph = new SourceGraph(root, nrOfStates, nrOfTransitions);
         graph.initialState = initialStateIndex;
 
         // prepare states
@@ -82,6 +84,7 @@ public class LTSParser {
             graph.actionLabels[edgeIndex] = label;
             graph.edges[edgeIndex] = edge;
             graph.mapping.computeIfAbsent(startState, s -> new PairList<>()).add(edge, endState);
+            graph.mapping.computeIfAbsent(endState, s -> new PairList<>()).add(edge, startState);
 
             edgeIndex++;
         }

@@ -359,4 +359,23 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
         }
     }
 
+    public static class Builder<L2, R2> {
+        private final PairList<L2, R2> list = new PairList<>();
+
+        public Builder() {
+        }
+
+        public Builder(L2 left, R2 right) {
+            list.add(left, right);
+        }
+
+        public Builder<L2, R2> add(L2 left, R2 right) {
+            list.add(left, right);
+            return this;
+        }
+
+        public PairList<L2, R2> get() {
+            return list;
+        }
+    }
 }

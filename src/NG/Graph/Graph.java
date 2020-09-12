@@ -1,15 +1,15 @@
 package NG.Graph;
 
 import NG.Core.Main;
-import NG.Core.ToolElement;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
-import NG.InputHandling.MouseClickListener;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
+import NG.InputHandling.MouseTools.AbstractMouseTool;
 import NG.Rendering.GLFWWindow;
+import NG.Rendering.Shaders.SGL;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -23,9 +23,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 /**
  * @author Geert van Ieperen created on 26-8-2020.
  */
-public abstract class Graph implements ToolElement, MouseClickListener, MouseMoveListener, MouseReleaseListener {
+public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     public static final Color4f BLUISH = Color4f.rgb(44, 58, 190);
-    protected Main root;
+    protected transient Main root;
     // the node that the mouse is holding
     private NodeMesh.Node selectedNode = null;
     private float selectedNodeZPlane = 0;
@@ -33,46 +33,8 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
     private EdgeMesh.Edge hoveredEdge = null;
     private NodeMesh.Node hoveredNode = null;
 
-    @Override
-    public void init(Main root) {
+    public Graph(Main root) {
         this.root = root;
-    }
-
-    @Override
-    public void onClick(int button, int xRel, int yRel) {
-        checkMouseClick(button);
-    }
-
-    public boolean checkMouseClick(int button) {
-        return doOnMouseSelection(
-                node -> {
-                    if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                        selectedNode = node;
-                        selectedNodeZPlane = new Vector3f(node.position)
-                                .mulPosition(root.camera().getViewProjection(root.window())).z;
-                        node.isFixed = true;
-
-                    } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-                        if (!node.stayFixed) {
-                            node.isFixed = true;
-                            node.stayFixed = true;
-                            node.addColor(Color4f.GREY, GraphElement.Priority.FIXATE_POSITION);
-
-                        } else {
-                            node.isFixed = false;
-                            node.stayFixed = false;
-                            node.resetColor(GraphElement.Priority.FIXATE_POSITION);
-                        }
-
-                        root.onNodePositionChange();
-                    }
-                },
-                edge -> {
-                    if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                        root.toggleClusterAttribute(edge.label);
-                    }
-                }
-        );
     }
 
     public boolean doOnMouseSelection(Consumer<NodeMesh.Node> nodeAction, Consumer<EdgeMesh.Edge> edgeAction) {
@@ -195,4 +157,48 @@ public abstract class Graph implements ToolElement, MouseClickListener, MouseMov
     }
 
     protected abstract NodeMesh.Node getInitialState();
+
+    public abstract void cleanup();
+
+    public static class ManipulationTool extends AbstractMouseTool {
+        public ManipulationTool(Main root) {
+            super(root);
+        }
+
+        @Override
+        public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT) {
+                graph.selectedNode = node;
+                graph.selectedNodeZPlane = new Vector3f(node.position)
+                        .mulPosition(graph.root.camera().getViewProjection(graph.root.window())).z;
+                node.isFixed = true;
+
+            } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+                if (!node.stayFixed) {
+                    node.isFixed = true;
+                    node.stayFixed = true;
+                    node.addColor(Color4f.GREY, GraphElement.Priority.FIXATE_POSITION);
+
+                } else {
+                    node.isFixed = false;
+                    node.stayFixed = false;
+                    node.resetColor(GraphElement.Priority.FIXATE_POSITION);
+                }
+
+                graph.root.onNodePositionChange();
+            }
+        }
+
+        @Override
+        public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT) {
+                graph.root.toggleClusterAttribute(edge.label);
+            }
+        }
+
+        @Override
+        public void draw(SGL gl) {
+
+        }
+    }
 }

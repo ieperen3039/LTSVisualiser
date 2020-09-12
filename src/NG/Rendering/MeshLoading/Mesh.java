@@ -1,8 +1,7 @@
 package NG.Rendering.MeshLoading;
 
 import NG.Rendering.Shaders.SGL;
-import NG.Resources.GeneratorResource;
-import NG.Resources.Resource;
+import NG.Resources.LazyInit;
 
 import java.util.Arrays;
 
@@ -37,8 +36,8 @@ public interface Mesh {
      */
     void dispose();
 
-    static Resource<Mesh> emptyMesh() {
-        return new GeneratorResource<>(() -> EMPTY_MESH, null);
+    static LazyInit<Mesh> emptyMesh() {
+        return new LazyInit<>(() -> EMPTY_MESH, null);
     }
 
     /**

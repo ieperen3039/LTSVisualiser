@@ -27,8 +27,7 @@ import static java.lang.Math.log;
  * @author Geert van Ieperen created on 2-8-2020.
  */
 public class SpringLayout extends AbstractGameLoop implements ToolElement {
-    public static final float EDGE_HANDLE_FORCE_FACTOR = 10f;
-    public static final float EDGE_HANDLE_DISTANCE = 1f;
+    private static final float EDGE_HANDLE_DISTANCE = 1f;
     private static final int NUM_THREADS = 5;
     private static final float MAX_NODE_MOVEMENT = 10f;
 
@@ -39,7 +38,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private float repulsion = 5f;
     private float attraction = 5f; // 1/100th of what LTSGraph uses
     private float speed = 0;
-    private float edgeRepulsion = 0.5f;
+    private float edgeRepulsion = 0.1f;
 
     private Graph graph;
     private boolean allow3D = true;
@@ -97,15 +96,23 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         Map<EdgeMesh.Edge, Vector3f> edgeHandleForces = new HashMap<>();
 
-        // edge handle centering
+        // edge handle centering or self-loop spacing
         for (EdgeMesh.Edge edge : edges) {
-            Vector3f target = new Vector3f(edge.aPosition).lerp(edge.bPosition, 0.5f);
-            Vector3f force = getAttractionQuadratic(edge.handlePos, target, EDGE_HANDLE_FORCE_FACTOR, EDGE_HANDLE_DISTANCE);
+            Vector3f force;
 
-            if (!Vectors.isNaN(force)) {
-                edgeHandleForces.put(edge, force);
+            if (edge.from == edge.to) {
+                force = getEdgeEffect(edge.handlePos, edge.fromPosition, repulsion, natLength);
+
             } else {
+                float dist = edge.fromPosition.distance(edge.toPosition) / 4;
+                force = getEdgeEffect(edge.handlePos, edge.fromPosition, 0.1f, dist);
+                force.add(getEdgeEffect(edge.handlePos, edge.toPosition, 0.1f, dist));
+            }
+
+            if (Vectors.isNaN(force)) {
                 assert false : force;
+            } else {
+                edgeHandleForces.put(edge, force);
             }
         }
 
@@ -160,8 +167,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             // also include forces of the parent nodes to have edges move along with the parents
             Vector3f parentForces = new Vector3f();
-            if (!edge.a.isFixed) parentForces.add(nodeForces.get(edge.a));
-            if (!edge.b.isFixed) parentForces.add(nodeForces.get(edge.b));
+            if (!edge.from.isFixed) parentForces.add(nodeForces.get(edge.from));
+            if (!edge.to.isFixed) parentForces.add(nodeForces.get(edge.to));
             parentForces.div(2);
 
             force.add(parentForces);
@@ -224,10 +231,10 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     private void computeNodeAttractionForces(Map<NodeMesh.Node, Vector3f> nodeForces, EdgeMesh.Edge edge) {
-        Vector3f aForce = nodeForces.computeIfAbsent(edge.a, node -> new Vector3f());
-        Vector3f bForce = nodeForces.computeIfAbsent(edge.b, node -> new Vector3f());
+        Vector3f aForce = nodeForces.computeIfAbsent(edge.from, node -> new Vector3f());
+        Vector3f bForce = nodeForces.computeIfAbsent(edge.to, node -> new Vector3f());
 
-        Vector3f force = getAttractionLTS(edge.aPosition, edge.bPosition, attraction, natLength);
+        Vector3f force = getEdgeEffect(edge.fromPosition, edge.toPosition, attraction, natLength);
         assert !Vectors.isNaN(force);
 
         aForce.add(force);
@@ -292,6 +299,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         this.natLength = Math.max(natLength, 0.01f);
     }
 
+    /** returns attraction on on a, affected by b */
     private static Vector3f getAttractionQuadratic(Vector3fc a, Vector3fc b, float attraction, float natLength) {
         Vector3f aToB = new Vector3f(b).sub(a);
 
@@ -301,7 +309,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         return aToB.mul(factor);
     }
 
-    private static Vector3f getAttractionLTS(Vector3fc a, Vector3fc b, float attraction, float natLength) {
+    /** returns attraction-repulsion on on a, affected by b */
+    private static Vector3f getEdgeEffect(Vector3fc a, Vector3fc b, float attraction, float natLength) {
         Vector3f aToB = new Vector3f(b).sub(a);
 
         float dist = Math.max(aToB.length(), 1.0f);
@@ -310,6 +319,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         return aToB.mul(factor);
     }
 
+    /** returns repulsion on a, affected by b */
     private static Vector3f getRepulsion(Vector3fc a, Vector3fc b, float natLength, float repulsion) {
         Vector3f otherToThis = new Vector3f(a).sub(b);
         float length = otherToThis.length();

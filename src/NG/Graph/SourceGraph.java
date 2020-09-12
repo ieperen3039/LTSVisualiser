@@ -25,7 +25,8 @@ public class SourceGraph extends Graph {
     private final EdgeMesh edgeMesh;
     public int initialState = 0;
 
-    public SourceGraph(int numStates, int numTransitions) {
+    public SourceGraph(Main root, int numStates, int numTransitions) {
+        super(root);
         this.mapping = new HashMap<>();
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
@@ -35,9 +36,7 @@ public class SourceGraph extends Graph {
         this.actionLabels = new String[numTransitions];
     }
 
-    public void init(Main root) {
-        super.init(root);
-
+    public void init() {
         if (edges.length < 1) return;
 
         // create position mapping
@@ -55,7 +54,7 @@ public class SourceGraph extends Graph {
             getNodeMesh().addParticle(node);
         }
         for (EdgeMesh.Edge edge : edges) {
-            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
 
@@ -69,10 +68,8 @@ public class SourceGraph extends Graph {
 
     @Override
     public void cleanup() {
-        root.executeOnRenderThread(() -> {
-            nodeMesh.dispose();
-            edgeMesh.dispose();
-        });
+        root.executeOnRenderThread(nodeMesh::dispose);
+        root.executeOnRenderThread(edgeMesh::dispose);
     }
 
     @Override

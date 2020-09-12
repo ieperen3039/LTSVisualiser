@@ -21,10 +21,10 @@ public class HDEPositioning {
         // make mapping bidirectional
         HashMap<NodeMesh.Node, Collection<NodeMesh.Node>> biMapping = new HashMap<>();
         for (EdgeMesh.Edge edge : edges) {
-            biMapping.computeIfAbsent(edge.a, n -> new HashSet<>())
-                    .add(edge.b);
-            biMapping.computeIfAbsent(edge.b, n -> new HashSet<>())
-                    .add(edge.a);
+            biMapping.computeIfAbsent(edge.from, n -> new HashSet<>())
+                    .add(edge.to);
+            biMapping.computeIfAbsent(edge.to, n -> new HashSet<>())
+                    .add(edge.from);
         }
 
         // get coordinates as [nodes.length][NUM_INITIAL_DIMENSIONS]

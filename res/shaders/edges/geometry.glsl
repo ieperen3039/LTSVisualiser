@@ -63,7 +63,17 @@ void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, int i){
 }
 
 void main() {
-    color = doUniqueColor ? numberToColor(geoID) : geoColor[0];
+    if (doUniqueColor){
+        if (geoColor[0].a < 0.09) {
+            return;
+        }
+        else {
+            color = numberToColor(geoID);
+        }
+
+    } else {
+        color = geoColor[0];
+    }
 
     float headHSize = 0.5 * headSize;
     float tailHSize = 0.5 * edgeSize;

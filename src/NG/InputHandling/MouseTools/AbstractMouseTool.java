@@ -7,9 +7,7 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.Graph.Graph;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseScrollListener;
-import NG.Rendering.Shaders.SGL;
 import org.joml.Vector2i;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * @author Geert van Ieperen created on 24-4-2020.
@@ -19,10 +17,6 @@ public abstract class AbstractMouseTool implements MouseTool {
 
     private MouseReleaseListener releaseListener;
 
-    public enum MouseAction {
-        PRESS_ACTIVATE, PRESS_DEACTIVATE, DRAG_ACTIVATE, DRAG_DEACTIVATE, HOVER
-    }
-
     public AbstractMouseTool(Main root) {
         this.root = root;
         releaseListener = root.camera();
@@ -30,40 +24,38 @@ public abstract class AbstractMouseTool implements MouseTool {
 
     @Override
     public void onClick(int button, int x, int y) {
-        // TODO keybindings
-        switch (button) {
-            case GLFW.GLFW_MOUSE_BUTTON_RIGHT:
-                MouseToolCallbacks callbacks = root.inputHandling();
-                if (callbacks.getMouseTool() != callbacks.getDefaultMouseTool()) {
-                    callbacks.setMouseTool(null);
-                    return;
-                }
-            case GLFW.GLFW_MOUSE_BUTTON_LEFT:
-                break;
-        }
-
         if (root.gui().checkMouseClick(button, x, y)) {
             releaseListener = root.gui();
             return;
         }
 
         Graph graph = root.getVisibleGraph();
-        boolean didClickGraph = graph.checkMouseClick(button);
+        boolean didClickGraph = graph.doOnMouseSelection(
+                node -> onNodeClick(button, graph, node),
+                edge -> onEdgeClick(button, graph, edge)
+        );
 
         if (didClickGraph) {
             releaseListener = root.getVisibleGraph();
 
         } else {
-            Camera camera = root.camera();
-            camera.onClick(button, x, y);
-            releaseListener = camera;
+            onAirClick(button, x, y);
         }
     }
 
+    protected void onAirClick(int button, int x, int y) {
+        Camera camera = root.camera();
+        camera.onClick(button, x, y);
+        releaseListener = camera;
+    }
+
+    public abstract void onNodeClick(int button, Graph graph, NG.Graph.Rendering.NodeMesh.Node node);
+
+    public abstract void onEdgeClick(int button, Graph graph, NG.Graph.Rendering.EdgeMesh.Edge edge);
+
     @Override
     public void onRelease(int button, int xSc, int ySc) {
-
-        // this is the case when a mouse-down caused a mouse tool switch
+        // this prevents the case when a mouse-down caused a mouse tool switch
         if (releaseListener != null) {
             releaseListener.onRelease(button, xSc, ySc);
             releaseListener = null;
@@ -98,13 +90,9 @@ public abstract class AbstractMouseTool implements MouseTool {
     @Override
     public final void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
         root.gui().mouseMoved(xDelta, yDelta, xPos, yPos);
+        if (root.gui().covers((int) xPos, (int) yPos)) return;
+
         root.camera().mouseMoved(xDelta, yDelta, xPos, yPos);
         root.getVisibleGraph().mouseMoved(xDelta, yDelta, xPos, yPos);
     }
-
-    @Override
-    public void draw(SGL gl) {
-        // TODO fancy cursor?
-    }
-
 }

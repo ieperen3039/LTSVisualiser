@@ -7,6 +7,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_MIDDLE;
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 
 /**
@@ -59,7 +60,7 @@ public class PointCenteredCamera implements Camera {
 
     @Override
     public void onClick(int button, int xRel, int yRel) {
-        isHeld = (button == GLFW_MOUSE_BUTTON_RIGHT);
+        isHeld = (button == GLFW_MOUSE_BUTTON_RIGHT || button == GLFW_MOUSE_BUTTON_MIDDLE);
     }
 
     @Override

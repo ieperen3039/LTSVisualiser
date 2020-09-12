@@ -2,14 +2,16 @@ package NG.GUIMenu;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
+import NG.DataStructures.Generic.PairList;
 import NG.GUIMenu.Components.*;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.Graph;
+import NG.Graph.GraphColorTool;
 import NG.Graph.GraphElement;
-import NG.Graph.NodeClustering;
 import NG.Graph.SpringLayout;
+import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.RenderLoop;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
@@ -27,34 +29,57 @@ import java.util.function.Consumer;
 public class Menu extends SDecorator {
     public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 30, true, false);
     public static final SComponentProperties WAILA_TEXT_PROPERTIES = new SComponentProperties(
-            150, 50, false, true, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
+            150, 50, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
     );
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(240, 190, 0);
-    public static final int SPACE_BETWEEN_UI_SECTIONS = 20;
+    public static final int SPACE_BETWEEN_UI_SECTIONS = 10;
     public static final int MAX_CHARACTERS_ACTION_LABELS = 35;
     public static final File BASE_FILE_CHOOSER_DIRECTORY = Directory.graphs.getDirectory();
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
 
+    private static final PairList<String, Color4f> paintColors = new PairList.Builder<String, Color4f>()
+            .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
+            .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
+            .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
+            .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
+            .add("Cyan", Color4f.rgb(50, 220, 236, 0.8f))
+            .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
+            .get();
+
     private final Main main;
+    private final GraphColorTool colorTool;
 
     public String[] actionLabels = new String[0];
     public SToggleButton[] attributeButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
+    private SToggleButton colorToggleButton;
 
     public Menu(Main main) {
         this.main = main;
+        this.colorTool = new GraphColorTool(main, () -> colorToggleButton.setActive(false), paintColors.right(0));
         reloadUI();
     }
 
     public void reloadUI() {
         Graph graph = main.graph();
-        NodeClustering nodeCluster = main.getNodeCluster();
+        RenderLoop renderLoop = main.renderer;
         SpringLayout updateLoop = main.getSpringLayout();
         UIFrameManager frameManager = main.gui();
-        RenderLoop renderLoop = main.renderer;
+        MouseToolCallbacks inputHandling = main.inputHandling();
 
         actionLabels = graph.getEdgeAttributes().stream().distinct().sorted().toArray(String[]::new);
-        attributeButtons = getButtons(nodeCluster, graph, actionLabels);
+
+        attributeButtons = new SToggleButton[actionLabels.length];
+        for (int i = 0; i < actionLabels.length; i++) {
+            String label = actionLabels[i];
+            attributeButtons[i] = new SToggleButton(label, BUTTON_PROPS)
+                    .addStateChangeListener(on -> main.selectAttribute(label, on));
+            attributeButtons[i].setActive(false);
+            attributeButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
+        }
+
+        colorToggleButton = new SToggleButton("Activate Painting", BUTTON_PROPS)
+                .addStateChangeListener(on -> inputHandling.setMouseTool(on ? colorTool : null));
 
         SDropDown displayMethodDropdown = new SDropDown(
                 frameManager, BUTTON_PROPS, 0, DISPLAY_METHOD_LIST,
@@ -99,6 +124,12 @@ public class Menu extends SDecorator {
                                 }, WAILA_TEXT_PROPERTIES)
                                         .setMaximumCharacters(150)
                         )),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        // color tool
+                        colorToggleButton,
+                        new SDropDown(frameManager, BUTTON_PROPS, 0, paintColors, p -> p.left)
+                                .addStateChangeListener(i -> colorTool.setColor(paintColors.right(i))),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // simulation sliders
@@ -149,30 +180,6 @@ public class Menu extends SDecorator {
         }
     }
 
-    private static void selectAttribute(Graph sourceGraph, NodeClustering nodeCluster, String label, boolean on) {
-        if (on) {
-            sourceGraph.setAttributeColor(label, EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE);
-        } else {
-            sourceGraph.forEachAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
-        }
-
-        nodeCluster.clusterEdgeAttribute(label, on);
-    }
-
-    private SToggleButton[] getButtons(NodeClustering nodeCluster, Graph graph, String[] actionLabels) {
-        SToggleButton[] buttons = new SToggleButton[actionLabels.length];
-
-        for (int i = 0; i < actionLabels.length; i++) {
-            String label = actionLabels[i];
-            buttons[i] = new SToggleButton(label, BUTTON_PROPS)
-                    .addStateChangeListener(on -> selectAttribute(graph, nodeCluster, label, on));
-            buttons[i].setActive(false);
-            buttons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
-        }
-
-        return buttons;
-    }
-
     private static class TimingUI extends SContainer.GhostContainer {
         public TimingUI(SpringLayout updateLoop, RenderLoop renderLoop) {
             super(SContainer.column(
@@ -202,7 +209,7 @@ public class Menu extends SDecorator {
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
                     }, {
                             new SActiveTextArea(() -> String.format("Handle Repulsion %5.03f", updateLoop.getEdgeRepulsionFactor()), BUTTON_PROPS),
-                    new SSlider(0, 5f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
+                    new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
                     }}
             ));
             setGrowthPolicy(true, false);

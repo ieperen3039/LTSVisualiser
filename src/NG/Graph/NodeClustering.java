@@ -1,6 +1,5 @@
 package NG.Graph;
 
-import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
@@ -24,12 +23,8 @@ public class NodeClustering extends Graph {
     private NodeMesh.Node clusterInitialState;
 
     public NodeClustering(Graph sourceGraph) {
+        super(sourceGraph.root);
         this.sourceGraph = sourceGraph;
-    }
-
-    @Override
-    public void init(Main root) {
-        super.init(root);
         createCluster(Collections.emptyMap());
     }
 
@@ -50,8 +45,21 @@ public class NodeClustering extends Graph {
         NodeMesh nodes = sourceGraph.getNodeMesh();
         EdgeMesh edges = sourceGraph.getEdgeMesh();
 
+        // schedule disposal
+        NodeMesh oldNodes = this.clusterNodes;
+        EdgeMesh oldEdges = this.clusterEdges;
+        root.executeOnRenderThread(() -> {
+            oldNodes.dispose();
+            oldEdges.dispose();
+        });
+
+        // create new cluster nodes
+        clusterNodes = new NodeMesh();
+        clusterEdges = new EdgeMesh();
+
         // maps a cluster leader to a new node representing the cluster
         Map<NodeMesh.Node, NodeMesh.Node> newNodes = new HashMap<>();
+        // compute the clusters and create new cluster nodes
         for (NodeMesh.Node node : nodes.nodeList()) {
             // if node is not found in clusterMap, it is a leader
             NodeMesh.Node clusterLeader = getClusterLeader(clusterLeaderMap, node);
@@ -67,68 +75,28 @@ public class NodeClustering extends Graph {
             // we create a new cluster if necessary, and add this node
             clusterMapping.computeIfAbsent(clusterNode, k -> new HashSet<>()).add(node);
         }
-        // maps a node representing a cluster to connected nodes representing clusters
-        Map<NodeMesh.Node, Collection<EdgeMesh.Edge>> clusterEdgeMap = new HashMap<>();
 
-        clusterMapping.forEach((clusterNode, cluster) -> {
-            Map<NodeMesh.Node, EdgeMesh.Edge> connections = new HashMap<>();
-
-            if (cluster.size() > 1) clusterNode.label = "cluster";
-
-            // for every element in this cluster
-            for (NodeMesh.Node element : cluster) {
-                // for each node connected to this element
-                PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = sourceGraph.connectionsOf(element);
-                assert neighbours != null : element;
-
-                for (int i = 0; i < neighbours.size(); i++) {
-                    NodeMesh.Node other = neighbours.right(i);
-                    EdgeMesh.Edge edge = neighbours.left(i);
-                    // for each element to outside this cluster
-                    if (cluster.contains(other)) continue;
-                    // add a connection from this cluster to the cluster of that element
-                    NodeMesh.Node otherLeader = getClusterLeader(clusterLeaderMap, other);
-                    NodeMesh.Node connectedNode = newNodes.get(otherLeader);
-
-                    if (!connections.containsKey(connectedNode)) {
-                        String label = edge.label;
-                        connections.put(connectedNode, new EdgeMesh.Edge(clusterNode, connectedNode, label));
-
-                    } else {
-                        connections.get(connectedNode).label += "+" + edge.label;
-                    }
-                }
-            }
-
-            clusterEdgeMap.put(clusterNode, connections.values());
-        });
-
-        // schedule disposal
-        NodeMesh oldNodes = this.clusterNodes;
-        EdgeMesh oldEdges = this.clusterEdges;
-        root.executeOnRenderThread(() -> {
-            oldNodes.dispose();
-            oldEdges.dispose();
-        });
-
-        // create new cluster nodes
-        clusterNodes = new NodeMesh();
-        clusterEdges = new EdgeMesh();
-
-        // set positions to graph
+        // add new nodes to the graph
         for (NodeMesh.Node node : newNodes.values()) {
             clusterNodes.addParticle(node);
-            PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = new PairList<>();
+        }
 
-            for (EdgeMesh.Edge edge : clusterEdgeMap.get(node)) {
-                assert node == edge.a;
-                edge.handlePos.set(node.position).lerp(edge.b.position, 0.5f);
+        // add all edges
+        for (EdgeMesh.Edge edge : edges.edgeList()) {
+            if (edgeAttributeCluster.contains(edge.label)) continue;
 
-                clusterEdges.addParticle(edge);
-                neighbours.add(edge, edge.b);
-            }
+            NodeMesh.Node aNode = edge.from;
+            NodeMesh.Node bNode = edge.to;
 
-            neighbourMapping.put(node, neighbours);
+            NodeMesh.Node aTarget = newNodes.get(getClusterLeader(clusterLeaderMap, aNode));
+            NodeMesh.Node bTarget = newNodes.get(getClusterLeader(clusterLeaderMap, bNode));
+
+            EdgeMesh.Edge newEdge = new EdgeMesh.Edge(aTarget, bTarget, edge.label);
+            newEdge.handlePos.set(edge.handlePos);
+            clusterEdges.addParticle(newEdge);
+
+            neighbourMapping.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bNode);
+            neighbourMapping.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aNode);
         }
     }
 
@@ -151,7 +119,7 @@ public class NodeClustering extends Graph {
         });
 
         for (EdgeMesh.Edge edge : clusterEdges.edgeList()) {
-            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
         }
     }
 
@@ -171,7 +139,7 @@ public class NodeClustering extends Graph {
         });
 
         for (EdgeMesh.Edge edge : sourceGraph.getEdgeMesh().edgeList()) {
-            edge.handlePos.set(edge.aPosition).lerp(edge.bPosition, 0.5f);
+            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
         }
     }
 
@@ -181,11 +149,11 @@ public class NodeClustering extends Graph {
         for (EdgeMesh.Edge edge : sourceGraph.getEdgeMesh().edgeList()) {
             if (!attributeLabels.contains(edge.label)) continue;
 
-            NodeMesh.Node aLeader = getClusterLeader(leaderMap, edge.a);
-            NodeMesh.Node bLeader = getClusterLeader(leaderMap, edge.b);
+            NodeMesh.Node aLeader = getClusterLeader(leaderMap, edge.from);
+            NodeMesh.Node bLeader = getClusterLeader(leaderMap, edge.to);
 
-            if (edge.a != aLeader) leaderMap.put(edge.a, aLeader);
-            if (edge.b != aLeader) leaderMap.put(edge.b, aLeader);
+            if (edge.from != aLeader) leaderMap.put(edge.from, aLeader);
+            if (edge.to != aLeader) leaderMap.put(edge.to, aLeader);
             if (bLeader != aLeader) leaderMap.put(bLeader, aLeader);
         }
 

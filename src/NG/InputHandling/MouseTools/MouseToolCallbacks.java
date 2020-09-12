@@ -2,6 +2,7 @@ package NG.InputHandling.MouseTools;
 
 import NG.Core.Main;
 import NG.Core.ToolElement;
+import NG.Graph.Graph;
 import NG.InputHandling.KeyControl;
 import NG.Rendering.GLFWWindow;
 import NG.Tools.Logger;
@@ -30,7 +31,7 @@ public class MouseToolCallbacks implements ToolElement {
         if (this.root != null) return;
         this.root = root;
 
-        DEFAULT_MOUSE_TOOL = new DefaultMouseTool(root);
+        DEFAULT_MOUSE_TOOL = new Graph.ManipulationTool(root);
         currentTool = DEFAULT_MOUSE_TOOL;
 
         GLFWWindow target = root.window();
