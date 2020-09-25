@@ -14,17 +14,15 @@ out vec4 fragColor;
 
 vec4 color;
 
-const int NUM_TAIL_SECTIONS = 6;
-const int NUM_HEAD_SECTIONS = 4;
-const int NUM_EDGE_SECTIONS = NUM_HEAD_SECTIONS + NUM_TAIL_SECTIONS;
-const float SECTION_SCALAR = 1.0 / NUM_EDGE_SECTIONS;
-
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 uniform float nodeRadius;
 uniform float edgeSize;
 uniform float headSize;
 uniform bool doUniqueColor;
+uniform bool doGradient;
+uniform int numTailSections;
+uniform int numHeadSections;
 
 vec3 bezier(vec3 A, vec3 B, vec3 C, float u){
     float uinv = 1 - u;
@@ -44,8 +42,7 @@ vec4 numberToColor(int i) {
     return vec4(r / 255.0, g / 255.0, b / 255.0, 1.0);
 }
 
-void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, int i){
-    float fraction = (i * SECTION_SCALAR);
+void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, float fraction){
     vec3 vector = bezier(aPos, bPos, cPos, fraction);
     vec3 direction = bezierDerivative(aPos, bPos, cPos, fraction);
 
@@ -54,11 +51,11 @@ void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, int i){
     vec4 perpendicular = vec4(normalize(vec2(scDir.y, -scDir.x)) * width, 0, 0);
 
     gl_Position = projectionMatrix * (scPos + perpendicular);
-    fragColor = color;
+    fragColor = doGradient ? vec4(color.xyz, 1 - fraction) : color;
     EmitVertex();
 
     gl_Position = projectionMatrix * (scPos - perpendicular);
-    fragColor = color;
+    fragColor = doGradient ? vec4(color.xyz, 1 - fraction) : color;
     EmitVertex();
 }
 
@@ -97,19 +94,23 @@ void main() {
     vec2 bToCView = vec2(cViewPos.xy - bViewPos.xy);
     vec2 bcPerpendicular = normalize(vec2(bToCView.y, -bToCView.x));
 
-    float tailFraction = (NUM_EDGE_SECTIONS) / NUM_TAIL_SECTIONS;
-    float sectionScalar = 1.0 / (NUM_EDGE_SECTIONS);
+    int numEdgeSections = numHeadSections + numTailSections;
+    float tailFraction = (numEdgeSections) / numTailSections;
+    float sectionScalar = 1.0 / numEdgeSections;
 
-    for (int i; i < NUM_TAIL_SECTIONS; i++) {
-        drawArrowSection(aPos, bPos, cPos, tailHSize, i);
+    for (int i = 0; i < numTailSections; i++) {
+        float fraction = i * sectionScalar;
+        drawArrowSection(aPos, bPos, cPos, tailHSize, fraction);
     }
 
-    drawArrowSection(aPos, bPos, cPos, tailHSize, NUM_TAIL_SECTIONS);
+    float fractionOfHeadStart = numTailSections * sectionScalar;
+    drawArrowSection(aPos, bPos, cPos, tailHSize, fractionOfHeadStart);
 
-    float growthStep = (headHSize / NUM_HEAD_SECTIONS);
-    for (int i = NUM_TAIL_SECTIONS; i < NUM_EDGE_SECTIONS; i++) {
-        float width = (NUM_EDGE_SECTIONS - i) * growthStep;
-        drawArrowSection(aPos, bPos, cPos, width, i);
+    float growthStep = (headHSize / numHeadSections);
+    for (int i = numTailSections; i < numEdgeSections; i++) {
+        float fraction = i * sectionScalar;
+        float width = (numEdgeSections - i) * growthStep;
+        drawArrowSection(aPos, bPos, cPos, width, fraction);
     }
 
     gl_Position = projectionMatrix * cViewPos;

@@ -29,8 +29,13 @@ public class EdgeShader implements ShaderProgram {
     private static final Path VERTEX_PATH = Directory.shaders.getPath("edges", "vertex.vert");
     private static final Path FRAGMENT_PATH = Directory.shaders.getPath("edges", "fragment.frag");
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
-    private static final float HEAD_SIZE = NODE_RADIUS * 1.0f;
-    private static final float EDGE_SIZE = HEAD_SIZE * 0.4f;
+
+    private static final boolean DO_GRADIENT = false;
+    private static final int NUM_TAIL_SECTIONS = 0;
+    private static final int NUM_HEAD_SECTIONS = 8;
+
+    private static final float HEAD_WIDTH = NODE_RADIUS * 1.0f;
+    private static final float EDGE_WIDTH = HEAD_WIDTH * 0.5f;
 
     private final int programID;
     private final int vertexShaderID;
@@ -42,7 +47,10 @@ public class EdgeShader implements ShaderProgram {
     private final int radiusUID;
     private final int edgeSizeUID;
     private final int headSizeUID;
+    private final int tailSectionUID;
+    private final int headSectionUID;
     private final int doClickUID;
+    private final int doGradientUID;
     private final int edgeIndexOffsetUID;
 
     public EdgeShader() throws IOException {
@@ -64,7 +72,10 @@ public class EdgeShader implements ShaderProgram {
         radiusUID = glGetUniformLocation(programID, "nodeRadius");
         edgeSizeUID = glGetUniformLocation(programID, "edgeSize");
         headSizeUID = glGetUniformLocation(programID, "headSize");
+        tailSectionUID = glGetUniformLocation(programID, "numTailSections");
+        headSectionUID = glGetUniformLocation(programID, "numHeadSections");
         doClickUID = glGetUniformLocation(programID, "doUniqueColor");
+        doGradientUID = glGetUniformLocation(programID, "doGradient");
         edgeIndexOffsetUID = glGetUniformLocation(programID, "edgeIndexOffset");
     }
 
@@ -83,10 +94,13 @@ public class EdgeShader implements ShaderProgram {
 
         int nrOfNodes = root.getVisibleGraph().getNodeMesh().nodeList().size();
         glUniform1f(radiusUID, NODE_RADIUS);
-        glUniform1f(edgeSizeUID, EDGE_SIZE);
-        glUniform1f(headSizeUID, HEAD_SIZE);
+        glUniform1f(edgeSizeUID, EDGE_WIDTH);
+        glUniform1f(headSizeUID, HEAD_WIDTH);
+        glUniform1i(tailSectionUID, NUM_TAIL_SECTIONS);
+        glUniform1i(headSectionUID, NUM_HEAD_SECTIONS);
         glUniform1i(edgeIndexOffsetUID, nrOfNodes);
         glUniform1i(doClickUID, 0);
+        glUniform1i(doGradientUID, DO_GRADIENT ? 1 : 0);
     }
 
     private void writeMatrix(Matrix4f view, int transformUID) {

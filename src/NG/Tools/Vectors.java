@@ -60,7 +60,8 @@ public final class Vectors {
     }
 
     /**
-     * @return a vector with length < 1 that is universally distributed. Would form a solid sphere when created points
+     * @return a vector with (0 < length <= 1) that is universally distributed. Would form a solid sphere when created
+     * points
      */
     public static Vector3f randomOrb() {
         float phi = Toolbox.random.nextFloat() * 6.2832f;
@@ -68,6 +69,7 @@ public final class Vectors {
 
         float theta = Math.acos(costheta);
         float r = (float) java.lang.Math.cbrt(Toolbox.random.nextFloat());
+        if (r == 0) r = 1;
 
         float x = (r * Math.sin(theta) * Math.cos(phi));
         float y = (r * Math.sin(theta) * Math.sin(phi));

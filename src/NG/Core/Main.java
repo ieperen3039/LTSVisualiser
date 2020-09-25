@@ -19,7 +19,10 @@ import NG.Rendering.RenderLoop;
 import NG.Rendering.Shaders.SGL;
 import NG.Resources.LazyInit;
 import NG.Settings.Settings;
-import NG.Tools.*;
+import NG.Tools.Directory;
+import NG.Tools.Logger;
+import NG.Tools.Toolbox;
+import NG.Tools.Vectors;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -36,14 +39,13 @@ import java.util.concurrent.FutureTask;
 import static org.lwjgl.opengl.GL11.glDepthMask;
 
 /**
- * A game of planning and making money.
- * <p>
- * This class initializes all gameAspects, allow for starting a game, loading mods and cleaning up afterwards. It
- * provides all aspects of the game engine through the {@link Main} interface.
+ * A tool for visualising large graphs
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
 public class Main {
     private static final Version GAME_VERSION = new Version(0, 1);
+    public static final int MAX_ITERATIONS_PER_SECOND = 50;
+    private static final int NUM_WORKER_THREADS = 5;
     private final Thread mainThread;
 
     public final RenderLoop renderer;
@@ -59,7 +61,7 @@ public class Main {
     private boolean doComputeSourceLayout = false;
     private final LazyInit<GraphComparator> graphComparator;
 
-    private final AutoLock graphLock = new AutoLock.Instance();
+    private final Object graphLock = new Object();
     private SourceGraph graph;
     private SourceGraph secondGraph;
     private final LazyInit<NodeClustering> nodeCluster;
@@ -67,10 +69,10 @@ public class Main {
     private DisplayMethod displayMethod = DisplayMethod.HIGHLIGHT_ACTIONS;
 
     public enum DisplayMethod {
-        HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, HIDE_ACTIONS, COMPARE_GRAPHS, CLUSTER_ON_SELECTED
+        HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS
     }
 
-    public Main() throws IOException {
+    public Main(Settings settings) throws IOException {
         Logger.INFO.print("Starting up...");
 
         Logger.DEBUG.print("General debug information: " +
@@ -82,11 +84,11 @@ public class Main {
         );
 
         // these are not GameAspects, and thus the init() rule does not apply.
-        settings = new Settings();
+        this.settings = settings;
         GLFWWindow.Settings videoSettings = new GLFWWindow.Settings(settings);
 
         window = new GLFWWindow(Settings.GAME_NAME, videoSettings, true);
-        renderer = new RenderLoop(settings.TARGET_FPS);
+        renderer = new RenderLoop(this.settings.TARGET_FPS);
         inputHandler = new MouseToolCallbacks();
         keyControl = inputHandler.getKeyControl();
         frameManager = new FrameManagerImpl();
@@ -95,7 +97,7 @@ public class Main {
 
         graph = new SourceGraph(this, 0, 0);
         secondGraph = new SourceGraph(this, 0, 0);
-        springLayout = new SpringLayout(50);
+        springLayout = new SpringLayout(MAX_ITERATIONS_PER_SECOND, NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
         graphComparator = new LazyInit<>(() -> new GraphComparator(graph, secondGraph), Graph::cleanup);
@@ -157,19 +159,19 @@ public class Main {
     public void onNodePositionChange() {
         if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED) {
             if (doComputeSourceLayout) {
-                nodeCluster.ifPresent(NodeClustering::pullClusterPositions);
+                nodeCluster.get().pullClusterPositions();
 
             } else {
-                nodeCluster.ifPresent(NodeClustering::pushClusterPositions);
+                nodeCluster.get().pushClusterPositions();
             }
         }
 
         if (displayMethod == DisplayMethod.COMPARE_GRAPHS && doComputeSourceLayout) {
-            graphComparator.ifPresent(GraphComparator::updateEdges);
+            graphComparator.get().updateEdges();
         }
 
         if (displayMethod == DisplayMethod.HIDE_ACTIONS && doComputeSourceLayout) {
-            subGraph.ifPresent(IgnoringGraph::updateEdges);
+            subGraph.get().updateEdges();
         }
 
         executeOnRenderThread(() -> {
@@ -216,9 +218,11 @@ public class Main {
     }
 
     private void cleanup() {
-        inputHandler.cleanup();
-        graph.cleanup();
-        window.cleanup();
+        synchronized (graphLock) {
+            inputHandler.cleanup();
+            graph.cleanup();
+            window.cleanup();
+        }
     }
 
     public void setGraph(File newGraphFile) {
@@ -232,21 +236,24 @@ public class Main {
     }
 
     public void setGraph(SourceGraph newGraph) {
-        try (AutoLock.Section section = graphLock.open()) {
-            graph.cleanup();
-            graph = newGraph;
-            graph.init();
+        springLayout.defer(() -> {
+            synchronized (graphLock) {
+                graph.cleanup();
+                graph = newGraph;
+                graph.init();
 
-            springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
+                springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
 
-            nodeCluster.drop();
-            graphComparator.drop();
-            subGraph.drop();
+                nodeCluster.drop();
+                graphComparator.drop();
+                subGraph.drop();
 
-            onNodePositionChange();
-        }
+                onNodePositionChange();
+                Logger.INFO.print("Loaded graph with " + graph.nodes.length + " nodes and " + graph.edges.length + " edges");
+            }
 
-        Logger.DEBUG.print("Loaded graph with " + graph.nodes.length + " nodes and " + graph.edges.length + " edges");
+            menu.reloadUI();
+        });
     }
 
     public void setSecondaryGraph(File newGraphFile) {
@@ -260,11 +267,15 @@ public class Main {
     }
 
     private void setSecondaryGraph(SourceGraph newGraph) {
-        secondGraph.cleanup();
-        secondGraph = newGraph;
-        secondGraph.init();
+        springLayout.defer(() -> {
+            synchronized (graphLock) {
+                secondGraph.cleanup();
+                secondGraph = newGraph;
+                secondGraph.init();
 
-        graphComparator.drop();
+                graphComparator.drop();
+            }
+        });
     }
 
     public void doSourceLayout(boolean doSource) {
@@ -276,11 +287,14 @@ public class Main {
     public void setDisplayMethod(DisplayMethod method) {
         this.displayMethod = method;
 
-        if (method == DisplayMethod.CLUSTER_ON_SELECTED) {
+        if (method == DisplayMethod.CLUSTER_ON_SELECTED || method == DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS) {
+            NodeClustering nodeClustering = nodeCluster.get();
+            nodeClustering.setShowSelfLoop(method != DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS);
+
             String[] actionLabels = menu.actionLabels;
             SToggleButton[] attributeButtons = menu.attributeButtons;
             for (int i = 0; i < actionLabels.length; i++) {
-                nodeCluster.get().clusterEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
+                nodeClustering.addEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
             }
         }
 
@@ -314,14 +328,14 @@ public class Main {
     }
 
     private void renderEdges(SGL gl, Main root) {
-        try (AutoLock.Section section = graphLock.open()) {
+        synchronized (graphLock) {
             Graph target = getVisibleGraph();
             gl.render(target.getEdgeMesh());
         }
     }
 
     private void renderNodes(SGL gl, Main root) {
-        try (AutoLock.Section section = graphLock.open()) {
+        synchronized (graphLock) {
             Graph target = getVisibleGraph();
             gl.render(target.getNodeMesh());
         }
@@ -343,6 +357,7 @@ public class Main {
                 return subGraph.get();
 
             case CLUSTER_ON_SELECTED:
+            case CLUSTER_ON_SELECTED_IGNORE_LOOPS:
                 return nodeCluster.get();
 
             case COMPARE_GRAPHS:
@@ -442,7 +457,7 @@ public class Main {
             graph.forEachAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
         }
 
-        nodeCluster.ifPresent(g -> g.clusterEdgeAttribute(label, on));
+        nodeCluster.ifPresent(g -> g.addEdgeAttribute(label, on));
         subGraph.ifPresent(g -> g.update(getMarkedLabels()));
     }
 }

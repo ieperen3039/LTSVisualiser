@@ -44,12 +44,12 @@ public class Menu extends SDecorator {
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
 
     private static final PairList<String, Color4f> paintColors = new PairList.Builder<String, Color4f>()
-            .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
             .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
             .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
             .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
             .add("Cyan", Color4f.rgb(50, 220, 236, 0.8f))
             .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
+            .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
             .get();
 
     private final Main main;
@@ -104,7 +104,6 @@ public class Menu extends SDecorator {
                                 file -> {
                                     this.currentGraphFile = file;
                                     main.setGraph(file);
-                                    reloadUI();
                                 }), BUTTON_PROPS
                         ),
                         new SButton(
@@ -166,7 +165,8 @@ public class Menu extends SDecorator {
                         ),
                         new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
-                        new SToggleButton("Accurate Render Timing", BUTTON_PROPS).addStateChangeListener(s -> renderLoop.accurateTiming = s),
+                        new SToggleButton("Accurate Render Timing", BUTTON_PROPS, renderLoop.accurateTiming)
+                                .addStateChangeListener(s -> renderLoop.accurateTiming = s),
                         new SFiller()
                 )).setGrowthPolicy(false, true)
         ));

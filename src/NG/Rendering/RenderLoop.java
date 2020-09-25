@@ -27,7 +27,7 @@ import static org.lwjgl.opengl.GL11.*;
 public class RenderLoop extends AbstractGameLoop implements ToolElement {
     public final TimeObserver timer;
     private final NVGOverlay overlay;
-    public boolean accurateTiming = false;
+    public boolean accurateTiming = true;
     private final List<RenderBundle> renders;
     private final ClickShader clickShader;
     private Main root;
@@ -51,7 +51,6 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         this.root = root;
 
         Settings settings = root.settings();
-        accurateTiming = settings.DEBUG;
 
         overlay.init(settings.ANTIALIAS_LEVEL);
         overlay.addHudItem((hud) -> {
@@ -84,7 +83,11 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
         if (accurateTimingThisLoop) timer.startTiming("loop init");
 
         GLFWWindow window = root.window();
-        if (window.getWidth() == 0 || window.getHeight() == 0) return;
+        if (window.getWidth() == 0 || window.getHeight() == 0) {
+            window.update();
+            return;
+        }
+
         // camera
         root.camera().updatePosition(deltaTime); // real-time deltatime
 

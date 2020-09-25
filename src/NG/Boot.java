@@ -1,6 +1,7 @@
 package NG;
 
 import NG.Core.Main;
+import NG.Settings.Settings;
 import NG.Tools.Logger;
 import org.lwjgl.system.Configuration;
 
@@ -30,6 +31,9 @@ public class Boot {
             Configuration.DEBUG.set(true);
         }
 
-        new Main().root();
+        Settings settings = new Settings();
+
+
+        new Main(settings).root();
     }
 }

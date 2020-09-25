@@ -21,11 +21,13 @@ public class NodeClustering extends Graph {
     private NodeMesh clusterNodes = new NodeMesh();
     private EdgeMesh clusterEdges = new EdgeMesh();
     private NodeMesh.Node clusterInitialState;
+    private boolean showSelfLoop = true;
+    private boolean isDirty = false;
 
     public NodeClustering(Graph sourceGraph) {
         super(sourceGraph.root);
         this.sourceGraph = sourceGraph;
-        createCluster(Collections.emptyMap());
+        createCluster(Collections.emptyMap(), true);
     }
 
     @Override
@@ -37,8 +39,9 @@ public class NodeClustering extends Graph {
     /**
      * sets this graph to a cluster based on the given cluster map
      * @param clusterLeaderMap maps each node to a 'leader' node where all nodes in one cluster refer to
+     * @param showSelfLoop
      */
-    public synchronized void createCluster(Map<NodeMesh.Node, NodeMesh.Node> clusterLeaderMap) {
+    public synchronized void createCluster(Map<NodeMesh.Node, NodeMesh.Node> clusterLeaderMap, boolean showSelfLoop) {
         clusterMapping.clear();
         neighbourMapping.clear();
 
@@ -91,24 +94,26 @@ public class NodeClustering extends Graph {
             NodeMesh.Node aTarget = newNodes.get(getClusterLeader(clusterLeaderMap, aNode));
             NodeMesh.Node bTarget = newNodes.get(getClusterLeader(clusterLeaderMap, bNode));
 
+            // self loop
+            if (aTarget == bTarget && !showSelfLoop) continue;
+
+            // already exists an equal edge
+            // even for non-deterministic graphs, this does not change the meaning of the graph
+            if (edgeExists(neighbourMapping, aTarget, bTarget, edge.label)) continue;
+
             EdgeMesh.Edge newEdge = new EdgeMesh.Edge(aTarget, bTarget, edge.label);
             newEdge.handlePos.set(edge.handlePos);
             clusterEdges.addParticle(newEdge);
 
-            neighbourMapping.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bNode);
-            neighbourMapping.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aNode);
+            neighbourMapping.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bTarget);
+            neighbourMapping.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aTarget);
         }
-    }
-
-    private NodeMesh.Node getClusterLeader(Map<NodeMesh.Node, NodeMesh.Node> leaderMap, NodeMesh.Node node) {
-        while (leaderMap.containsKey(node)) {
-            node = leaderMap.get(node);
-        }
-        return node;
     }
 
     /** Sets the position of the clustered nodes to the average of its source */
     public synchronized void pullClusterPositions() {
+        checkDirty();
+
         clusterMapping.forEach((node, cluster) -> {
             Vector3f total = new Vector3f();
             for (NodeMesh.Node element : cluster) {
@@ -123,8 +128,17 @@ public class NodeClustering extends Graph {
         }
     }
 
+    private NodeMesh.Node getClusterLeader(Map<NodeMesh.Node, NodeMesh.Node> leaderMap, NodeMesh.Node node) {
+        while (leaderMap.containsKey(node)) {
+            node = leaderMap.get(node);
+        }
+        return node;
+    }
+
     /** Sets the average of the source nodes of each cluster to the clustered node */
     public synchronized void pushClusterPositions() {
+        checkDirty();
+
         clusterMapping.forEach((node, cluster) -> {
             Vector3f total = new Vector3f();
             for (NodeMesh.Node element : cluster) {
@@ -141,6 +155,12 @@ public class NodeClustering extends Graph {
         for (EdgeMesh.Edge edge : sourceGraph.getEdgeMesh().edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
         }
+    }
+
+    @Override
+    public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
+        checkDirty();
+        return neighbourMapping.getOrDefault(node, PairList.empty());
     }
 
     private Map<NodeMesh.Node, NodeMesh.Node> attributeCluster(Set<String> attributeLabels) {
@@ -160,17 +180,21 @@ public class NodeClustering extends Graph {
         return leaderMap;
     }
 
-    @Override
-    public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
-        return neighbourMapping.getOrDefault(node, PairList.empty());
-    }
-
     public synchronized NodeMesh getNodeMesh() {
+        checkDirty();
         return clusterNodes;
     }
 
     public synchronized EdgeMesh getEdgeMesh() {
+        checkDirty();
         return clusterEdges;
+    }
+
+    private synchronized void checkDirty() {
+        if (isDirty) {
+            createCluster(attributeCluster(edgeAttributeCluster), showSelfLoop);
+            isDirty = false;
+        }
     }
 
     @Override
@@ -184,18 +208,21 @@ public class NodeClustering extends Graph {
         return edgeAttributeCluster;
     }
 
-    public void clusterEdgeAttribute(String label, boolean on) {
+    public void addEdgeAttribute(String label, boolean on) {
         if (on) {
             edgeAttributeCluster.add(label);
         } else {
             edgeAttributeCluster.remove(label);
         }
 
-        createCluster(attributeCluster(edgeAttributeCluster));
+        synchronized (this) {
+            isDirty = true;
+        }
     }
 
     @Override
-    public void cleanup() {
+    public synchronized void cleanup() {
+        isDirty = false;
         NodeMesh oldNodes = this.clusterNodes;
         EdgeMesh oldEdges = this.clusterEdges;
         root.executeOnRenderThread(() -> {
@@ -208,6 +235,37 @@ public class NodeClustering extends Graph {
 
     @Override
     protected NodeMesh.Node getInitialState() {
+        checkDirty();
         return clusterInitialState;
+    }
+
+    public void setShowSelfLoop(boolean showSelfLoop) {
+        this.showSelfLoop = showSelfLoop;
+    }
+
+    /**
+     * @return true iff there is already an edge starting at aTarget, ending at bTarget, with a label {@link
+     * String#equals(Object) equal} to the given label
+     */
+    public static boolean edgeExists(
+            Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> neighbourMapping, NodeMesh.Node aTarget,
+            NodeMesh.Node bTarget, String label
+    ) {
+        PairList<EdgeMesh.Edge, NodeMesh.Node> existingATargets = neighbourMapping.get(aTarget);
+        if (existingATargets == null) return false;
+
+        for (int i = 0; i < existingATargets.size(); i++) {
+            NodeMesh.Node existingBTarget = existingATargets.right(i);
+
+            if (existingBTarget == bTarget) {
+                String labelOfExisting = existingATargets.left(i).label;
+
+                if (labelOfExisting.equals(label)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
