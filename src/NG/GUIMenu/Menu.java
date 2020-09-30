@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * @author Geert van Ieperen created on 7-8-2020.
  */
 public class Menu extends SDecorator {
-    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 30, true, false);
+    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 28, true, false);
     public static final SComponentProperties WAILA_TEXT_PROPERTIES = new SComponentProperties(
             150, 50, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
     );
@@ -47,7 +47,6 @@ public class Menu extends SDecorator {
             .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
             .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
             .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
-            .add("Cyan", Color4f.rgb(50, 220, 236, 0.8f))
             .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
             .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
             .get();
@@ -87,13 +86,13 @@ public class Menu extends SDecorator {
         colorToggleButton = new SToggleButton("Activate Painting", BUTTON_PROPS)
                 .addStateChangeListener(on -> inputHandling.setMouseTool(on ? colorTool : null));
 
+        // dropdown for what graph is displayed
         SDropDown displayMethodDropdown = new SDropDown(
                 frameManager, BUTTON_PROPS, 0, DISPLAY_METHOD_LIST,
                 displayMethod -> displayMethod.name().replace("_", " ")
-        )
-                .addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)));
+        ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)));
 
-        //
+        // automatic barnes-hut activation
         if (main.graph().getNrOfNodes() < 500) {
             updateLoop.setBarnesHutTheta(0);
         } else if (updateLoop.getBarnesHutTheta() == 0) {
@@ -113,15 +112,15 @@ public class Menu extends SDecorator {
                                     main.setGraph(file);
                                 }), BUTTON_PROPS
                         ),
-                        new SButton(
-                                "Compare with second graph", () -> openFileDialog(
-                                file -> {
-                                    main.setSecondaryGraph(file);
-                                    displayMethodDropdown.setCurrent(
-                                            DISPLAY_METHOD_LIST.indexOf(Main.DisplayMethod.COMPARE_GRAPHS)
-                                    );
-                                }), BUTTON_PROPS
-                        ),
+//                        new SButton(
+//                                "Compare with second graph", () -> openFileDialog(
+//                                file -> {
+//                                    main.setSecondaryGraph(file);
+//                                    displayMethodDropdown.setCurrent(
+//                                            DISPLAY_METHOD_LIST.indexOf(Main.DisplayMethod.COMPARE_GRAPHS)
+//                                    );
+//                                }), BUTTON_PROPS
+//                        ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // graph information panel
@@ -136,12 +135,6 @@ public class Menu extends SDecorator {
                                 }, WAILA_TEXT_PROPERTIES)
                                         .setMaximumCharacters(150)
                         )),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
-                        // color tool
-                        colorToggleButton,
-                        new SDropDown(frameManager, BUTTON_PROPS, 0, paintColors, p -> p.left)
-                                .addStateChangeListener(i -> colorTool.setColor(paintColors.right(i))),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // simulation sliders
@@ -160,6 +153,12 @@ public class Menu extends SDecorator {
                         )),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
+                        // color tool
+                        colorToggleButton,
+                        new SDropDown(frameManager, BUTTON_PROPS, 0, paintColors, p -> p.left)
+                                .addStateChangeListener(i -> colorTool.setColor(paintColors.right(i))),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
                         // attribute coloring
                         SContainer.column(
                                 new STextArea("Attribute markings", BUTTON_PROPS),
@@ -167,6 +166,10 @@ public class Menu extends SDecorator {
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
+                        new SButton("Add marking from file", () -> openFileDialog(main::applyFileMarkings), BUTTON_PROPS),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        // auxiliary buttons
                         new SButton("Center camera on...",
                                 () -> main.inputHandling().setMouseTool(new CameraCenterTool(main)), BUTTON_PROPS
                         ),

@@ -20,7 +20,7 @@ public class WindowsLF implements SFrameLookAndFeel {
     private static final int INDENT = 1;
     private static final int BUTTON_INDENT = 2;
     private static final int STROKE_WIDTH = 1;
-    private static final int TEXT_SIZE_REGULAR = 14;
+    private static final int TEXT_SIZE_REGULAR = 12;
     private static final int TEXT_SIZE_LARGE = 16;
 
     private static final NGFonts FONT = LUCIDA_CONSOLE;

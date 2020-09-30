@@ -3,6 +3,7 @@ package NG.Core;
 import NG.Camera.Camera;
 import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
+import NG.DataStructures.Generic.Color4f;
 import NG.GUIMenu.Components.SToggleButton;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
@@ -27,11 +28,9 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -174,11 +173,9 @@ public class Main {
             subGraph.get().updateEdges();
         }
 
-        executeOnRenderThread(() -> {
-            Graph graph = getVisibleGraph();
-            graph.getNodeMesh().reload();
-            graph.getEdgeMesh().reload();
-        });
+        Graph graph = getVisibleGraph();
+        graph.getNodeMesh().scheduleReload();
+        graph.getEdgeMesh().scheduleReload();
     }
 
     public Camera camera() {
@@ -300,6 +297,26 @@ public class Main {
 
         springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
         onNodePositionChange();
+    }
+
+    public void applyFileMarkings(File file) {
+        try (Scanner scanner = new Scanner(file)) {
+            String[] elements = scanner.nextLine().split(",");
+
+            synchronized (graphLock) {
+                NodeMesh.Node[] nodes = graph.nodes;
+                for (String elt : elements) {
+                    int index = Integer.parseInt(elt);
+                    nodes[index].addColor(
+                            Color4f.rgb(50, 220, 236, 0.8f), // cyan
+                            GraphElement.Priority.EXTERNAL
+                    );
+                }
+            }
+
+        } catch (FileNotFoundException e) {
+            Logger.ERROR.print(e);
+        }
     }
 
     public Collection<String> getMarkedLabels() {

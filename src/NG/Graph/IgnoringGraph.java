@@ -54,7 +54,7 @@ public class IgnoringGraph extends Graph {
             p.addColor(color, GraphElement.Priority.IGNORE);
         }
 
-        root.executeOnRenderThread(edgeMesh::reload);
+        root.executeOnRenderThread(edgeMesh::scheduleReload);
     }
 
     @Override

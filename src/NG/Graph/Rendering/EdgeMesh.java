@@ -32,6 +32,7 @@ public class EdgeMesh implements Mesh {
     private int colorVBO;
     private boolean isLoaded = false;
     private int nrOfParticles = 0;
+    private boolean doReload = false;
 
     public void addParticle(NodeMesh.Node a, NodeMesh.Node b, String label) {
         addParticle(new Edge(a, b, label));
@@ -74,45 +75,46 @@ public class EdgeMesh implements Mesh {
         Toolbox.checkGLError(toString());
     }
 
-    public List<Edge> edgeList() {
-        return bulk;
+    private void reload() {
+        FloatBuffer aPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
+        FloatBuffer handlePosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
+        FloatBuffer bPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
+        FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+
+        try {
+            put(bulk, aPosBuffer, handlePosBuffer, bPosBuffer, colorBuffer);
+
+            aPosBuffer.rewind();
+            handlePosBuffer.rewind();
+
+            glBindBuffer(GL_ARRAY_BUFFER, aPositionVBO);
+            glBufferData(GL_ARRAY_BUFFER, aPosBuffer, GL_STREAM_DRAW);
+
+            glBindBuffer(GL_ARRAY_BUFFER, handlePositionVBO);
+            glBufferData(GL_ARRAY_BUFFER, handlePosBuffer, GL_STREAM_DRAW);
+
+            glBindBuffer(GL_ARRAY_BUFFER, bPositionVBO);
+            glBufferData(GL_ARRAY_BUFFER, bPosBuffer, GL_STREAM_DRAW);
+
+            glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        } finally {
+            MemoryUtil.memFree(aPosBuffer);
+            MemoryUtil.memFree(handlePosBuffer);
+            MemoryUtil.memFree(bPosBuffer);
+            MemoryUtil.memFree(colorBuffer);
+        }
     }
 
-    public void reload() {
-        if (isLoaded) {
-            FloatBuffer aPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
-            FloatBuffer handlePosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
-            FloatBuffer bPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
-            FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+    public void scheduleReload() {
+        doReload = true;
+    }
 
-            try {
-                put(bulk, aPosBuffer, handlePosBuffer, bPosBuffer, colorBuffer);
-
-                aPosBuffer.rewind();
-                handlePosBuffer.rewind();
-
-                glBindBuffer(GL_ARRAY_BUFFER, aPositionVBO);
-                glBufferData(GL_ARRAY_BUFFER, aPosBuffer, GL_STREAM_DRAW);
-
-                glBindBuffer(GL_ARRAY_BUFFER, handlePositionVBO);
-                glBufferData(GL_ARRAY_BUFFER, handlePosBuffer, GL_STREAM_DRAW);
-
-                glBindBuffer(GL_ARRAY_BUFFER, bPositionVBO);
-                glBufferData(GL_ARRAY_BUFFER, bPosBuffer, GL_STREAM_DRAW);
-
-                glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-                glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
-
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-            } finally {
-                MemoryUtil.memFree(aPosBuffer);
-                MemoryUtil.memFree(handlePosBuffer);
-                MemoryUtil.memFree(bPosBuffer);
-                MemoryUtil.memFree(colorBuffer);
-            }
-
-        }
+    public List<Edge> edgeList() {
+        return bulk;
     }
 
     /**
@@ -120,7 +122,9 @@ public class EdgeMesh implements Mesh {
      */
     @Override
     public void render(SGL.Painter lock) {
-        if (!isLoaded) writeToGL();
+        if (!isLoaded) {
+            writeToGL();
+        } else if (doReload) reload();
 
         glBindVertexArray(vaoId);
         glEnableVertexAttribArray(0); // a pos

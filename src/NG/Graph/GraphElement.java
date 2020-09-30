@@ -14,7 +14,7 @@ public abstract class GraphElement {
     protected final PairList<Priority, Color4f> colors = new PairList<>();
 
     public enum Priority {
-        MAXIMUM, IGNORE, HOVER, USER_COLOR, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
+        MAXIMUM, IGNORE, HOVER, USER_COLOR, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
     }
 
     public Color4f getColor() {

@@ -30,6 +30,7 @@ public class NodeMesh implements Mesh {
     private boolean isLoaded = false;
     private final List<Node> bulk = new ArrayList<>();
     private int nrOfParticles = 0;
+    private boolean doReload = false;
 
     /**
      * @param position   position of the middle of the particle
@@ -69,13 +70,13 @@ public class NodeMesh implements Mesh {
         Toolbox.checkGLError(toString());
     }
 
-    public void reload(){
-        if (isLoaded) {
-            FloatBuffer positionBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
-            FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+    private void reload() {
+        FloatBuffer positionBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
+        FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
 
-            put(bulk, positionBuffer, colorBuffer);
+        put(bulk, positionBuffer, colorBuffer);
 
+        try {
             glBindBuffer(GL_ARRAY_BUFFER, posMidVboID);
             glBufferData(GL_ARRAY_BUFFER, positionBuffer, GL_STREAM_DRAW);
 
@@ -84,9 +85,14 @@ public class NodeMesh implements Mesh {
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+        } finally {
             MemoryUtil.memFree(positionBuffer);
             MemoryUtil.memFree(colorBuffer);
         }
+    }
+
+    public void scheduleReload() {
+        doReload = true;
     }
 
     public List<Node> nodeList() {
@@ -98,7 +104,9 @@ public class NodeMesh implements Mesh {
      */
     @Override
     public void render(SGL.Painter lock) {
-        if (!isLoaded) writeToGL();
+        if (!isLoaded) {
+            writeToGL();
+        } else if (doReload) reload();
 
         glBindVertexArray(vaoId);
         glEnableVertexAttribArray(0); // Position of triangle middle VBO

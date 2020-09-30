@@ -58,7 +58,6 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         if (selectedNode == null) {
             EdgeMesh.Edge oldHoveredEdge = hoveredEdge;
             NodeMesh.Node oldHoveredNode = hoveredNode;
-            boolean reloadNodes = false;
 
             hoveredEdge = null;
             hoveredNode = null;
@@ -71,7 +70,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             if (oldHoveredNode != null) {
                 if (oldHoveredNode != hoveredNode) {
                     oldHoveredNode.resetColor(GraphElement.Priority.HOVER);
-                    reloadNodes = true;
+                    getNodeMesh().scheduleReload();
                 }
 
             } else if (oldHoveredEdge != null) {
@@ -82,13 +81,11 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
             if (hoveredNode != null) {
                 hoveredNode.addColor(BLUISH, GraphElement.Priority.HOVER);
-                reloadNodes = true;
+                getNodeMesh().scheduleReload();
 
             } else if (hoveredEdge != null) {
                 setAttributeColor(hoveredEdge.label, BLUISH, GraphElement.Priority.HOVER);
             }
-
-            if (reloadNodes) root.executeOnRenderThread(getNodeMesh()::reload);
 
         } else {
             // move node
@@ -148,7 +145,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             }
         }
 
-        root.executeOnRenderThread(edges::reload);
+        root.executeOnRenderThread(edges::scheduleReload);
     }
 
     public GraphElement getHovered() {
