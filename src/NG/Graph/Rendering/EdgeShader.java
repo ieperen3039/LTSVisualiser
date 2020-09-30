@@ -31,8 +31,8 @@ public class EdgeShader implements ShaderProgram {
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
 
     private static final boolean DO_GRADIENT = false;
-    private static final int NUM_TAIL_SECTIONS = 0;
-    private static final int NUM_HEAD_SECTIONS = 8;
+    private static final int NUM_TAIL_SECTIONS = 4;
+    private static final int NUM_HEAD_SECTIONS = 6;
 
     private static final float HEAD_WIDTH = NODE_RADIUS * 1.0f;
     private static final float EDGE_WIDTH = HEAD_WIDTH * 0.5f;

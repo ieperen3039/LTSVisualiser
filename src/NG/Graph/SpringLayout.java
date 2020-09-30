@@ -12,10 +12,7 @@ import org.joml.Math;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,7 +27,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private static final float EDGE_HANDLE_DISTANCE = 1f;
     private static final float MAX_NODE_MOVEMENT = 10f;
 
-    public final TimeObserver timer = new TimeObserver(10, false);
+    public final TimeObserver timer = new TimeObserver(4, false);
     private final ExecutorService executor;
     private final List<Runnable> updateListeners = new ArrayList<>();
     private final int numThreads;
@@ -42,6 +39,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
     private Graph graph;
     private boolean allow3D = true;
+    private float barnesHutTheta = 0.5f;
 
     public SpringLayout(int iterationsPerSecond, int numThreads) {
         super("layout", iterationsPerSecond);
@@ -66,18 +64,35 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         List<NodeMesh.Node> nodes = graph.getNodeMesh().nodeList();
         List<EdgeMesh.Edge> edges = graph.getEdgeMesh().edgeList();
 
+        BarnesHutTree barnesTree;
+        if (barnesHutTheta > 0) {
+            timer.startTiming("Barnes-Hut setup");
+            barnesTree = new BarnesHutTree(1 << 10);
+            barnesTree.setForceComputation((a, b) -> getRepulsion(a, b, natLength, repulsion));
+            barnesTree.setMaxDepth(16);
+            barnesTree.setMaxTheta(barnesHutTheta);
+
+            for (NodeMesh.Node node : nodes) {
+                barnesTree.add(node.position);
+            }
+            timer.endTiming("Barnes-Hut setup");
+
+        } else {
+            barnesTree = null;
+        }
+
         int batchSize = (nodes.size() / numThreads) + 1;
         List<Future<Vector3f[]>> futureResults = new ArrayList<>();
         Map<NodeMesh.Node, Vector3f> nodeForces = new HashMap<>();
 
         // start node repulsion computations
-        timer.startTiming("node scheduling");
+        timer.startTiming("node repulsion scheduling");
         int index = 0;
         while (index < nodes.size()) {
             int startIndex = index;
             int endIndex = Math.min(index + batchSize, nodes.size());
 
-            Callable<Vector3f[]> task = () -> computeRepulsions(nodes, startIndex, endIndex);
+            Callable<Vector3f[]> task = () -> computeRepulsions(nodes, startIndex, endIndex, barnesTree);
 
             Future<Vector3f[]> future = executor.submit(task);
             futureResults.add(future);
@@ -85,7 +100,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             index = endIndex;
         }
 
-        timer.endTiming("node scheduling");
+        timer.endTiming("node repulsion scheduling");
         timer.startTiming("node attraction computation");
         // node edge attraction
         for (EdgeMesh.Edge edge : edges) {
@@ -146,7 +161,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         }
 
         timer.endTiming("edge handle computation");
-        timer.startTiming("node force collection");
+        timer.startTiming("node repulsion collection");
 
         // collect node repulsion computations
         int i = 0;
@@ -154,7 +169,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             Vector3f[] batch = future.get();
 
             for (int j = 0; j < batch.length; j++) {
-                assert !Vectors.isNaN(batch[j]);
+                assert !Vectors.isNaN(batch[j]) : Arrays.toString(batch);
                 NodeMesh.Node node = nodes.get(i + j);
                 Vector3f nodeForce = nodeForces.computeIfAbsent(node, k -> new Vector3f());
                 nodeForce.add(batch[j]);
@@ -162,7 +177,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             i += batch.length;
         }
-        timer.endTiming("node force collection");
+        timer.endTiming("node repulsion collection");
         timer.startTiming("position update");
 
         // apply forces
@@ -214,20 +229,30 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 //        if (tension < 1f) stopLoop();
     }
 
-    private Vector3f[] computeRepulsions(List<NodeMesh.Node> nodes, int startIndex, int endIndex) {
+    private Vector3f[] computeRepulsions(
+            List<NodeMesh.Node> nodes, int startIndex, int endIndex, BarnesHutTree optionalBarnes
+    ) {
         int nrOfNodes = endIndex - startIndex;
         Vector3f[] forces = new Vector3f[nrOfNodes];
 
         for (int i = 0; i < nrOfNodes; i++) {
-            forces[i] = new Vector3f();
             NodeMesh.Node node = nodes.get(startIndex + i);
 
-            for (NodeMesh.Node other : nodes) {
-                if (node == other) continue;
-                Vector3f otherToThis = getRepulsion(node.position, other.position, natLength, repulsion);
-                forces[i].add(otherToThis);
+            if (optionalBarnes == null) {
+                // naive implementation
+                forces[i] = new Vector3f();
+
+                for (NodeMesh.Node other : nodes) {
+                    if (node == other) continue;
+                    Vector3f otherToThis = getRepulsion(node.position, other.position, natLength, repulsion);
+                    forces[i].add(otherToThis);
+                }
+
+            } else {
+                forces[i] = optionalBarnes.getForceOn(node.position);
             }
 
+            assert !Vectors.isNaN(forces[i]) : node;
             if (Thread.interrupted()) return forces;
         }
 
@@ -273,12 +298,6 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         updateListeners.add(action);
     }
 
-    @Override
-    public synchronized void cleanup() {
-        executor.shutdownNow();
-        updateListeners.clear();
-    }
-
     public boolean doAllow3D() {
         return allow3D;
     }
@@ -303,6 +322,20 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         this.natLength = Math.max(natLength, 0.01f);
     }
 
+    public float getBarnesHutTheta() {
+        return barnesHutTheta;
+    }
+
+    public void setBarnesHutTheta(float barnesHutTheta) {
+        this.barnesHutTheta = barnesHutTheta;
+    }
+
+    @Override
+    public synchronized void cleanup() {
+        executor.shutdownNow();
+        updateListeners.clear();
+    }
+
     /** returns attraction on on a, affected by b */
     private static Vector3f getAttractionQuadratic(Vector3fc a, Vector3fc b, float attraction, float natLength) {
         Vector3f aToB = new Vector3f(b).sub(a);
@@ -324,7 +357,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     /** returns repulsion on a, affected by b */
-    private static Vector3f getRepulsion(Vector3fc a, Vector3fc b, float natLength, float repulsion) {
+    public static Vector3f getRepulsion(Vector3fc a, Vector3fc b, float natLength, float repulsion) {
         Vector3f otherToThis = new Vector3f(a).sub(b);
         float length = otherToThis.length();
 

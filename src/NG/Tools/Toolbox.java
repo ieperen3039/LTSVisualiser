@@ -330,6 +330,36 @@ public final class Toolbox {
         };
     }
 
+    public static class ChainIterator<Element> implements Iterator<Element> {
+        private final Iterator<? extends Iterable<Element>> iterables;
+        private Iterator<Element> current;
+
+        public ChainIterator(List<? extends Iterable<Element>> elements) {
+            this.iterables = elements.iterator();
+            this.current = Collections.emptyIterator();
+
+            progress();
+        }
+
+        public void progress() {
+            while (!current.hasNext() && iterables.hasNext()) {
+                current = iterables.next().iterator();
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return current.hasNext();
+        }
+
+        @Override
+        public Element next() {
+            Element next = current.next();
+            progress();
+            return next;
+        }
+    }
+
     public static <T> List<T> combinedList(List<T> a, List<T> b) {
         return new AbstractList<T>() {
             final List<T> aList = a;

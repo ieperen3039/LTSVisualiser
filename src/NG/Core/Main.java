@@ -45,7 +45,7 @@ import static org.lwjgl.opengl.GL11.glDepthMask;
 public class Main {
     private static final Version GAME_VERSION = new Version(0, 1);
     public static final int MAX_ITERATIONS_PER_SECOND = 50;
-    private static final int NUM_WORKER_THREADS = 5;
+    private static final int NUM_WORKER_THREADS = 3;
     private final Thread mainThread;
 
     public final RenderLoop renderer;

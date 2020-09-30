@@ -93,6 +93,13 @@ public class Menu extends SDecorator {
         )
                 .addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)));
 
+        //
+        if (main.graph().getNrOfNodes() < 500) {
+            updateLoop.setBarnesHutTheta(0);
+        } else if (updateLoop.getBarnesHutTheta() == 0) {
+            updateLoop.setBarnesHutTheta(0.5f);
+        }
+
         setMainPanel(SContainer.row(
                 new SFiller(),
                 new SPanel(SContainer.column(
@@ -225,8 +232,8 @@ public class Menu extends SDecorator {
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{
-                    new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttractionFactor()), BUTTON_PROPS),
-                    new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
+                            new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttractionFactor()), BUTTON_PROPS),
+                            new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
                     }, {
                             new SActiveTextArea(() -> String.format("Repulsion %5.03f", updateLoop.getRepulsionFactor()), BUTTON_PROPS),
                             new SSlider(0, 10f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
@@ -238,7 +245,10 @@ public class Menu extends SDecorator {
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
                     }, {
                             new SActiveTextArea(() -> String.format("Handle Repulsion %5.03f", updateLoop.getEdgeRepulsionFactor()), BUTTON_PROPS),
-                    new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
+                            new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
+                    }, {
+                            new SActiveTextArea(() -> String.format("Heuristic Effect %5.03f", updateLoop.getBarnesHutTheta()), BUTTON_PROPS),
+                            new SSlider(0, 2f, updateLoop.getBarnesHutTheta(), BUTTON_PROPS, updateLoop::setBarnesHutTheta)
                     }}
             ));
             setGrowthPolicy(true, false);
