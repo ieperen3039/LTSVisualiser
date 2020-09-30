@@ -120,10 +120,8 @@ public class MovableCamera implements Camera {
     }
 
     @Override
-    public void set(Vector3fc focus, Vector3fc eye, Vector3fc up) {
+    public void set(Vector3fc focus) {
         this.focus.set(focus);
-        Vector3f offset = new Vector3f(eye).sub(focus);
-        this.eyeOffset.set(offset);
     }
 
     @Override

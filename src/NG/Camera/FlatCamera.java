@@ -92,9 +92,8 @@ public class FlatCamera implements Camera {
     }
 
     @Override
-    public void set(Vector3fc focus, Vector3fc eye, Vector3fc up) {
+    public void set(Vector3fc focus) {
         this.focus.set(focus);
-        vDist = eye.distance(focus);
     }
 
     @Override

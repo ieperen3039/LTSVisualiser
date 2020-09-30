@@ -19,7 +19,6 @@ import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.RenderLoop;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
-import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
@@ -210,9 +209,7 @@ public class Menu extends SDecorator {
         public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Camera camera = main.camera();
-                Vector3f newFocus = node.position;
-                Vector3f newEye = new Vector3f(newFocus).sub(camera.vectorToFocus());
-                camera.set(newFocus, newEye, camera.getUpVector());
+                camera.set(node.position);
             }
             main.inputHandling().setMouseTool(null);
         }
@@ -221,9 +218,7 @@ public class Menu extends SDecorator {
         public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Camera camera = main.camera();
-                Vector3f newFocus = edge.handlePos;
-                Vector3f newEye = new Vector3f(newFocus).sub(camera.vectorToFocus());
-                camera.set(newFocus, newEye, camera.getUpVector());
+                camera.set(edge.handlePos);
             }
             main.inputHandling().setMouseTool(null);
         }

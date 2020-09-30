@@ -41,7 +41,7 @@ public interface Camera extends ToolElement, MouseListener {
     /** a copy of the direction of up, the length of this vector is undetermined. */
     Vector3fc getUpVector();
 
-    void set(Vector3fc focus, Vector3fc eye, Vector3fc up);
+    void set(Vector3fc focus);
 
     /**
      * Calculates a projection matrix based on a camera position and the given parameters of the viewport
