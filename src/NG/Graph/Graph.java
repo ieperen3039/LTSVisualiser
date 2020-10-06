@@ -23,7 +23,6 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
  * @author Geert van Ieperen created on 26-8-2020.
  */
 public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
-    public static final Color4f BLUISH = Color4f.rgb(44, 58, 190);
     protected transient Main root;
     // the node that the mouse is holding
     private NodeMesh.Node selectedNode = null;
@@ -69,22 +68,24 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
             if (oldHoveredNode != null) {
                 if (oldHoveredNode != hoveredNode) {
-                    oldHoveredNode.resetColor(GraphElement.Priority.HOVER);
+                    forNodeClass(oldHoveredNode.classIndex, n -> n.resetColor(GraphElement.Priority.HOVER));
                     getNodeMesh().scheduleReload();
                 }
 
             } else if (oldHoveredEdge != null) {
                 if (oldHoveredEdge != hoveredEdge) {
-                    forEachAttribute(oldHoveredEdge.label, e -> e.resetColor(GraphElement.Priority.HOVER));
+                    forAttribute(oldHoveredEdge.label, e -> e.resetColor(GraphElement.Priority.HOVER));
+                    getEdgeMesh().scheduleReload();
                 }
             }
 
             if (hoveredNode != null) {
-                hoveredNode.addColor(BLUISH, GraphElement.Priority.HOVER);
+                forNodeClass(hoveredNode.classIndex, n -> n.addColor(Main.HOVER_COLOR, GraphElement.Priority.HOVER));
                 getNodeMesh().scheduleReload();
 
             } else if (hoveredEdge != null) {
-                setAttributeColor(hoveredEdge.label, BLUISH, GraphElement.Priority.HOVER);
+                forAttribute(hoveredEdge.label, edge -> edge.addColor(Main.HOVER_COLOR, GraphElement.Priority.HOVER));
+                getEdgeMesh().scheduleReload();
             }
 
         } else {
@@ -132,11 +133,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
     public abstract Collection<String> getEdgeAttributes();
 
-    public void setAttributeColor(String label, Color4f color, GraphElement.Priority priority) {
-        forEachAttribute(label, edge -> edge.addColor(color, priority));
-    }
-
-    public void forEachAttribute(String label, Consumer<EdgeMesh.Edge> action) {
+    public void forAttribute(String label, Consumer<EdgeMesh.Edge> action) {
         EdgeMesh edges = getEdgeMesh();
 
         for (EdgeMesh.Edge edge : edges.edgeList()) {
@@ -144,8 +141,16 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
                 action.accept(edge);
             }
         }
+    }
 
-        root.executeOnRenderThread(edges::scheduleReload);
+    public void forNodeClass(int classIndex, Consumer<NodeMesh.Node> action) {
+        NodeMesh nodes = getNodeMesh();
+
+        for (NodeMesh.Node node : nodes.nodeList()) {
+            if (node.classIndex == classIndex) {
+                action.accept(node);
+            }
+        }
     }
 
     public GraphElement getHovered() {
@@ -166,7 +171,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 graph.selectedNode = node;
                 graph.selectedNodeZPlane = new Vector3f(node.position)
-                        .mulPosition(graph.root.camera().getViewProjection(graph.root.window())).z;
+                        .mulPosition(root.camera().getViewProjection(root.window())).z;
                 node.isFixed = true;
 
             } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
@@ -181,14 +186,14 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
                     node.resetColor(GraphElement.Priority.FIXATE_POSITION);
                 }
 
-                graph.root.onNodePositionChange();
+                root.onNodePositionChange();
             }
         }
 
         @Override
         public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                graph.root.toggleClusterAttribute(edge.label);
+                root.toggleClusterAttribute(edge.label);
             }
         }
 

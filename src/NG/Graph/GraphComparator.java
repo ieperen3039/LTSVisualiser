@@ -40,7 +40,7 @@ public class GraphComparator extends Graph {
         HashMap<NodeMesh.Node, Map<NodeMesh.Node, Integer>> similarityMap = new HashMap<>();
         findMatching(a, a.getInitialState(), b, b.getInitialState(), similarityMap);
 
-        this.initialState = new NodeMesh.Node(a.getInitialState().position, "initial");
+        this.initialState = new NodeMesh.Node(a.getInitialState().position, "initial", 0);
         initialState.addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
         nodeMesh.addParticle(initialState);
 
@@ -184,7 +184,7 @@ public class GraphComparator extends Graph {
 
                 boolean exists = seen.containsKey(aNode);
                 EdgeMesh.Edge aEdge = aConnections.left(i);
-                NodeMesh.Node newNode = exists ? seen.get(aNode) : new NodeMesh.Node(aNode.position, "A" + aNode.label + "|B" + bNode.label);
+                NodeMesh.Node newNode = exists ? seen.get(aNode) : new NodeMesh.Node(aNode.position, "A" + aNode.label + "|B" + bNode.label, index);
                 EdgeMesh.Edge newEdge = new EdgeMesh.Edge(generatedNode, newNode, aEdge.label);
 
                 edgeMesh.addParticle(newEdge);
@@ -234,7 +234,7 @@ public class GraphComparator extends Graph {
         EdgeMesh.Edge edge = connections.left(index);
 
         boolean exists = seen.containsKey(node);
-        NodeMesh.Node newNode = exists ? seen.get(node) : new NodeMesh.Node(node.position, prefix + node.label);
+        NodeMesh.Node newNode = exists ? seen.get(node) : new NodeMesh.Node(node.position, prefix + node.label, index);
         EdgeMesh.Edge newEdge = new EdgeMesh.Edge(parentNode, newNode, edge.label);
 
         edgeMesh.addParticle(newEdge);

@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.regex.Pattern;
 
 import static org.lwjgl.opengl.GL11.glDepthMask;
 
@@ -42,12 +43,16 @@ import static org.lwjgl.opengl.GL11.glDepthMask;
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
 public class Main {
-    private static final Version GAME_VERSION = new Version(0, 1);
-    public static final int MAX_ITERATIONS_PER_SECOND = 50;
+    public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(220, 150, 0); // yellow
+    public static final Color4f HOVER_COLOR = Color4f.rgb(44, 58, 190); // blue
+    private static final Version VERSION = new Version(0, 2);
+    private static final Pattern PATTERN_COMMA = Pattern.compile(",");
+    private static final int MAX_ITERATIONS_PER_SECOND = 50;
     private static final int NUM_WORKER_THREADS = 3;
-    private final Thread mainThread;
 
+    private final Thread mainThread;
     public final RenderLoop renderer;
+
     private final UIFrameManager frameManager;
     private final SpringLayout springLayout;
     private final Settings settings;
@@ -82,7 +87,6 @@ public class Main {
                 "\n\tWorking directory:  " + Directory.workDirectory()
         );
 
-        // these are not GameAspects, and thus the init() rule does not apply.
         this.settings = settings;
         GLFWWindow.Settings videoSettings = new GLFWWindow.Settings(settings);
 
@@ -199,7 +203,7 @@ public class Main {
     }
 
     public Version getVersionNumber() {
-        return GAME_VERSION;
+        return VERSION;
     }
 
     public Graph graph() {
@@ -301,16 +305,23 @@ public class Main {
 
     public void applyFileMarkings(File file) {
         try (Scanner scanner = new Scanner(file)) {
-            String[] elements = scanner.nextLine().split(",");
-
             synchronized (graphLock) {
                 NodeMesh.Node[] nodes = graph.nodes;
-                for (String elt : elements) {
-                    int index = Integer.parseInt(elt);
-                    nodes[index].addColor(
-                            Color4f.rgb(50, 220, 236, 0.8f), // cyan
-                            GraphElement.Priority.EXTERNAL
-                    );
+                for (NodeMesh.Node node : nodes) {
+                    node.classIndex = -1;
+                }
+
+                int classIndex = 0;
+
+                while (scanner.hasNextLine()) {
+                    String[] elements = PATTERN_COMMA.split(scanner.nextLine());
+
+                    for (String elt : elements) {
+                        int nodeIndex = Integer.parseInt(elt);
+                        nodes[nodeIndex].classIndex = classIndex;
+                    }
+
+                    classIndex++;
                 }
             }
 
@@ -469,11 +480,13 @@ public class Main {
 
     public void selectAttribute(String label, boolean on) {
         if (on) {
-            graph.setAttributeColor(label, Menu.EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE);
+            graph.forAttribute(label, edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
+            graph.getEdgeMesh().scheduleReload();
         } else {
-            graph.forEachAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
+            graph.forAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
         }
 
+        graph.getEdgeMesh().scheduleReload();
         nodeCluster.ifPresent(g -> g.addEdgeAttribute(label, on));
         subGraph.ifPresent(g -> g.update(getMarkedLabels()));
     }

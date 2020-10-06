@@ -61,7 +61,7 @@ public class LTSParser {
 
         // prepare states
         for (int i = 0; i < nrOfStates; i++) {
-            graph.nodes[i] = new NodeMesh.Node(Vectors.O, Integer.toString(i));
+            graph.nodes[i] = new NodeMesh.Node(Vectors.O, Integer.toString(i), i);
         }
 
         // parse edges

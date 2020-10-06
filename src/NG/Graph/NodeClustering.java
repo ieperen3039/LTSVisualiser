@@ -68,7 +68,7 @@ public class NodeClustering extends Graph {
             NodeMesh.Node clusterLeader = getClusterLeader(clusterLeaderMap, node);
             assert clusterLeader != null;
             // map the leader to the clusterNode, or create when absent
-            NodeMesh.Node clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new NodeMesh.Node(old.position, old.label));
+            NodeMesh.Node clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new NodeMesh.Node(old.position, old.label, old.classIndex));
 
             if (node == sourceGraph.getInitialState()) {
                 clusterInitialState = clusterNode;

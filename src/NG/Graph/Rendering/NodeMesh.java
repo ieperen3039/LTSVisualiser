@@ -35,9 +35,10 @@ public class NodeMesh implements Mesh {
     /**
      * @param position   position of the middle of the particle
      * @param label
+     * @param classIndex
      */
-    public void addParticle(Vector3fc position, String label) {
-        addParticle(new Node(position, label));
+    public void addParticle(Vector3fc position, String label, int classIndex) {
+        addParticle(new Node(position, label, classIndex));
     }
 
     public void addParticle(Node p) {
@@ -156,19 +157,22 @@ public class NodeMesh implements Mesh {
 
         public final Vector3f position;
         public String label; // the node label, if any
+        public int classIndex;
 
         public boolean isFixed = false;
         public boolean stayFixed = false;
 
-        public Node(Vector3fc position, String label) {
+        public Node(Vector3fc position, String label, int classIndex) {
             this.position = new Vector3f(position);
             this.label = label;
+            this.classIndex = classIndex;
             colors.add(GraphElement.Priority.BASE, BASE_COLOR);
         }
 
         public Node(Node other, String newLabel) {
             this.position = other.position;
             this.label = newLabel;
+            this.classIndex = other.classIndex;
             colors.add(GraphElement.Priority.BASE, BASE_COLOR);
         }
 

@@ -36,7 +36,6 @@ public class Menu extends SDecorator {
     public static final SComponentProperties WAILA_TEXT_PROPERTIES = new SComponentProperties(
             150, 50, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
     );
-    public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(240, 190, 0);
     public static final int SPACE_BETWEEN_UI_SECTIONS = 10;
     public static final int MAX_CHARACTERS_ACTION_LABELS = 35;
     public static final File BASE_FILE_CHOOSER_DIRECTORY = Directory.graphs.getDirectory();
@@ -105,7 +104,7 @@ public class Menu extends SDecorator {
 
                         // graph file selector
                         new SButton(
-                                "Select Graph", () -> openFileDialog(
+                                "Load Graph", () -> openFileDialog(
                                 file -> {
                                     this.currentGraphFile = file;
                                     main.setGraph(file);
@@ -120,6 +119,7 @@ public class Menu extends SDecorator {
 //                                    );
 //                                }), BUTTON_PROPS
 //                        ),
+                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings), BUTTON_PROPS),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // graph information panel
@@ -163,9 +163,6 @@ public class Menu extends SDecorator {
                                 new STextArea("Attribute markings", BUTTON_PROPS),
                                 new SScrollableList(9, attributeButtons)
                         ),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
-                        new SButton("Add marking from file", () -> openFileDialog(main::applyFileMarkings), BUTTON_PROPS),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // auxiliary buttons

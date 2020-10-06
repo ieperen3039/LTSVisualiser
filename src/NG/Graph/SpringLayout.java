@@ -24,7 +24,7 @@ import static java.lang.Math.log;
  * @author Geert van Ieperen created on 2-8-2020.
  */
 public class SpringLayout extends AbstractGameLoop implements ToolElement {
-    private static final float EDGE_HANDLE_DISTANCE = 1f;
+    private static final float EDGE_HANDLE_DISTANCE = 0.2f;
     private static final float MAX_NODE_MOVEMENT = 10f;
 
     public final TimeObserver timer = new TimeObserver(4, false);
