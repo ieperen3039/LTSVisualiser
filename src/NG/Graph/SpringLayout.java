@@ -69,7 +69,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             timer.startTiming("Barnes-Hut setup");
             barnesTree = new BarnesHutTree(1 << 10);
             barnesTree.setForceComputation((a, b) -> getRepulsion(a, b, natLength, repulsion));
-            barnesTree.setMaxDepth(16);
+            barnesTree.setMaxDepth(13);
             barnesTree.setMaxTheta(barnesHutTheta);
 
             for (NodeMesh.Node node : nodes) {
@@ -121,11 +121,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             } else {
                 float dist = edge.fromPosition.distance(edge.toPosition) / 8;
-                force = getEdgeEffect(edge.handlePos, edge.fromPosition, 0.1f, dist);
-                force.add(getEdgeEffect(edge.handlePos, edge.toPosition, 0.1f, dist));
-
-                Vector3f middle = new Vector3f(edge.fromPosition).lerp(edge.toPosition, 0.5f);
-                force.add(getAttractionQuadratic(edge.handlePos, middle, 1, 0.1f));
+                force = getAttractionQuadratic(edge.handlePos, edge.fromPosition, 1f, dist);
+                force.add(getAttractionQuadratic(edge.handlePos, edge.toPosition, 1f, dist));
             }
 
             if (Vectors.isNaN(force)) {

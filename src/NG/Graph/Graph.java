@@ -9,6 +9,7 @@ import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseTools.MouseTool;
 import NG.Rendering.GLFWWindow;
+import NG.Tools.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -46,6 +47,12 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         } else {
             index -= nodes.size();
             List<EdgeMesh.Edge> edges = getEdgeMesh().edgeList();
+
+            if (index > edges.size()) {
+                Logger.ERROR.printf("Mouse hovered element %d which does not exist", index + nodes.size());
+                return false;
+            }
+
             edgeAction.accept(edges.get(index));
         }
 
