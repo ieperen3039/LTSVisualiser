@@ -45,6 +45,7 @@ import static org.lwjgl.opengl.GL11.glDepthMask;
 public class Main {
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(220, 150, 0); // yellow
     public static final Color4f HOVER_COLOR = Color4f.rgb(44, 58, 190); // blue
+    public static final Color4f PATH_COLOR = Color4f.rgb(200, 83, 0); // orange
     private static final Version VERSION = new Version(0, 2);
     private static final Pattern PATTERN_COMMA = Pattern.compile(",");
     private static final int MAX_ITERATIONS_PER_SECOND = 50;
@@ -98,8 +99,8 @@ public class Main {
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
 
-        graph = new SourceGraph(this, 0, 0);
-        secondGraph = new SourceGraph(this, 0, 0);
+        graph = new SourceGraph(this, 0, 0, 1);
+        secondGraph = new SourceGraph(this, 0, 0, 1);
         springLayout = new SpringLayout(MAX_ITERATIONS_PER_SECOND, NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);

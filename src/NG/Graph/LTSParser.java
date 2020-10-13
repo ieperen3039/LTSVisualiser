@@ -56,7 +56,7 @@ public class LTSParser {
         int nrOfTransitions = Integer.parseInt(matcher.group(2));
         int nrOfStates = Integer.parseInt(matcher.group(3));
 
-        graph = new SourceGraph(root, nrOfStates, nrOfTransitions);
+        graph = new SourceGraph(root, nrOfStates, nrOfTransitions, root.getSpringLayout().getNatLength());
         graph.initialState = initialStateIndex;
 
         // prepare states

@@ -168,6 +168,15 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
     public abstract void cleanup();
 
+    public void resetColors(GraphElement.Priority path) {
+        for (NodeMesh.Node node : getNodeMesh().nodeList()) {
+            node.resetColor(path);
+        }
+        for (EdgeMesh.Edge edge : getEdgeMesh().edgeList()) {
+            edge.resetColor(path);
+        }
+    }
+
     public static class ManipulationTool extends MouseTool {
         public ManipulationTool(Main root) {
             super(root);

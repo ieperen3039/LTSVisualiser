@@ -24,9 +24,11 @@ public class SourceGraph extends Graph {
     private final NodeMesh nodeMesh;
     private final EdgeMesh edgeMesh;
     public int initialState = 0;
+    private final float natLength;
 
-    public SourceGraph(Main root, int numStates, int numTransitions) {
+    public SourceGraph(Main root, int numStates, int numTransitions, float natLength) {
         super(root);
+        this.natLength = natLength;
         this.mapping = new HashMap<>();
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
@@ -46,7 +48,7 @@ public class SourceGraph extends Graph {
                     positions[i].length > 0 ? (float) positions[i][0] : 0,
                     positions[i].length > 1 ? (float) positions[i][1] : 0,
                     positions[i].length > 2 ? (float) positions[i][2] : 0
-            );
+            ).mul(natLength);
         }
 
         // set positions to graph

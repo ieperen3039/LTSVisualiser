@@ -25,15 +25,15 @@ import static java.lang.Math.log;
  */
 public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private static final float EDGE_HANDLE_DISTANCE = 0.2f;
-    private static final float MAX_NODE_MOVEMENT = 10f;
+    private static final float MAX_NODE_MOVEMENT = 2f;
 
     public final TimeObserver timer = new TimeObserver(4, false);
     private final ExecutorService executor;
     private final List<Runnable> updateListeners = new ArrayList<>();
     private final int numThreads;
-    private float natLength = 1f;
+    private float natLength = 2f;
     private float repulsion = 5f;
-    private float attraction = 5f; // 1/100th of what LTSGraph uses
+    private float attraction = 2.5f; // 1/100th of what LTSGraph uses
     private float speed = 0;
     private float edgeRepulsion = 0.1f;
 
@@ -112,7 +112,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         Map<EdgeMesh.Edge, Vector3f> edgeHandleForces = new HashMap<>();
 
-        // edge handle centering or self-loop spacing
+        // linear-time edge handle centering and self-loop spacing
         for (EdgeMesh.Edge edge : edges) {
             Vector3f force;
 
@@ -133,7 +133,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         }
 
         if (edgeRepulsion != 0) {
-            // edge handle repulsion
+            // quadratic-time edge handle repulsion
             for (NodeMesh.Node node : nodes) {
                 PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
                 assert neighbours != null : node;

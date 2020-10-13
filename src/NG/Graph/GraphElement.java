@@ -14,7 +14,7 @@ public abstract class GraphElement {
     protected final PairList<Priority, Color4f> colors = new PairList<>();
 
     public enum Priority {
-        MAXIMUM, IGNORE, HOVER, USER_COLOR, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
+        MAXIMUM, IGNORE, HOVER, USER_COLOR, PATH, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
     }
 
     public Color4f getColor() {
@@ -38,7 +38,7 @@ public abstract class GraphElement {
     public void resetColor(Priority priority) {
         if (priority == BASE) throw new IllegalArgumentException("Cannot remove priority " + BASE);
         int index = colors.indexOfLeft(priority);
-        assert index != -1 : priority;
+        if (index == -1) return;
         colors.remove(index);
     }
 }

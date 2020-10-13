@@ -8,12 +8,9 @@ import NG.GUIMenu.Components.*;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
-import NG.Graph.Graph;
-import NG.Graph.GraphColorTool;
-import NG.Graph.GraphElement;
+import NG.Graph.*;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
-import NG.Graph.SpringLayout;
 import NG.InputHandling.MouseTools.MouseTool;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.RenderLoop;
@@ -27,6 +24,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static NG.Core.Main.PATH_COLOR;
 
 /**
  * @author Geert van Ieperen created on 7-8-2020.
@@ -90,11 +89,15 @@ public class Menu extends SDecorator {
                 displayMethod -> displayMethod.name().replace("_", " ")
         ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)));
 
-        // automatic barnes-hut activation
+        // automatic barnes-hut (de)activation
         if (main.graph().getNrOfNodes() < 500) {
             updateLoop.setBarnesHutTheta(0);
         } else if (updateLoop.getBarnesHutTheta() == 0) {
             updateLoop.setBarnesHutTheta(0.5f);
+        }
+
+        if (main.graph().getNrOfEdges() > 10_000) {
+            updateLoop.setEdgeRepulsionFactor(0);
         }
 
         setMainPanel(SContainer.row(
@@ -110,15 +113,6 @@ public class Menu extends SDecorator {
                                     main.setGraph(file);
                                 }), BUTTON_PROPS
                         ),
-//                        new SButton(
-//                                "Compare with second graph", () -> openFileDialog(
-//                                file -> {
-//                                    main.setSecondaryGraph(file);
-//                                    displayMethodDropdown.setCurrent(
-//                                            DISPLAY_METHOD_LIST.indexOf(Main.DisplayMethod.COMPARE_GRAPHS)
-//                                    );
-//                                }), BUTTON_PROPS
-//                        ),
                         new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings), BUTTON_PROPS),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -153,7 +147,14 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // color tool
-                        colorToggleButton,
+                        SContainer.row(
+                                colorToggleButton,
+                                new SButton(
+                                        "Reset colors",
+                                        () -> graph.resetColors(GraphElement.Priority.USER_COLOR),
+                                        BUTTON_PROPS
+                                )
+                        ),
                         new SDropDown(frameManager, BUTTON_PROPS, 0, paintColors, p -> p.left)
                                 .addStateChangeListener(i -> colorTool.setColor(paintColors.right(i))),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
@@ -166,8 +167,13 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // auxiliary buttons
+                        new SButton("Find shortest path",
+                                () -> main.inputHandling().setMouseTool(new PathVisualisationTool(main)),
+                                BUTTON_PROPS
+                        ),
                         new SButton("Center camera on...",
-                                () -> main.inputHandling().setMouseTool(new CameraCenterTool(main)), BUTTON_PROPS
+                                () -> main.inputHandling().setMouseTool(new CameraCenterTool(main)),
+                                BUTTON_PROPS
                         ),
                         new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
@@ -222,27 +228,89 @@ public class Menu extends SDecorator {
 
     }
 
+    private static class PathVisualisationTool extends MouseTool {
+        private final Graph graph;
+        private NodeMesh.Node startNode = null;
+
+        public PathVisualisationTool(Main root) {
+            super(root);
+            graph = root.getVisibleGraph();
+            graph.resetColors(GraphElement.Priority.PATH);
+        }
+
+        @Override
+        public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+            if (startNode == null) {
+                startNode = node;
+                node.addColor(PATH_COLOR, GraphElement.Priority.PATH);
+
+            } else {
+                colorPath(startNode, node);
+                root.inputHandling().setMouseTool(null);
+            }
+        }
+
+        @Override
+        public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+            if (startNode == null) {
+                startNode = edge.to;
+                edge.addColor(PATH_COLOR, GraphElement.Priority.PATH);
+                edge.to.addColor(PATH_COLOR, GraphElement.Priority.PATH);
+
+            } else {
+                colorPath(startNode, edge.from);
+                root.inputHandling().setMouseTool(null);
+            }
+        }
+
+        private void colorPath(NodeMesh.Node startNode, NodeMesh.Node endNode) {
+            GraphPathFinder dijkstra = new GraphPathFinder(startNode, endNode, graph);
+
+            Logger.DEBUG.print("Searching path from " + startNode + " to " + endNode);
+
+            List<EdgeMesh.Edge> edges = dijkstra.call();
+
+            if (edges == null) {
+                Logger.WARN.print("No path found from " + startNode + " to " + endNode);
+
+                startNode.addColor(Color4f.RED, GraphElement.Priority.PATH);
+                endNode.addColor(Color4f.RED, GraphElement.Priority.PATH);
+                return;
+            }
+
+            Logger.DEBUG.print("Path from " + startNode + " to " + endNode + " found of length " + edges.size());
+
+            for (EdgeMesh.Edge edge : edges) {
+                edge.addColor(PATH_COLOR, GraphElement.Priority.PATH);
+                edge.to.addColor(PATH_COLOR, GraphElement.Priority.PATH);
+            }
+
+            graph.getEdgeMesh().scheduleReload();
+            graph.getNodeMesh().scheduleReload();
+        }
+    }
+
     private static class SimulationSliderUI extends SPanel {
         public static final float SPEED_MAXIMUM = 2f / (1 << 11);
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{
-                            new SActiveTextArea(() -> String.format("Attraction %5.03f", updateLoop.getAttractionFactor()), BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
-                    }, {
-                            new SActiveTextArea(() -> String.format("Repulsion %5.03f", updateLoop.getRepulsionFactor()), BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
-                    }, {
-                            new SActiveTextArea(() -> String.format("Natural Length %5.03f", updateLoop.getNatLength()), BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
-                    }, {
-                            new SActiveTextArea(() -> String.format("Simulation Step Size %5.03f", updateLoop.getSpeed() / SPEED_MAXIMUM), BUTTON_PROPS),
+                            new STextArea("Simulation Step Size", BUTTON_PROPS),
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
                     }, {
-                            new SActiveTextArea(() -> String.format("Handle Repulsion %5.03f", updateLoop.getEdgeRepulsionFactor()), BUTTON_PROPS),
+                            new STextArea("Attraction", BUTTON_PROPS),
+                            new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
+                    }, {
+                            new STextArea("Repulsion", BUTTON_PROPS),
+                            new SSlider(0, 20f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
+                    }, {
+                            new STextArea("Natural Length", BUTTON_PROPS),
+                            new SSlider(0, 10f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
+                    }, {
+                            new STextArea("Handle Repulsion", BUTTON_PROPS),
                             new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
                     }, {
-                            new SActiveTextArea(() -> String.format("Heuristic Effect %5.03f", updateLoop.getBarnesHutTheta()), BUTTON_PROPS),
+                            new SActiveTextArea(() -> String.format("Heuristic Effect: %4.02f", updateLoop.getBarnesHutTheta()), BUTTON_PROPS),
                             new SSlider(0, 2f, updateLoop.getBarnesHutTheta(), BUTTON_PROPS, updateLoop::setBarnesHutTheta)
                     }}
             ));
