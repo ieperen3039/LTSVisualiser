@@ -1,0 +1,5 @@
+% Invariantly, plato can eat in some future.
+% short: nuX(X (X X) muY(Y Y true))
+% depths: 2, 2, 0
+
+nu X. (([i]X && ([plato]X && [others]X )) && mu Y. ((<i>Y || <others>Y) || <plato>true ))

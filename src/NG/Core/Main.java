@@ -10,11 +10,13 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
 import NG.Graph.*;
 import NG.Graph.Rendering.EdgeShader;
-import NG.Graph.Rendering.GraphComparator;
 import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
+import NG.MuChecker.FormulaParser;
+import NG.MuChecker.ModelChecker;
+import NG.MuChecker.StateSet;
 import NG.Rendering.GLFWWindow;
 import NG.Rendering.RenderLoop;
 import NG.Rendering.Shaders.SGL;
@@ -36,6 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.regex.Pattern;
 
+import static NG.Graph.Rendering.GraphElement.Priority.MU_FORMULA;
 import static org.lwjgl.opengl.GL11.glDepthMask;
 
 /**
@@ -46,8 +49,11 @@ public class Main {
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(220, 150, 0); // yellow
     public static final Color4f HOVER_COLOR = Color4f.rgb(44, 58, 190); // blue
     public static final Color4f PATH_COLOR = Color4f.rgb(200, 83, 0); // orange
+    public static final Color4f MU_FORMULA_COLOR = Color4f.rgb(255, 0, 255); // purple-pink
+
     private static final Version VERSION = new Version(0, 2);
     private static final Pattern PATTERN_COMMA = Pattern.compile(",");
+
     private static final int MAX_ITERATIONS_PER_SECOND = 50;
     private static final int NUM_WORKER_THREADS = 3;
 
@@ -99,8 +105,8 @@ public class Main {
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
 
-        graph = new SourceGraph(this, 0, 0, 1);
-        secondGraph = new SourceGraph(this, 0, 0, 1);
+        graph = SourceGraph.empty(this);
+        secondGraph = SourceGraph.empty(this);
         springLayout = new SpringLayout(MAX_ITERATIONS_PER_SECOND, NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
@@ -229,8 +235,7 @@ public class Main {
 
     public void setGraph(File newGraphFile) {
         try {
-            LTSParser ltsParser = new LTSParser(newGraphFile, this);
-            setGraph(ltsParser.get());
+            setGraph(SourceGraph.parse(newGraphFile, this));
 
         } catch (IOException e) {
             Logger.ERROR.print(newGraphFile.getName(), e);
@@ -251,7 +256,7 @@ public class Main {
                 subGraph.drop();
 
                 onNodePositionChange();
-                Logger.INFO.print("Loaded graph with " + graph.nodes.length + " nodes and " + graph.edges.length + " edges");
+                Logger.INFO.print("Loaded graph with " + graph.states.length + " nodes and " + graph.edges.length + " edges");
             }
 
             menu.reloadUI();
@@ -260,8 +265,7 @@ public class Main {
 
     public void setSecondaryGraph(File newGraphFile) {
         try {
-            LTSParser ltsParser = new LTSParser(newGraphFile, this);
-            setSecondaryGraph(ltsParser.get());
+            setSecondaryGraph(SourceGraph.parse(newGraphFile, this));
 
         } catch (IOException e) {
             Logger.ERROR.print(newGraphFile.getName(), e);
@@ -307,7 +311,7 @@ public class Main {
     public void applyFileMarkings(File file) {
         try (Scanner scanner = new Scanner(file)) {
             synchronized (graphLock) {
-                State[] nodes = graph.nodes;
+                State[] nodes = graph.states;
                 for (State node : nodes) {
                     node.classIndex = -1;
                 }
@@ -490,5 +494,25 @@ public class Main {
         graph.getEdgeMesh().scheduleReload();
         nodeCluster.ifPresent(g -> g.addEdgeAttribute(label, on));
         subGraph.ifPresent(g -> g.update(getMarkedLabels()));
+    }
+
+    public void applyMuFormulaMarking(File file) {
+        try {
+            FormulaParser formulaParser = new FormulaParser(file);
+            ModelChecker modelChecker = new ModelChecker(graph, formulaParser);
+            Logger.DEBUG.print(formulaParser);
+
+            new Thread(() -> {
+                StateSet result = modelChecker.call();
+                Logger.INFO.printf("Formula holds for %d states", result.size());
+                for (State state : result) {
+                    state.addColor(MU_FORMULA_COLOR, MU_FORMULA);
+                }
+                graph.getNodeMesh().scheduleReload();
+            }).start();
+
+        } catch (FileNotFoundException e) {
+            Logger.ERROR.print(e);
+        }
     }
 }

@@ -1,0 +1,2 @@
+% player II winning strategy
+mu X.([choose1]<choose2>X || <won>true)

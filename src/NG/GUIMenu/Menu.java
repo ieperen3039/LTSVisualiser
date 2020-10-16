@@ -111,9 +111,10 @@ public class Menu extends SDecorator {
                                 file -> {
                                     this.currentGraphFile = file;
                                     main.setGraph(file);
-                                }), BUTTON_PROPS
+                                }, "*.aut"), BUTTON_PROPS
                         ),
-                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings), BUTTON_PROPS),
+                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS),
+                        new SButton("Load Mu-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // graph information panel
@@ -184,12 +185,12 @@ public class Menu extends SDecorator {
         ));
     }
 
-    private void openFileDialog(Consumer<File> action) {
+    private void openFileDialog(Consumer<File> action, String extension) {
         Frame parent = new Frame();
         try {
             FileDialog fd = new FileDialog(parent, "Choose a file", FileDialog.LOAD);
             fd.setDirectory(BASE_FILE_CHOOSER_DIRECTORY.getAbsolutePath());
-            fd.setFile("*.aut");
+            fd.setFile(extension);
             fd.setVisible(true);
 
             String filename = fd.getFile();

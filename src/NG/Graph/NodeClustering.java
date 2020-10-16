@@ -69,7 +69,7 @@ public class NodeClustering extends Graph {
             State clusterLeader = getClusterLeader(clusterLeaderMap, node);
             assert clusterLeader != null;
             // map the leader to the clusterNode, or create when absent
-            State clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new State(old.position, old.label, old.classIndex));
+            State clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new State(old.position, old.label, old.index, old.classIndex));
 
             if (node == sourceGraph.getInitialState()) {
                 clusterInitialState = clusterNode;
@@ -82,7 +82,7 @@ public class NodeClustering extends Graph {
 
         // add new nodes to the graph
         for (State node : newNodes.values()) {
-            clusterNodes.addParticle(node);
+            clusterNodes.addNode(node);
         }
 
         // add all edges

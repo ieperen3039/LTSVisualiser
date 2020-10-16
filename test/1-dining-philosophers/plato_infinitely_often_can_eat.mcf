@@ -1,0 +1,4 @@
+% There is a course of events in which Plato infinitely often eats
+% short: nuX(muY((X Y) Y)
+% depths: 2, 2, 2
+nu X. mu Y. ( (<plato>X || <i>Y) || <others>Y)

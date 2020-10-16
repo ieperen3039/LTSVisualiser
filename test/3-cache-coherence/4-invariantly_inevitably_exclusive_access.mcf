@@ -1,0 +1,33 @@
+nu X. (
+      [i]X
+      &&
+        (
+        [req_exclusive]X
+        &&
+          (
+          [req_shared]X
+          &&
+            (
+            [exclusive]X
+            &&
+              (
+                [shared]X
+                &&
+                [req_exclusive]mu Y. (
+                                     [i]Y
+                                     &&
+                                       (
+                                       [req_exclusive]Y
+                                       &&
+                                         (
+                                         [req_shared]Y
+                                         &&
+                                         [shared]Y
+                                         )
+                                       )
+                                     )
+              )
+            )
+          )
+        )
+      )

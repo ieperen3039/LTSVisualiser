@@ -1,0 +1,5 @@
+% In every state, reachable by plato not eating, plato has the chance to starve
+% short: nuX((X ^ X) ^ nuY (Y v Y))
+% depths: 2,1,1
+
+nu X. (([i]X && [others]X ) && nu Y. (<i>Y || <others>Y) )

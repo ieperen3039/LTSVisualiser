@@ -4,7 +4,6 @@ import NG.Graph.State;
 import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.SGL;
 import NG.Tools.Toolbox;
-import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -30,16 +29,7 @@ public class NodeMesh implements Mesh {
     private int nrOfParticles = 0;
     private boolean doReload = false;
 
-    /**
-     * @param position   position of the middle of the particle
-     * @param label
-     * @param classIndex
-     */
-    public void addParticle(Vector3fc position, String label, int classIndex) {
-        addParticle(new State(position, label, classIndex));
-    }
-
-    public void addParticle(State p) {
+    public void addNode(State p) {
         bulk.add(p);
     }
 

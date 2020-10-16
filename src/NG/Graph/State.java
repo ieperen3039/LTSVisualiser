@@ -13,14 +13,16 @@ public class State extends GraphElement {
 
     public final Vector3f position;
     public String label; // the node label, if any
+    public final int index;
     public int classIndex;
 
     public boolean isFixed = false;
     public boolean stayFixed = false;
 
-    public State(Vector3fc position, String label, int classIndex) {
+    public State(Vector3fc position, String label, int index, int classIndex) {
         this.position = new Vector3f(position);
         this.label = label;
+        this.index = index;
         this.classIndex = classIndex;
         colors.add(Priority.BASE, BASE_COLOR);
     }
@@ -28,6 +30,7 @@ public class State extends GraphElement {
     public State(State other, String newLabel) {
         this.position = other.position;
         this.label = newLabel;
+        this.index = other.index;
         this.classIndex = other.classIndex;
         colors.add(Priority.BASE, BASE_COLOR);
     }

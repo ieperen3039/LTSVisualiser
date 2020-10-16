@@ -1,0 +1,30 @@
+Verdicts below refer to whether state 0 statisfies a formula
+
+-----------------------
+processing testcase form1.mcf
+verdict: false
+-----------------------
+processing testcase form2.mcf
+verdict: true
+-----------------------
+processing testcase form3.mcf
+verdict: false
+-----------------------
+processing testcase form4.mcf
+verdict: false
+-----------------------
+processing testcase form5.mcf
+verdict: true
+-----------------------
+processing testcase form6.mcf
+verdict: true
+-----------------------
+processing testcase form7.mcf
+verdict: false
+-----------------------
+processing testcase form8.mcf
+verdict: true
+-----------------------
+processing testcase form9.mcf
+verdict: true
+

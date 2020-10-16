@@ -1,0 +1,5 @@
+% In every reachable state, someone must start eating
+% short: nuX(X.X.muY(Y))
+% depths: 2, 2, 1
+
+nu X. (([i]X && ([plato]X && [others]X )) && mu Y. ([i]Y && (<plato>true || <others>true)) )

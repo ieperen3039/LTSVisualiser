@@ -1,0 +1,2 @@
+% winning play
+mu X.(<choose1><choose2>X || <won>true)
