@@ -9,8 +9,8 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.*;
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
+import NG.Graph.Rendering.GraphColorTool;
+import NG.Graph.Rendering.GraphElement;
 import NG.InputHandling.MouseTools.MouseTool;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.RenderLoop;
@@ -209,7 +209,7 @@ public class Menu extends SDecorator {
         }
 
         @Override
-        public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+        public void onNodeClick(int button, Graph graph, State node) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Camera camera = main.camera();
                 camera.set(node.position);
@@ -218,7 +218,7 @@ public class Menu extends SDecorator {
         }
 
         @Override
-        public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+        public void onEdgeClick(int button, Graph graph, Transition edge) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Camera camera = main.camera();
                 camera.set(edge.handlePos);
@@ -230,7 +230,7 @@ public class Menu extends SDecorator {
 
     private static class PathVisualisationTool extends MouseTool {
         private final Graph graph;
-        private NodeMesh.Node startNode = null;
+        private State startNode = null;
 
         public PathVisualisationTool(Main root) {
             super(root);
@@ -239,7 +239,7 @@ public class Menu extends SDecorator {
         }
 
         @Override
-        public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+        public void onNodeClick(int button, Graph graph, State node) {
             if (startNode == null) {
                 startNode = node;
                 node.addColor(PATH_COLOR, GraphElement.Priority.PATH);
@@ -251,7 +251,7 @@ public class Menu extends SDecorator {
         }
 
         @Override
-        public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+        public void onEdgeClick(int button, Graph graph, Transition edge) {
             if (startNode == null) {
                 startNode = edge.to;
                 edge.addColor(PATH_COLOR, GraphElement.Priority.PATH);
@@ -263,12 +263,12 @@ public class Menu extends SDecorator {
             }
         }
 
-        private void colorPath(NodeMesh.Node startNode, NodeMesh.Node endNode) {
+        private void colorPath(State startNode, State endNode) {
             GraphPathFinder dijkstra = new GraphPathFinder(startNode, endNode, graph);
 
             Logger.DEBUG.print("Searching path from " + startNode + " to " + endNode);
 
-            List<EdgeMesh.Edge> edges = dijkstra.call();
+            List<Transition> edges = dijkstra.call();
 
             if (edges == null) {
                 Logger.WARN.print("No path found from " + startNode + " to " + endNode);
@@ -280,7 +280,7 @@ public class Menu extends SDecorator {
 
             Logger.DEBUG.print("Path from " + startNode + " to " + endNode + " found of length " + edges.size());
 
-            for (EdgeMesh.Edge edge : edges) {
+            for (Transition edge : edges) {
                 edge.addColor(PATH_COLOR, GraphElement.Priority.PATH);
                 edge.to.addColor(PATH_COLOR, GraphElement.Priority.PATH);
             }

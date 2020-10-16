@@ -1,11 +1,11 @@
-package NG.Graph;
+package NG.Graph.Rendering;
 
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 
 import java.util.Comparator;
 
-import static NG.Graph.GraphElement.Priority.BASE;
+import static NG.Graph.Rendering.GraphElement.Priority.BASE;
 
 /**
  * @author Geert van Ieperen created on 1-9-2020.
@@ -14,7 +14,7 @@ public abstract class GraphElement {
     protected final PairList<Priority, Color4f> colors = new PairList<>();
 
     public enum Priority {
-        MAXIMUM, IGNORE, HOVER, USER_COLOR, PATH, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
+        MAXIMUM, HOVER, USER_COLOR, PATH, IGNORE, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
     }
 
     public Color4f getColor() {

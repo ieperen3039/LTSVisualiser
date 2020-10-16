@@ -1,7 +1,5 @@
 package NG.Graph;
 
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
 import NG.Tools.Toolbox;
 
 import java.util.*;
@@ -15,12 +13,12 @@ public class HDEPositioning {
     private static final int NUM_TARGET_DIMENSIONS = 3; // k
     private static final double THRESHOLD = 1 / 128f;
 
-    public static double[][] position(EdgeMesh.Edge[] edges, NodeMesh.Node[] nodes) {
+    public static double[][] position(Transition[] edges, State[] nodes) {
         int initialDimensions = Math.min(NUM_INITIAL_DIMENSIONS, nodes.length);
 
         // make mapping bidirectional
-        HashMap<NodeMesh.Node, Collection<NodeMesh.Node>> biMapping = new HashMap<>();
-        for (EdgeMesh.Edge edge : edges) {
+        HashMap<State, Collection<State>> biMapping = new HashMap<>();
+        for (Transition edge : edges) {
             biMapping.computeIfAbsent(edge.from, n -> new HashSet<>())
                     .add(edge.to);
             biMapping.computeIfAbsent(edge.to, n -> new HashSet<>())
@@ -75,19 +73,19 @@ public class HDEPositioning {
     }
 
     private static double[][] getHighDimensionLayout(
-            Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping, NodeMesh.Node[] nodes, int initialDimensions
+            Map<State, Collection<State>> mapping, State[] nodes, int initialDimensions
     ) {
         double[][] coordinates = new double[nodes.length][initialDimensions];
         int[] anchorDistance = new int[nodes.length]; // distance to any picked coordinate
         Arrays.fill(anchorDistance, Integer.MAX_VALUE);
 
-        NodeMesh.Node pivot = nodes[0];
+        State pivot = nodes[0];
         for (int i = 0; i < initialDimensions; i++) {
             // compute all distances to pivot
-            Map<NodeMesh.Node, Integer> distances = getAllDistances(pivot, mapping);
+            Map<State, Integer> distances = getAllDistances(pivot, mapping);
 
             for (int j = 0; j < nodes.length; j++) {
-                NodeMesh.Node node = nodes[j];
+                State node = nodes[j];
                 assert distances.containsKey(node) : node;
 
                 // write distances from this node to this pivot
@@ -106,27 +104,27 @@ public class HDEPositioning {
     }
 
     private static double[][] getHighDimensionLayout2(
-            Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping, NodeMesh.Node[] nodes, int initialDimensions
-    ){
+            Map<State, Collection<State>> mapping, State[] nodes, int initialDimensions
+    ) {
         double[][] coordinates = new double[nodes.length][initialDimensions];
 
         return coordinates;
     }
 
-    private static Map<NodeMesh.Node, Integer> getAllDistances(
-            NodeMesh.Node p1, Map<NodeMesh.Node, Collection<NodeMesh.Node>> mapping
+    private static Map<State, Integer> getAllDistances(
+            State p1, Map<State, Collection<State>> mapping
     ) {
-        Map<NodeMesh.Node, Integer> distances = new HashMap<>();
-        Queue<NodeMesh.Node> open = new ArrayDeque<>();
+        Map<State, Integer> distances = new HashMap<>();
+        Queue<State> open = new ArrayDeque<>();
         open.add(p1);
         distances.put(p1, 0);
 
         while (!open.isEmpty()) {
-            NodeMesh.Node node = open.remove();
+            State node = open.remove();
             int baseDist = distances.get(node);
 
             if (mapping.containsKey(node)) { // deadlocks have no outgoing transitions
-                for (NodeMesh.Node secondary : mapping.get(node)) {
+                for (State secondary : mapping.get(node)) {
 
                     if (distances.containsKey(secondary)) {
                         int secDist = distances.get(secondary);

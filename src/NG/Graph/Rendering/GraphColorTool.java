@@ -1,13 +1,14 @@
-package NG.Graph;
+package NG.Graph.Rendering;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
+import NG.Graph.Graph;
+import NG.Graph.State;
+import NG.Graph.Transition;
 import NG.InputHandling.MouseTools.MouseTool;
 import org.lwjgl.glfw.GLFW;
 
-import static NG.Graph.GraphElement.Priority.USER_COLOR;
+import static NG.Graph.Rendering.GraphElement.Priority.USER_COLOR;
 
 /**
  * @author Geert van Ieperen created on 10-9-2020.
@@ -23,7 +24,7 @@ public class GraphColorTool extends MouseTool {
     }
 
     @Override
-    public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+    public void onNodeClick(int button, Graph graph, State node) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             node.addColor(color, USER_COLOR);
 
@@ -33,7 +34,7 @@ public class GraphColorTool extends MouseTool {
     }
 
     @Override
-    public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+    public void onEdgeClick(int button, Graph graph, Transition edge) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             edge.addColor(color, USER_COLOR);
 

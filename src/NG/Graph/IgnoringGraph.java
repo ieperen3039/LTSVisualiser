@@ -3,6 +3,7 @@ package NG.Graph;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
+import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 import NG.Tools.Vectors;
 
@@ -16,7 +17,7 @@ public class IgnoringGraph extends Graph {
     private final Graph source;
     private final Collection<String> edgeAttributes;
     private final EdgeMesh edgeMesh;
-    private final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> mapping;
+    private final Map<State, PairList<Transition, State>> mapping;
 
     public IgnoringGraph(Graph source, Collection<String> ignoredLabels) {
         super(source.root);
@@ -26,9 +27,9 @@ public class IgnoringGraph extends Graph {
         this.edgeAttributes.removeAll(ignoredLabels);
         this.mapping = new HashMap<>();
 
-        List<EdgeMesh.Edge> edges = source.getEdgeMesh().edgeList();
-        for (EdgeMesh.Edge sourceEdge : edges) {
-            EdgeMesh.Edge newEdge = new EdgeMesh.Edge(sourceEdge.from, sourceEdge.to, sourceEdge.label);
+        List<Transition> edges = source.getEdgeMesh().edgeList();
+        for (Transition sourceEdge : edges) {
+            Transition newEdge = new Transition(sourceEdge.from, sourceEdge.to, sourceEdge.label);
 
             Color4f color = ignoredLabels.contains(sourceEdge.label) ? IGNORED_COLOR : sourceEdge.getColor();
             newEdge.addColor(color, GraphElement.Priority.IGNORE);
@@ -46,10 +47,10 @@ public class IgnoringGraph extends Graph {
         edgeAttributes.addAll(source.getEdgeAttributes());
         edgeAttributes.removeAll(ignoredLabels);
 
-        List<EdgeMesh.Edge> edges = getEdgeMesh().edgeList();
-        List<EdgeMesh.Edge> sourceEdges = source.getEdgeMesh().edgeList();
+        List<Transition> edges = getEdgeMesh().edgeList();
+        List<Transition> sourceEdges = source.getEdgeMesh().edgeList();
         for (int i = 0, edgesSize = edges.size(); i < edgesSize; i++) {
-            EdgeMesh.Edge p = edges.get(i);
+            Transition p = edges.get(i);
             Color4f color = ignoredLabels.contains(p.label) ? IGNORED_COLOR : sourceEdges.get(i).getColor();
             p.addColor(color, GraphElement.Priority.IGNORE);
         }
@@ -63,7 +64,7 @@ public class IgnoringGraph extends Graph {
     }
 
     @Override
-    public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
+    public PairList<Transition, State> connectionsOf(State node) {
         return mapping.getOrDefault(node, PairList.empty());
     }
 
@@ -83,12 +84,12 @@ public class IgnoringGraph extends Graph {
     }
 
     @Override
-    protected NodeMesh.Node getInitialState() {
+    protected State getInitialState() {
         return source.getInitialState();
     }
 
     public void updateEdges() {
-        for (EdgeMesh.Edge edge : edgeMesh.edgeList()) {
+        for (Transition edge : edgeMesh.edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             assert !Vectors.isNaN(edge.handlePos) : edge;
         }

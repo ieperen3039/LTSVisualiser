@@ -4,6 +4,7 @@ import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
+import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
@@ -26,27 +27,27 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
 public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     protected transient Main root;
     // the node that the mouse is holding
-    private NodeMesh.Node selectedNode = null;
+    private State selectedNode = null;
     private float selectedNodeZPlane = 0;
 
-    private EdgeMesh.Edge hoveredEdge = null;
-    private NodeMesh.Node hoveredNode = null;
+    private Transition hoveredEdge = null;
+    private State hoveredNode = null;
 
     public Graph(Main root) {
         this.root = root;
     }
 
-    public boolean doOnMouseSelection(Consumer<NodeMesh.Node> nodeAction, Consumer<EdgeMesh.Edge> edgeAction) {
+    public boolean doOnMouseSelection(Consumer<State> nodeAction, Consumer<Transition> edgeAction) {
         int index = root.getClickShaderResult();
         if (index == -1) return false;
 
-        List<NodeMesh.Node> nodes = getNodeMesh().nodeList();
+        List<State> nodes = getNodeMesh().nodeList();
         if (index < nodes.size()) {
             nodeAction.accept(nodes.get(index));
 
         } else {
             index -= nodes.size();
-            List<EdgeMesh.Edge> edges = getEdgeMesh().edgeList();
+            List<Transition> edges = getEdgeMesh().edgeList();
 
             if (index > edges.size()) {
                 Logger.ERROR.printf("Mouse hovered element %d which does not exist", index + nodes.size());
@@ -62,8 +63,8 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     @Override
     public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
         if (selectedNode == null) {
-            EdgeMesh.Edge oldHoveredEdge = hoveredEdge;
-            NodeMesh.Node oldHoveredNode = hoveredNode;
+            Transition oldHoveredEdge = hoveredEdge;
+            State oldHoveredNode = hoveredNode;
 
             hoveredEdge = null;
             hoveredNode = null;
@@ -109,7 +110,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
     }
 
-    public void setNodePosition(NodeMesh.Node node, Vector3f newPosition) {
+    public void setNodePosition(State node, Vector3f newPosition) {
         node.position.set(newPosition);
     }
 
@@ -124,7 +125,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
     }
 
-    public abstract PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node);
+    public abstract PairList<Transition, State> connectionsOf(State node);
 
     public abstract NodeMesh getNodeMesh();
 
@@ -140,20 +141,20 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
     public abstract Collection<String> getEdgeAttributes();
 
-    public void forAttribute(String label, Consumer<EdgeMesh.Edge> action) {
+    public void forAttribute(String label, Consumer<Transition> action) {
         EdgeMesh edges = getEdgeMesh();
 
-        for (EdgeMesh.Edge edge : edges.edgeList()) {
+        for (Transition edge : edges.edgeList()) {
             if (edge.label.equals(label)) {
                 action.accept(edge);
             }
         }
     }
 
-    public void forNodeClass(int classIndex, Consumer<NodeMesh.Node> action) {
+    public void forNodeClass(int classIndex, Consumer<State> action) {
         NodeMesh nodes = getNodeMesh();
 
-        for (NodeMesh.Node node : nodes.nodeList()) {
+        for (State node : nodes.nodeList()) {
             if (node.classIndex == classIndex) {
                 action.accept(node);
             }
@@ -164,15 +165,15 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         return hoveredNode != null ? hoveredNode : hoveredEdge;
     }
 
-    protected abstract NodeMesh.Node getInitialState();
+    protected abstract State getInitialState();
 
     public abstract void cleanup();
 
     public void resetColors(GraphElement.Priority path) {
-        for (NodeMesh.Node node : getNodeMesh().nodeList()) {
+        for (State node : getNodeMesh().nodeList()) {
             node.resetColor(path);
         }
-        for (EdgeMesh.Edge edge : getEdgeMesh().edgeList()) {
+        for (Transition edge : getEdgeMesh().edgeList()) {
             edge.resetColor(path);
         }
     }
@@ -183,7 +184,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
 
         @Override
-        public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+        public void onNodeClick(int button, Graph graph, State node) {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 graph.selectedNode = node;
                 graph.selectedNodeZPlane = new Vector3f(node.position)
@@ -207,7 +208,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
 
         @Override
-        public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+        public void onEdgeClick(int button, Graph graph, Transition edge) {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 root.toggleClusterAttribute(edge.label);
             }

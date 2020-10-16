@@ -1,41 +1,38 @@
 package NG.Graph;
 
 import NG.DataStructures.Generic.PairList;
-import NG.Graph.Rendering.EdgeMesh.Edge;
 
 import java.util.*;
 import java.util.concurrent.Callable;
-
-import static NG.Graph.Rendering.NodeMesh.Node;
 
 /**
  * Implements Breadth first search to find the shortest path
  * @author Geert van Ieperen created on 22-5-2020.
  */
-public class GraphPathFinder implements Callable<List<Edge>> {
-    private final Node startNode;
-    private final Node endNode;
+public class GraphPathFinder implements Callable<List<Transition>> {
+    private final State startNode;
+    private final State endNode;
     private final Graph graph;
 
-    public GraphPathFinder(Node startNode, Node endNode, Graph graph) {
+    public GraphPathFinder(State startNode, State endNode, Graph graph) {
         this.startNode = startNode;
         this.endNode = endNode;
         this.graph = graph;
     }
 
     @Override
-    public List<Edge> call() {
-        ArrayDeque<Node> open = new ArrayDeque<>();
+    public List<Transition> call() {
+        ArrayDeque<State> open = new ArrayDeque<>();
         open.add(startNode);
 
-        Map<Node, Edge> predecessors = BFS(open);
+        Map<State, Transition> predecessors = BFS(open);
         if (predecessors == null) return null;
 
-        Node current = this.endNode;
-        List<Edge> edges = new ArrayList<>();
+        State current = this.endNode;
+        List<Transition> edges = new ArrayList<>();
 
         while (current != startNode) {
-            Edge edge = predecessors.get(current);
+            Transition edge = predecessors.get(current);
             edges.add(edge);
             current = edge.from;
         }
@@ -50,18 +47,18 @@ public class GraphPathFinder implements Callable<List<Edge>> {
      *             returning, its contents is undefined.
      * @return the nearest node in {@code targets} found.
      */
-    private Map<Node, Edge> BFS(ArrayDeque<Node> open) {
-        Map<Node, Edge> predecessors = new HashMap<>();
+    private Map<State, Transition> BFS(ArrayDeque<State> open) {
+        Map<State, Transition> predecessors = new HashMap<>();
 
         while (!open.isEmpty()) {
-            Node node = open.remove();
+            State node = open.remove();
             if (node == endNode) return predecessors;
 
-            PairList<Edge, Node> connections = graph.connectionsOf(node);
+            PairList<Transition, State> connections = graph.connectionsOf(node);
 
             for (int i = 0; i < connections.size(); i++) {
-                Edge nextEdge = connections.left(i);
-                Node nextNode = connections.right(i);
+                Transition nextEdge = connections.left(i);
+                State nextNode = connections.right(i);
 
                 if (nextEdge.from != node) continue; // incoming edge
                 if (nextNode == node) continue; // self-loop

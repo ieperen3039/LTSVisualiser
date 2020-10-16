@@ -2,8 +2,6 @@ package NG.Graph;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.PairList;
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
 import NG.Tools.Vectors;
 
 import java.io.File;
@@ -61,7 +59,7 @@ public class LTSParser {
 
         // prepare states
         for (int i = 0; i < nrOfStates; i++) {
-            graph.nodes[i] = new NodeMesh.Node(Vectors.O, Integer.toString(i), i);
+            graph.nodes[i] = new State(Vectors.O, Integer.toString(i), i);
         }
 
         // parse edges
@@ -77,9 +75,9 @@ public class LTSParser {
             String label = matcher.group(2);
             int endStateIndex = Integer.parseInt(matcher.group(3));
 
-            NodeMesh.Node startState = graph.nodes[startStateIndex];
-            NodeMesh.Node endState = graph.nodes[endStateIndex];
-            EdgeMesh.Edge edge = new EdgeMesh.Edge(startState, endState, label);
+            State startState = graph.nodes[startStateIndex];
+            State endState = graph.nodes[endStateIndex];
+            Transition edge = new Transition(startState, endState, label);
 
             graph.actionLabels[edgeIndex] = label;
             graph.edges[edgeIndex] = edge;

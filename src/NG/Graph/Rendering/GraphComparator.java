@@ -1,9 +1,10 @@
-package NG.Graph;
+package NG.Graph.Rendering;
 
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
+import NG.Graph.Graph;
+import NG.Graph.State;
+import NG.Graph.Transition;
 import NG.Tools.Vectors;
 
 import java.util.*;
@@ -16,11 +17,11 @@ public class GraphComparator extends Graph {
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.2f);
     public static final Color4f COMBINED_COLOR = Color4f.rgb(0, 0, 0, 0.8f);
 
-    private final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> mapping;
+    private final Map<State, PairList<Transition, State>> mapping;
     private final Collection<String> attributes;
     private final NodeMesh nodeMesh = new NodeMesh();
     private final EdgeMesh edgeMesh = new EdgeMesh();
-    private final NodeMesh.Node initialState;
+    private final State initialState;
 
     public GraphComparator(Graph a, Graph b) {
         super(a.root);
@@ -37,10 +38,10 @@ public class GraphComparator extends Graph {
             if (!attributes.contains(attribute)) attributes.add(attribute);
         }
 
-        HashMap<NodeMesh.Node, Map<NodeMesh.Node, Integer>> similarityMap = new HashMap<>();
+        HashMap<State, Map<State, Integer>> similarityMap = new HashMap<>();
         findMatching(a, a.getInitialState(), b, b.getInitialState(), similarityMap);
 
-        this.initialState = new NodeMesh.Node(a.getInitialState().position, "initial", 0);
+        this.initialState = new State(a.getInitialState().position, "initial", 0);
         initialState.addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
         nodeMesh.addParticle(initialState);
 
@@ -57,11 +58,11 @@ public class GraphComparator extends Graph {
      * @return the number of matching nodes
      */
     private int findMatching(
-            Graph aGraph, NodeMesh.Node a, Graph bGraph, NodeMesh.Node b, Map<NodeMesh.Node,
-            Map<NodeMesh.Node, Integer>> similarityMap
+            Graph aGraph, State a, Graph bGraph, State b, Map<State,
+            Map<State, Integer>> similarityMap
     ) {
         if (similarityMap.containsKey(a)) {
-            Map<NodeMesh.Node, Integer> aMap = similarityMap.get(a);
+            Map<State, Integer> aMap = similarityMap.get(a);
             if (aMap.containsKey(b)) {
                 return aMap.get(b);
             }
@@ -69,16 +70,16 @@ public class GraphComparator extends Graph {
         // prevent loops when recursing
         similarityMap.computeIfAbsent(a, node -> new HashMap<>(2)).put(b, 0);
 
-        PairList<EdgeMesh.Edge, NodeMesh.Node> aConnections = aGraph.connectionsOf(a);
-        PairList<EdgeMesh.Edge, NodeMesh.Node> bConnections = bGraph.connectionsOf(b);
+        PairList<Transition, State> aConnections = aGraph.connectionsOf(a);
+        PairList<Transition, State> bConnections = bGraph.connectionsOf(b);
 
         int bSize = bConnections.size();
         int aSize = aConnections.size();
-        Map<String, Collection<NodeMesh.Node>> aLabelIndices = new HashMap<>(aSize);
-        Map<String, Collection<NodeMesh.Node>> bLabelIndices = new HashMap<>(bSize);
+        Map<String, Collection<State>> aLabelIndices = new HashMap<>(aSize);
+        Map<String, Collection<State>> bLabelIndices = new HashMap<>(bSize);
 
         for (int i = 0; i < aSize; i++) {
-            EdgeMesh.Edge left = aConnections.left(i);
+            Transition left = aConnections.left(i);
 
             if (left.from == a) {
                 String aLabel = left.label;
@@ -88,7 +89,7 @@ public class GraphComparator extends Graph {
         }
 
         for (int i = 0; i < bSize; i++) {
-            EdgeMesh.Edge left = bConnections.left(i);
+            Transition left = bConnections.left(i);
 
             if (left.from == b) {
                 String bLabel = left.label;
@@ -104,11 +105,11 @@ public class GraphComparator extends Graph {
         int mostMatchingNodes = -1;
 
         for (String label : intersect) {
-            Collection<NodeMesh.Node> aNodes = aLabelIndices.get(label);
-            Collection<NodeMesh.Node> bNodes = bLabelIndices.get(label);
+            Collection<State> aNodes = aLabelIndices.get(label);
+            Collection<State> bNodes = bLabelIndices.get(label);
 
-            for (NodeMesh.Node aNode : aNodes) {
-                for (NodeMesh.Node bNode : bNodes) {
+            for (State aNode : aNodes) {
+                for (State bNode : bNodes) {
                     int length = findMatching(aGraph, aNode, bGraph, bNode, similarityMap);
                     if (length > mostMatchingNodes) {
                         mostMatchingNodes = length;
@@ -138,14 +139,14 @@ public class GraphComparator extends Graph {
      *                      generatedNode. Upon returning, a and b both map to generatedNode
      */
     void addMatching(
-            NodeMesh.Node generatedNode, Graph aGraph, NodeMesh.Node a, Graph bGraph, NodeMesh.Node b,
-            Map<NodeMesh.Node, Map<NodeMesh.Node, Integer>> similarityMap, HashMap<NodeMesh.Node, NodeMesh.Node> seen
+            State generatedNode, Graph aGraph, State a, Graph bGraph, State b,
+            Map<State, Map<State, Integer>> similarityMap, HashMap<State, State> seen
     ) {
         seen.put(a, generatedNode);
         seen.put(b, generatedNode);
 
-        PairList<EdgeMesh.Edge, NodeMesh.Node> aConnections = aGraph.connectionsOf(a);
-        PairList<EdgeMesh.Edge, NodeMesh.Node> bConnections = bGraph.connectionsOf(b);
+        PairList<Transition, State> aConnections = aGraph.connectionsOf(a);
+        PairList<Transition, State> bConnections = bGraph.connectionsOf(b);
 
         Collection<Integer> aNonMatching = new ArrayList<>(0);
         Collection<Integer> bNonMatching = new HashSet<>(0);
@@ -157,15 +158,15 @@ public class GraphComparator extends Graph {
 
         for (int i = 0; i < aConnections.size(); i++) {
             if (aConnections.left(i).from != a) continue;
-            NodeMesh.Node aNode = aConnections.right(i);
+            State aNode = aConnections.right(i);
 
-            Map<NodeMesh.Node, Integer> bSimilarities = similarityMap.get(aNode);
-            NodeMesh.Node bNode = null;
+            Map<State, Integer> bSimilarities = similarityMap.get(aNode);
+            State bNode = null;
             if (bSimilarities != null && !bSimilarities.isEmpty()) {
                 int maxValue = -1;
                 for (int j = 0; j < bConnections.size(); j++) {
                     if (bConnections.left(j).from != b) continue;
-                    NodeMesh.Node bCandidate = bConnections.right(j);
+                    State bCandidate = bConnections.right(j);
                     int value = bSimilarities.getOrDefault(bCandidate, -1);
                     if (value > maxValue) {
                         maxValue = value;
@@ -183,9 +184,9 @@ public class GraphComparator extends Graph {
                 bNonMatching.remove(index);
 
                 boolean exists = seen.containsKey(aNode);
-                EdgeMesh.Edge aEdge = aConnections.left(i);
-                NodeMesh.Node newNode = exists ? seen.get(aNode) : new NodeMesh.Node(aNode.position, "A" + aNode.label + "|B" + bNode.label, index);
-                EdgeMesh.Edge newEdge = new EdgeMesh.Edge(generatedNode, newNode, aEdge.label);
+                Transition aEdge = aConnections.left(i);
+                State newNode = exists ? seen.get(aNode) : new State(aNode.position, "A" + aNode.label + "|B" + bNode.label, index);
+                Transition newEdge = new Transition(generatedNode, newNode, aEdge.label);
 
                 edgeMesh.addParticle(newEdge);
                 newEdge.addColor(COMBINED_COLOR, GraphElement.Priority.BASE);
@@ -211,10 +212,10 @@ public class GraphComparator extends Graph {
      * has the given prefix.
      */
     private void addChildren(
-            NodeMesh.Node parentNode, NodeMesh.Node targetNode, String prefix, Color4f color,
-            Map<NodeMesh.Node, NodeMesh.Node> seen, Graph graph
+            State parentNode, State targetNode, String prefix, Color4f color,
+            Map<State, State> seen, Graph graph
     ) {
-        PairList<EdgeMesh.Edge, NodeMesh.Node> connections = graph.connectionsOf(targetNode);
+        PairList<Transition, State> connections = graph.connectionsOf(targetNode);
         for (int i = 0; i < connections.size(); i++) {
             if (connections.left(i).from != targetNode) continue;
             add(parentNode, graph, prefix, color, seen, connections, i);
@@ -226,16 +227,16 @@ public class GraphComparator extends Graph {
      * node has the given prefix. Each new node assumes parentNode as its parent
      */
     private void add(
-            NodeMesh.Node parentNode, Graph graph, String prefix, Color4f color,
-            Map<NodeMesh.Node, NodeMesh.Node> seen, PairList<EdgeMesh.Edge, NodeMesh.Node> connections,
+            State parentNode, Graph graph, String prefix, Color4f color,
+            Map<State, State> seen, PairList<Transition, State> connections,
             int index
     ) {
-        NodeMesh.Node node = connections.right(index);
-        EdgeMesh.Edge edge = connections.left(index);
+        State node = connections.right(index);
+        Transition edge = connections.left(index);
 
         boolean exists = seen.containsKey(node);
-        NodeMesh.Node newNode = exists ? seen.get(node) : new NodeMesh.Node(node.position, prefix + node.label, index);
-        EdgeMesh.Edge newEdge = new EdgeMesh.Edge(parentNode, newNode, edge.label);
+        State newNode = exists ? seen.get(node) : new State(node.position, prefix + node.label, index);
+        Transition newEdge = new Transition(parentNode, newNode, edge.label);
 
         edgeMesh.addParticle(newEdge);
         newEdge.addColor(color, GraphElement.Priority.BASE);
@@ -251,13 +252,13 @@ public class GraphComparator extends Graph {
     }
 
     @Override
-    protected NodeMesh.Node getInitialState() {
+    protected State getInitialState() {
         return initialState;
     }
 
     @Override
-    public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(
-            NodeMesh.Node node
+    public PairList<Transition, State> connectionsOf(
+            State node
     ) {
         return mapping.getOrDefault(node, PairList.empty());
     }
@@ -286,7 +287,7 @@ public class GraphComparator extends Graph {
     }
 
     public void updateEdges() {
-        for (EdgeMesh.Edge edge : edgeMesh.edgeList()) {
+        for (Transition edge : edgeMesh.edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             assert !Vectors.isNaN(edge.handlePos) : edge;
         }

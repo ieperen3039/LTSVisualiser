@@ -3,6 +3,7 @@ package NG.Graph;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
+import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 import org.joml.Vector3f;
 
@@ -12,15 +13,15 @@ import java.util.*;
  * @author Geert van Ieperen created on 5-8-2020.
  */
 public class NodeClustering extends Graph {
-    private final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> neighbourMapping = new HashMap<>();
+    private final Map<State, PairList<Transition, State>> neighbourMapping = new HashMap<>();
 
     // maps a new cluster node to the set of elements representing that cluster
-    private final Map<NodeMesh.Node, Collection<NodeMesh.Node>> clusterMapping = new HashMap<>();
+    private final Map<State, Collection<State>> clusterMapping = new HashMap<>();
     private final Set<String> edgeAttributeCluster = new HashSet<>();
     private final Graph sourceGraph;
     private NodeMesh clusterNodes = new NodeMesh();
     private EdgeMesh clusterEdges = new EdgeMesh();
-    private NodeMesh.Node clusterInitialState;
+    private State clusterInitialState;
     private boolean showSelfLoop = true;
     private boolean isDirty = false;
 
@@ -31,7 +32,7 @@ public class NodeClustering extends Graph {
     }
 
     @Override
-    public void setNodePosition(NodeMesh.Node node, Vector3f newPosition) {
+    public void setNodePosition(State node, Vector3f newPosition) {
         super.setNodePosition(node, newPosition);
         pushClusterPositions();
     }
@@ -41,7 +42,7 @@ public class NodeClustering extends Graph {
      * @param clusterLeaderMap maps each node to a 'leader' node where all nodes in one cluster refer to
      * @param showSelfLoop
      */
-    public synchronized void createCluster(Map<NodeMesh.Node, NodeMesh.Node> clusterLeaderMap, boolean showSelfLoop) {
+    public synchronized void createCluster(Map<State, State> clusterLeaderMap, boolean showSelfLoop) {
         clusterMapping.clear();
         neighbourMapping.clear();
 
@@ -61,14 +62,14 @@ public class NodeClustering extends Graph {
         clusterEdges = new EdgeMesh();
 
         // maps a cluster leader to a new node representing the cluster
-        Map<NodeMesh.Node, NodeMesh.Node> newNodes = new HashMap<>();
+        Map<State, State> newNodes = new HashMap<>();
         // compute the clusters and create new cluster nodes
-        for (NodeMesh.Node node : nodes.nodeList()) {
+        for (State node : nodes.nodeList()) {
             // if node is not found in clusterMap, it is a leader
-            NodeMesh.Node clusterLeader = getClusterLeader(clusterLeaderMap, node);
+            State clusterLeader = getClusterLeader(clusterLeaderMap, node);
             assert clusterLeader != null;
             // map the leader to the clusterNode, or create when absent
-            NodeMesh.Node clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new NodeMesh.Node(old.position, old.label, old.classIndex));
+            State clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new State(old.position, old.label, old.classIndex));
 
             if (node == sourceGraph.getInitialState()) {
                 clusterInitialState = clusterNode;
@@ -80,19 +81,19 @@ public class NodeClustering extends Graph {
         }
 
         // add new nodes to the graph
-        for (NodeMesh.Node node : newNodes.values()) {
+        for (State node : newNodes.values()) {
             clusterNodes.addParticle(node);
         }
 
         // add all edges
-        for (EdgeMesh.Edge edge : edges.edgeList()) {
+        for (Transition edge : edges.edgeList()) {
             if (edgeAttributeCluster.contains(edge.label)) continue;
 
-            NodeMesh.Node aNode = edge.from;
-            NodeMesh.Node bNode = edge.to;
+            State aNode = edge.from;
+            State bNode = edge.to;
 
-            NodeMesh.Node aTarget = newNodes.get(getClusterLeader(clusterLeaderMap, aNode));
-            NodeMesh.Node bTarget = newNodes.get(getClusterLeader(clusterLeaderMap, bNode));
+            State aTarget = newNodes.get(getClusterLeader(clusterLeaderMap, aNode));
+            State bTarget = newNodes.get(getClusterLeader(clusterLeaderMap, bNode));
 
             // self loop
             if (aTarget == bTarget && !showSelfLoop) continue;
@@ -101,7 +102,7 @@ public class NodeClustering extends Graph {
             // even for non-deterministic graphs, this does not change the meaning of the graph
             if (edgeExists(neighbourMapping, aTarget, bTarget, edge.label)) continue;
 
-            EdgeMesh.Edge newEdge = new EdgeMesh.Edge(aTarget, bTarget, edge.label);
+            Transition newEdge = new Transition(aTarget, bTarget, edge.label);
             newEdge.handlePos.set(edge.handlePos);
             clusterEdges.addParticle(newEdge);
 
@@ -116,19 +117,19 @@ public class NodeClustering extends Graph {
 
         clusterMapping.forEach((node, cluster) -> {
             Vector3f total = new Vector3f();
-            for (NodeMesh.Node element : cluster) {
+            for (State element : cluster) {
                 total.add(element.position);
             }
             total.div(cluster.size());
             node.position.set(total);
         });
 
-        for (EdgeMesh.Edge edge : clusterEdges.edgeList()) {
+        for (Transition edge : clusterEdges.edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
         }
     }
 
-    private NodeMesh.Node getClusterLeader(Map<NodeMesh.Node, NodeMesh.Node> leaderMap, NodeMesh.Node node) {
+    private State getClusterLeader(Map<State, State> leaderMap, State node) {
         while (leaderMap.containsKey(node)) {
             node = leaderMap.get(node);
         }
@@ -141,36 +142,36 @@ public class NodeClustering extends Graph {
 
         clusterMapping.forEach((node, cluster) -> {
             Vector3f total = new Vector3f();
-            for (NodeMesh.Node element : cluster) {
+            for (State element : cluster) {
                 total.add(element.position);
             }
             total.div(cluster.size());
             Vector3f movement = new Vector3f(node.position).sub(total);
 
-            for (NodeMesh.Node element : cluster) {
+            for (State element : cluster) {
                 element.position.add(movement);
             }
         });
 
-        for (EdgeMesh.Edge edge : sourceGraph.getEdgeMesh().edgeList()) {
+        for (Transition edge : sourceGraph.getEdgeMesh().edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
         }
     }
 
     @Override
-    public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
+    public PairList<Transition, State> connectionsOf(State node) {
         checkDirty();
         return neighbourMapping.getOrDefault(node, PairList.empty());
     }
 
-    private Map<NodeMesh.Node, NodeMesh.Node> attributeCluster(Set<String> attributeLabels) {
-        Map<NodeMesh.Node, NodeMesh.Node> leaderMap = new HashMap<>();
+    private Map<State, State> attributeCluster(Set<String> attributeLabels) {
+        Map<State, State> leaderMap = new HashMap<>();
 
-        for (EdgeMesh.Edge edge : sourceGraph.getEdgeMesh().edgeList()) {
+        for (Transition edge : sourceGraph.getEdgeMesh().edgeList()) {
             if (!attributeLabels.contains(edge.label)) continue;
 
-            NodeMesh.Node aLeader = getClusterLeader(leaderMap, edge.from);
-            NodeMesh.Node bLeader = getClusterLeader(leaderMap, edge.to);
+            State aLeader = getClusterLeader(leaderMap, edge.from);
+            State bLeader = getClusterLeader(leaderMap, edge.to);
 
             if (edge.from != aLeader) leaderMap.put(edge.from, aLeader);
             if (edge.to != aLeader) leaderMap.put(edge.to, aLeader);
@@ -234,7 +235,7 @@ public class NodeClustering extends Graph {
     }
 
     @Override
-    protected NodeMesh.Node getInitialState() {
+    protected State getInitialState() {
         checkDirty();
         return clusterInitialState;
     }
@@ -248,14 +249,14 @@ public class NodeClustering extends Graph {
      * String#equals(Object) equal} to the given label
      */
     public static boolean edgeExists(
-            Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> neighbourMapping, NodeMesh.Node aTarget,
-            NodeMesh.Node bTarget, String label
+            Map<State, PairList<Transition, State>> neighbourMapping, State aTarget,
+            State bTarget, String label
     ) {
-        PairList<EdgeMesh.Edge, NodeMesh.Node> existingATargets = neighbourMapping.get(aTarget);
+        PairList<Transition, State> existingATargets = neighbourMapping.get(aTarget);
         if (existingATargets == null) return false;
 
         for (int i = 0; i < existingATargets.size(); i++) {
-            NodeMesh.Node existingBTarget = existingATargets.right(i);
+            State existingBTarget = existingATargets.right(i);
 
             if (existingBTarget == bTarget) {
                 String labelOfExisting = existingATargets.left(i).label;

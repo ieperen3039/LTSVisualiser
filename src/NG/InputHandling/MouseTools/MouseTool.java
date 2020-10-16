@@ -5,6 +5,8 @@ import NG.Core.Main;
 import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.Graph.Graph;
+import NG.Graph.State;
+import NG.Graph.Transition;
 import NG.InputHandling.MouseListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseScrollListener;
@@ -50,9 +52,9 @@ public abstract class MouseTool implements MouseListener {
         releaseListener = camera;
     }
 
-    public abstract void onNodeClick(int button, Graph graph, NG.Graph.Rendering.NodeMesh.Node node);
+    public abstract void onNodeClick(int button, Graph graph, State node);
 
-    public abstract void onEdgeClick(int button, Graph graph, NG.Graph.Rendering.EdgeMesh.Edge edge);
+    public abstract void onEdgeClick(int button, Graph graph, Transition edge);
 
     @Override
     public void onRelease(int button, int xSc, int ySc) {

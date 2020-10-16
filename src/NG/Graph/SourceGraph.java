@@ -4,6 +4,7 @@ import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
+import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 
 import java.util.Arrays;
@@ -15,11 +16,11 @@ import java.util.Map;
  * @author Geert van Ieperen created on 20-7-2020.
  */
 public class SourceGraph extends Graph {
-    public final NodeMesh.Node[] nodes;
-    public final EdgeMesh.Edge[] edges;
+    public final State[] nodes;
+    public final Transition[] edges;
     public final String[] actionLabels;
     // maps nodes to their neighbours
-    public final Map<NodeMesh.Node, PairList<EdgeMesh.Edge, NodeMesh.Node>> mapping;
+    public final Map<State, PairList<Transition, State>> mapping;
 
     private final NodeMesh nodeMesh;
     private final EdgeMesh edgeMesh;
@@ -33,8 +34,8 @@ public class SourceGraph extends Graph {
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
 
-        this.nodes = new NodeMesh.Node[numStates];
-        this.edges = new EdgeMesh.Edge[numTransitions];
+        this.nodes = new State[numStates];
+        this.edges = new Transition[numTransitions];
         this.actionLabels = new String[numTransitions];
     }
 
@@ -52,10 +53,10 @@ public class SourceGraph extends Graph {
         }
 
         // set positions to graph
-        for (NodeMesh.Node node : nodes) {
+        for (State node : nodes) {
             getNodeMesh().addParticle(node);
         }
-        for (EdgeMesh.Edge edge : edges) {
+        for (Transition edge : edges) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
@@ -64,7 +65,7 @@ public class SourceGraph extends Graph {
     }
 
     @Override
-    public PairList<EdgeMesh.Edge, NodeMesh.Node> connectionsOf(NodeMesh.Node node) {
+    public PairList<Transition, State> connectionsOf(State node) {
         return mapping.getOrDefault(node, PairList.empty());
     }
 
@@ -90,7 +91,7 @@ public class SourceGraph extends Graph {
     }
 
     @Override
-    public NodeMesh.Node getInitialState() {
+    public State getInitialState() {
         if (nodes.length == 0) return null;
         return nodes[initialState];
     }

@@ -1,12 +1,11 @@
 package NG.Graph.Rendering;
 
 import NG.DataStructures.Generic.Color4f;
-import NG.Graph.GraphElement;
+import NG.Graph.State;
+import NG.Graph.Transition;
 import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.SGL;
 import NG.Tools.Toolbox;
-import org.joml.Vector3f;
-import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -24,7 +23,7 @@ import static org.lwjgl.opengl.GL30.*;
  */
 public class EdgeMesh implements Mesh {
     public static final Color4f BASE_COLOR = new Color4f(0, 0, 0, 0.5f);
-    private final List<Edge> bulk = new ArrayList<>();
+    private final List<Transition> bulk = new ArrayList<>();
     private int vaoId = -1;
     private int aPositionVBO;
     private int handlePositionVBO;
@@ -34,11 +33,11 @@ public class EdgeMesh implements Mesh {
     private int nrOfParticles = 0;
     private boolean doReload = false;
 
-    public void addParticle(NodeMesh.Node a, NodeMesh.Node b, String label) {
-        addParticle(new Edge(a, b, label));
+    public void addParticle(State a, State b, String label) {
+        addParticle(new Transition(a, b, label));
     }
 
-    public void addParticle(Edge p) {
+    public void addParticle(Transition p) {
         bulk.add(p);
     }
 
@@ -113,7 +112,7 @@ public class EdgeMesh implements Mesh {
         doReload = true;
     }
 
-    public List<Edge> edgeList() {
+    public List<Transition> edgeList() {
         return bulk;
     }
 
@@ -154,11 +153,11 @@ public class EdgeMesh implements Mesh {
     }
 
     private static void put(
-            List<Edge> bulk, FloatBuffer aPosBuffer, FloatBuffer handleBuffer, FloatBuffer bPosBuffer,
+            List<Transition> bulk, FloatBuffer aPosBuffer, FloatBuffer handleBuffer, FloatBuffer bPosBuffer,
             FloatBuffer colorBuffer
     ) {
         for (int i = 0; i < bulk.size(); i++) {
-            Edge p = bulk.get(i);
+            Transition p = bulk.get(i);
 
             p.fromPosition.get(i * 3, aPosBuffer);
             p.handlePos.get(i * 3, handleBuffer);
@@ -178,28 +177,4 @@ public class EdgeMesh implements Mesh {
         return vboID;
     }
 
-    public static class Edge extends GraphElement {
-        public final NodeMesh.Node from;
-        public final NodeMesh.Node to;
-        public String label;
-
-        public final Vector3fc fromPosition;
-        public final Vector3fc toPosition;
-        public final Vector3f handlePos;
-
-        public Edge(NodeMesh.Node from, NodeMesh.Node to, String label) {
-            this.from = from;
-            this.to = to;
-            this.fromPosition = from.position;
-            this.toPosition = to.position;
-            this.handlePos = new Vector3f(fromPosition).lerp(toPosition, 0.5f);
-            this.label = label;
-            colors.add(GraphElement.Priority.BASE, BASE_COLOR);
-        }
-
-        @Override
-        public String toString() {
-            return "Action " + label;
-        }
-    }
 }

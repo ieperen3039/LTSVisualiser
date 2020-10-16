@@ -9,9 +9,9 @@ import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
 import NG.Graph.*;
-import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.EdgeShader;
-import NG.Graph.Rendering.NodeMesh;
+import NG.Graph.Rendering.GraphComparator;
+import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
@@ -307,8 +307,8 @@ public class Main {
     public void applyFileMarkings(File file) {
         try (Scanner scanner = new Scanner(file)) {
             synchronized (graphLock) {
-                NodeMesh.Node[] nodes = graph.nodes;
-                for (NodeMesh.Node node : nodes) {
+                State[] nodes = graph.nodes;
+                for (State node : nodes) {
                     node.classIndex = -1;
                 }
 
@@ -343,11 +343,11 @@ public class Main {
         return markedActionLabels;
     }
 
-    public List<EdgeMesh.Edge> getMarkedEdges() {
+    public List<Transition> getMarkedEdges() {
         Collection<String> markedActionLabels = getMarkedLabels();
 
-        List<EdgeMesh.Edge> markedEdges = new ArrayList<>();
-        for (EdgeMesh.Edge edge : graph.getEdgeMesh().edgeList()) {
+        List<Transition> markedEdges = new ArrayList<>();
+        for (Transition edge : graph.getEdgeMesh().edgeList()) {
             if (markedActionLabels.contains(edge.label)) {
                 markedEdges.add(edge);
             }
@@ -408,11 +408,11 @@ public class Main {
                     camera.getFocus(),
                     camera.getUpVector()
             );
-            for (NodeMesh.Node node : graph.getNodeMesh().nodeList()) {
+            for (State node : graph.getNodeMesh().nodeList()) {
                 node.position.mulPosition(viewMatrix);
                 node.position.z = 0;
             }
-            for (EdgeMesh.Edge edge : graph.getEdgeMesh().edgeList()) {
+            for (Transition edge : graph.getEdgeMesh().edgeList()) {
                 edge.handlePos.mulPosition(viewMatrix);
                 edge.handlePos.z = 0;
             }
@@ -427,7 +427,7 @@ public class Main {
             camera = new PointCenteredCamera(camera.getFocus(), camera.getEye());
             camera.init(this);
 
-            for (NodeMesh.Node node : graph.getNodeMesh().nodeList()) {
+            for (State node : graph.getNodeMesh().nodeList()) {
                 node.position.z += Toolbox.randomBetween(-1, 1);
             }
         }

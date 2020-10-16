@@ -1,11 +1,9 @@
 package NG.Graph.Rendering;
 
-import NG.DataStructures.Generic.Color4f;
-import NG.Graph.GraphElement;
+import NG.Graph.State;
 import NG.Rendering.MeshLoading.Mesh;
 import NG.Rendering.Shaders.SGL;
 import NG.Tools.Toolbox;
-import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
 
@@ -28,7 +26,7 @@ public class NodeMesh implements Mesh {
     private int colorVboID;
 
     private boolean isLoaded = false;
-    private final List<Node> bulk = new ArrayList<>();
+    private final List<State> bulk = new ArrayList<>();
     private int nrOfParticles = 0;
     private boolean doReload = false;
 
@@ -38,10 +36,10 @@ public class NodeMesh implements Mesh {
      * @param classIndex
      */
     public void addParticle(Vector3fc position, String label, int classIndex) {
-        addParticle(new Node(position, label, classIndex));
+        addParticle(new State(position, label, classIndex));
     }
 
-    public void addParticle(Node p) {
+    public void addParticle(State p) {
         bulk.add(p);
     }
 
@@ -96,7 +94,7 @@ public class NodeMesh implements Mesh {
         doReload = true;
     }
 
-    public List<Node> nodeList() {
+    public List<State> nodeList() {
         return bulk;
     }
 
@@ -133,9 +131,9 @@ public class NodeMesh implements Mesh {
         Toolbox.checkGLError(toString());
     }
 
-    private static void put(List<Node> bulk, FloatBuffer positionBuffer, FloatBuffer colorBuffer) {
+    private static void put(List<State> bulk, FloatBuffer positionBuffer, FloatBuffer colorBuffer) {
         for (int i = 0; i < bulk.size(); i++) {
-            Node p = bulk.get(i);
+            State p = bulk.get(i);
 
             p.position.get(i * 3, positionBuffer);
             p.getColor().put(colorBuffer);
@@ -152,33 +150,4 @@ public class NodeMesh implements Mesh {
         return vboID;
     }
 
-    public static class Node extends GraphElement {
-        public static final Color4f BASE_COLOR = Color4f.WHITE;
-
-        public final Vector3f position;
-        public String label; // the node label, if any
-        public int classIndex;
-
-        public boolean isFixed = false;
-        public boolean stayFixed = false;
-
-        public Node(Vector3fc position, String label, int classIndex) {
-            this.position = new Vector3f(position);
-            this.label = label;
-            this.classIndex = classIndex;
-            colors.add(GraphElement.Priority.BASE, BASE_COLOR);
-        }
-
-        public Node(Node other, String newLabel) {
-            this.position = other.position;
-            this.label = newLabel;
-            this.classIndex = other.classIndex;
-            colors.add(GraphElement.Priority.BASE, BASE_COLOR);
-        }
-
-        @Override
-        public String toString() {
-            return "Node " + label;
-        }
-    }
 }

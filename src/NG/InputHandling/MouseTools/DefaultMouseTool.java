@@ -2,8 +2,8 @@ package NG.InputHandling.MouseTools;
 
 import NG.Core.Main;
 import NG.Graph.Graph;
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
+import NG.Graph.State;
+import NG.Graph.Transition;
 import NG.Tools.Logger;
 
 /**
@@ -24,12 +24,12 @@ public class DefaultMouseTool extends MouseTool {
     }
 
     @Override
-    public void onNodeClick(int button, Graph graph, NodeMesh.Node node) {
+    public void onNodeClick(int button, Graph graph, State node) {
         Logger.DEBUG.print(node);
     }
 
     @Override
-    public void onEdgeClick(int button, Graph graph, EdgeMesh.Edge edge) {
+    public void onEdgeClick(int button, Graph graph, Transition edge) {
         Logger.DEBUG.print(edge);
     }
 

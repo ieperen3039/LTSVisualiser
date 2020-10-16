@@ -4,8 +4,6 @@ import NG.Core.AbstractGameLoop;
 import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.DataStructures.Generic.PairList;
-import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.NodeMesh;
 import NG.Tools.TimeObserver;
 import NG.Tools.Vectors;
 import org.joml.Math;
@@ -61,8 +59,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         if (speed == 0) return;
         timer.startNewLoop();
 
-        List<NodeMesh.Node> nodes = graph.getNodeMesh().nodeList();
-        List<EdgeMesh.Edge> edges = graph.getEdgeMesh().edgeList();
+        List<NG.Graph.State> nodes = graph.getNodeMesh().nodeList();
+        List<Transition> edges = graph.getEdgeMesh().edgeList();
 
         BarnesHutTree barnesTree;
         if (barnesHutTheta > 0) {
@@ -72,7 +70,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             barnesTree.setMaxDepth(13);
             barnesTree.setMaxTheta(barnesHutTheta);
 
-            for (NodeMesh.Node node : nodes) {
+            for (NG.Graph.State node : nodes) {
                 barnesTree.add(node.position);
             }
             timer.endTiming("Barnes-Hut setup");
@@ -83,7 +81,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         int batchSize = (nodes.size() / numThreads) + 1;
         List<Future<Vector3f[]>> futureResults = new ArrayList<>();
-        Map<NodeMesh.Node, Vector3f> nodeForces = new HashMap<>();
+        Map<NG.Graph.State, Vector3f> nodeForces = new HashMap<>();
 
         // start node repulsion computations
         timer.startTiming("node repulsion scheduling");
@@ -103,17 +101,17 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         timer.endTiming("node repulsion scheduling");
         timer.startTiming("node attraction computation");
         // node edge attraction
-        for (EdgeMesh.Edge edge : edges) {
+        for (Transition edge : edges) {
             computeNodeAttractionForces(nodeForces, edge);
         }
 
         timer.endTiming("node attraction computation");
         timer.startTiming("edge handle computation");
 
-        Map<EdgeMesh.Edge, Vector3f> edgeHandleForces = new HashMap<>();
+        Map<Transition, Vector3f> edgeHandleForces = new HashMap<>();
 
         // linear-time edge handle centering and self-loop spacing
-        for (EdgeMesh.Edge edge : edges) {
+        for (Transition edge : edges) {
             Vector3f force;
 
             if (edge.from == edge.to) {
@@ -134,15 +132,15 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         if (edgeRepulsion != 0) {
             // quadratic-time edge handle repulsion
-            for (NodeMesh.Node node : nodes) {
-                PairList<EdgeMesh.Edge, NodeMesh.Node> neighbours = graph.connectionsOf(node);
+            for (NG.Graph.State node : nodes) {
+                PairList<Transition, NG.Graph.State> neighbours = graph.connectionsOf(node);
                 assert neighbours != null : node;
 
                 for (int i = 0; i < neighbours.size(); i++) {
-                    EdgeMesh.Edge a = neighbours.left(i);
+                    Transition a = neighbours.left(i);
 
                     for (int j = i + 1; j < neighbours.size(); j++) {
-                        EdgeMesh.Edge b = neighbours.left(j);
+                        Transition b = neighbours.left(j);
 
                         Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
 
@@ -167,7 +165,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
             for (int j = 0; j < batch.length; j++) {
                 assert !Vectors.isNaN(batch[j]) : Arrays.toString(batch);
-                NodeMesh.Node node = nodes.get(i + j);
+                NG.Graph.State node = nodes.get(i + j);
                 Vector3f nodeForce = nodeForces.computeIfAbsent(node, k -> new Vector3f());
                 nodeForce.add(batch[j]);
             }
@@ -178,7 +176,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         timer.startTiming("position update");
 
         // apply forces
-        for (EdgeMesh.Edge edge : edges) {
+        for (Transition edge : edges) {
             Vector3f force = edgeHandleForces.get(edge);
 
             // also include forces of the parent nodes to have edges move along with the parents
@@ -202,7 +200,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             assert !Vectors.isNaN(edge.handlePos) : movement;
         }
 
-        for (NodeMesh.Node node : nodes) {
+        for (NG.Graph.State node : nodes) {
             if (node.isFixed) continue;
 
             Vector3f force = nodeForces.get(node);
@@ -227,19 +225,19 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     private Vector3f[] computeRepulsions(
-            List<NodeMesh.Node> nodes, int startIndex, int endIndex, BarnesHutTree optionalBarnes
+            List<NG.Graph.State> nodes, int startIndex, int endIndex, BarnesHutTree optionalBarnes
     ) {
         int nrOfNodes = endIndex - startIndex;
         Vector3f[] forces = new Vector3f[nrOfNodes];
 
         for (int i = 0; i < nrOfNodes; i++) {
-            NodeMesh.Node node = nodes.get(startIndex + i);
+            NG.Graph.State node = nodes.get(startIndex + i);
 
             if (optionalBarnes == null) {
                 // naive implementation
                 forces[i] = new Vector3f();
 
-                for (NodeMesh.Node other : nodes) {
+                for (NG.Graph.State other : nodes) {
                     if (node == other) continue;
                     Vector3f otherToThis = getRepulsion(node.position, other.position, natLength, repulsion);
                     forces[i].add(otherToThis);
@@ -256,7 +254,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         return forces;
     }
 
-    private void computeNodeAttractionForces(Map<NodeMesh.Node, Vector3f> nodeForces, EdgeMesh.Edge edge) {
+    private void computeNodeAttractionForces(Map<NG.Graph.State, Vector3f> nodeForces, Transition edge) {
         Vector3f aForce = nodeForces.computeIfAbsent(edge.from, node -> new Vector3f());
         Vector3f bForce = nodeForces.computeIfAbsent(edge.to, node -> new Vector3f());
 
