@@ -58,7 +58,7 @@ public class EdgeMesh implements Mesh {
             aPositionVBO = loadToGL(aPosBuffer, 0, 3, GL_STREAM_DRAW); // position of start side of edge
             handlePositionVBO = loadToGL(handleBuffer, 1, 3, GL_STREAM_DRAW); // position of handle of edge
             bPositionVBO = loadToGL(bPosBuffer, 2, 3, GL_STREAM_DRAW); // position of end side of edge
-            colorVBO = loadToGL(colorBuffer, 3, 4, GL_DYNAMIC_DRAW); // color of edge
+            colorVBO = loadToGL(colorBuffer, 3, 4, GL_STREAM_DRAW); // color of edge
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -96,7 +96,7 @@ public class EdgeMesh implements Mesh {
             glBufferData(GL_ARRAY_BUFFER, bPosBuffer, GL_STREAM_DRAW);
 
             glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STREAM_DRAW);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 

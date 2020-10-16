@@ -12,9 +12,10 @@ import static NG.Graph.Rendering.GraphElement.Priority.BASE;
  */
 public abstract class GraphElement {
     protected final PairList<Priority, Color4f> colors = new PairList<>();
+    public Color4f border = Color4f.BLACK;
 
     public enum Priority {
-        MAXIMUM, HOVER, USER_COLOR, MU_FORMULA, PATH, IGNORE, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, INITIAL_STATE, BASE
+        MAXIMUM, HOVER, USER_COLOR, MU_FORMULA, PATH, IGNORE, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, BASE
     }
 
     public Color4f getColor() {

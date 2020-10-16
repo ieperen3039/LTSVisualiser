@@ -41,10 +41,10 @@ public class Menu extends SDecorator {
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
 
     private static final PairList<String, Color4f> paintColors = new PairList.Builder<String, Color4f>()
-            .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
-            .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
-            .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
-            .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
+            .add("Red", Color4f.rgb(200, 25, 25))
+            .add("Green", Color4f.rgb(4, 120, 13))
+            .add("Orange", Color4f.rgb(220, 105, 20))
+            .add("Purple", Color4f.rgb(200, 20, 160))
             .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
             .get();
 

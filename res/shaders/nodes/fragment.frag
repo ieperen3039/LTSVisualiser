@@ -1,11 +1,12 @@
 #version 330
 
-const float THICKNESS = 0.10f;
+const float THICKNESS = 0.15f;
 
 uniform bool doUniqueColor;
 
 smooth in float distanceFromMiddle;
 in vec4 fragColor;
+in vec4 fragBorder;
 
 out vec4 outputColor;
 
@@ -15,7 +16,6 @@ void main()
         outputColor = fragColor;
 
     } else {
-        // black
-        outputColor = vec4(0.0, 0.0, 0.0, 0.5 + 0.5 * fragColor.a);
+        outputColor = fragBorder;
     }
 }

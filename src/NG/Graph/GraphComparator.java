@@ -1,5 +1,6 @@
 package NG.Graph;
 
+import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
@@ -42,7 +43,7 @@ public class GraphComparator extends Graph {
         findMatching(a, a.getInitialState(), b, b.getInitialState(), similarityMap);
 
         this.initialState = new State(a.getInitialState().position, "initial", 0, 0);
-        initialState.addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
+        initialState.border = Main.INITAL_STATE_COLOR;
         nodeMesh.addNode(initialState);
 
         addMatching(initialState, a, a.getInitialState(), b, b.getInitialState(), similarityMap, new HashMap<>());

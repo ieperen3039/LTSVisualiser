@@ -15,6 +15,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static NG.Core.Main.INITAL_STATE_COLOR;
+
 /**
  * @author Geert van Ieperen created on 20-7-2020.
  */
@@ -61,13 +63,31 @@ public class SourceGraph extends Graph {
         // set positions to graph
         for (State node : states) {
             getNodeMesh().addNode(node);
+
+            if (isDeadlocked(node)) {
+                node.border = Color4f.RED;
+            }
         }
         for (Transition edge : edges) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
 
-        getInitialState().addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
+        State initialState = getInitialState();
+        initialState.addColor(INITAL_STATE_COLOR, GraphElement.Priority.BASE);
+        initialState.border = INITAL_STATE_COLOR;
+    }
+
+    public boolean isDeadlocked(State node) {
+        PairList<Transition, State> pairs = mapping.get(node);
+
+        for (int i = 0; i < pairs.size(); i++) {
+            if (pairs.left(i).from == pairs.right(i)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override

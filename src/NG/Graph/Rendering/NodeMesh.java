@@ -23,6 +23,7 @@ public class NodeMesh implements Mesh {
     private int vaoId = -1;
     private int posMidVboID;
     private int colorVboID;
+    private int borderVboID;
 
     private boolean isLoaded = false;
     private final List<State> bulk = new ArrayList<>();
@@ -38,7 +39,8 @@ public class NodeMesh implements Mesh {
 
         FloatBuffer positionBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
         FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
-        put(bulk, positionBuffer, colorBuffer);
+        FloatBuffer borderBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+        put(bulk, positionBuffer, colorBuffer, borderBuffer);
 
         try {
             vaoId = glGenVertexArrays();
@@ -46,6 +48,7 @@ public class NodeMesh implements Mesh {
 
             posMidVboID = loadToGL(positionBuffer, 0, 3, GL_STREAM_DRAW);
             colorVboID = loadToGL(colorBuffer, 1, 4, GL_STREAM_DRAW);
+            borderVboID = loadToGL(borderBuffer, 2, 4, GL_STREAM_DRAW);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -54,6 +57,7 @@ public class NodeMesh implements Mesh {
         } finally {
             MemoryUtil.memFree(positionBuffer);
             MemoryUtil.memFree(colorBuffer);
+            MemoryUtil.memFree(borderBuffer);
         }
 
         Toolbox.checkGLError(toString());
@@ -62,8 +66,9 @@ public class NodeMesh implements Mesh {
     private void reload() {
         FloatBuffer positionBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
         FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+        FloatBuffer borderBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
 
-        put(bulk, positionBuffer, colorBuffer);
+        put(bulk, positionBuffer, colorBuffer, borderBuffer);
 
         try {
             glBindBuffer(GL_ARRAY_BUFFER, posMidVboID);
@@ -72,11 +77,15 @@ public class NodeMesh implements Mesh {
             glBindBuffer(GL_ARRAY_BUFFER, colorVboID);
             glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STREAM_DRAW);
 
+            glBindBuffer(GL_ARRAY_BUFFER, borderVboID);
+            glBufferData(GL_ARRAY_BUFFER, borderBuffer, GL_STREAM_DRAW);
+
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         } finally {
             MemoryUtil.memFree(positionBuffer);
             MemoryUtil.memFree(colorBuffer);
+            MemoryUtil.memFree(borderBuffer);
         }
     }
 
@@ -98,13 +107,15 @@ public class NodeMesh implements Mesh {
         } else if (doReload) reload();
 
         glBindVertexArray(vaoId);
-        glEnableVertexAttribArray(0); // Position of triangle middle VBO
-        glEnableVertexAttribArray(1); // Position of triangle middle VBO
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
 
         glDrawArrays(GL_POINTS, 0, nrOfParticles);
 
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);
         glBindVertexArray(0);
     }
 
@@ -112,7 +123,7 @@ public class NodeMesh implements Mesh {
         if (!isLoaded) return;
         // Delete the VBOs
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDeleteBuffers(new int[]{posMidVboID, colorVboID});
+        glDeleteBuffers(new int[]{posMidVboID, colorVboID, borderVboID});
 
         // Delete the VAO
         glBindVertexArray(0);
@@ -121,14 +132,18 @@ public class NodeMesh implements Mesh {
         Toolbox.checkGLError(toString());
     }
 
-    private static void put(List<State> bulk, FloatBuffer positionBuffer, FloatBuffer colorBuffer) {
+    private static void put(
+            List<State> bulk, FloatBuffer positionBuffer, FloatBuffer colorBuffer, FloatBuffer borderBuffer
+    ) {
         for (int i = 0; i < bulk.size(); i++) {
             State p = bulk.get(i);
 
             p.position.get(i * 3, positionBuffer);
             p.getColor().put(colorBuffer);
+            p.border.put(borderBuffer);
         }
         colorBuffer.flip();
+        borderBuffer.flip();
     }
 
     private static int loadToGL(FloatBuffer buffer, int index, int itemSize, int usage) {

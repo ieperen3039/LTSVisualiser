@@ -50,6 +50,7 @@ public class Main {
     public static final Color4f HOVER_COLOR = Color4f.rgb(44, 58, 190); // blue
     public static final Color4f PATH_COLOR = Color4f.rgb(200, 83, 0); // orange
     public static final Color4f MU_FORMULA_COLOR = Color4f.rgb(255, 0, 255); // purple-pink
+    public static final Color4f INITAL_STATE_COLOR = Color4f.rgb(4, 120, 13);
 
     private static final Version VERSION = new Version(0, 2);
     private static final Pattern PATTERN_COMMA = Pattern.compile(",");
@@ -498,18 +499,23 @@ public class Main {
 
     public void applyMuFormulaMarking(File file) {
         try {
+            for (State state : graph.states) {
+                state.resetColor(MU_FORMULA);
+            }
             FormulaParser formulaParser = new FormulaParser(file);
             ModelChecker modelChecker = new ModelChecker(graph, formulaParser);
             Logger.DEBUG.print(formulaParser);
 
-            new Thread(() -> {
+            Thread thread = new Thread(() -> {
                 StateSet result = modelChecker.call();
                 Logger.INFO.printf("Formula holds for %d states", result.size());
                 for (State state : result) {
                     state.addColor(MU_FORMULA_COLOR, MU_FORMULA);
                 }
                 graph.getNodeMesh().scheduleReload();
-            }).start();
+            });
+            thread.setDaemon(true);
+            thread.start();
 
         } catch (FileNotFoundException e) {
             Logger.ERROR.print(e);

@@ -1,13 +1,13 @@
 package NG.Graph;
 
-import NG.DataStructures.Generic.Color4f;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
-import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 import org.joml.Vector3f;
 
 import java.util.*;
+
+import static NG.Core.Main.INITAL_STATE_COLOR;
 
 /**
  * @author Geert van Ieperen created on 5-8-2020.
@@ -73,7 +73,7 @@ public class NodeClustering extends Graph {
 
             if (node == sourceGraph.getInitialState()) {
                 clusterInitialState = clusterNode;
-                clusterNode.addColor(Color4f.GREEN, GraphElement.Priority.INITIAL_STATE);
+                clusterNode.border = INITAL_STATE_COLOR;
             }
 
             // we create a new cluster if necessary, and add this node

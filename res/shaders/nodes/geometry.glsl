@@ -4,14 +4,14 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = 35) out;
 
-in vec4[1] geoMiddle;// view position of middle
-in vec4[1] geoColor;// color
+in vec4[1] geoMiddle;// viewProjection position of middle
+in vec4[1] geoColor;
+in vec4[] geoBorder;
 in int[1] geoID;
 
 smooth out float distanceFromMiddle;
 out vec4 fragColor;
-
-vec4 color;
+out vec4 fragBorder;
 
 uniform mat4 projectionMatrix;
 uniform float nodeRadius;
@@ -37,6 +37,9 @@ vec2(-0.707, 0.707),
 vec2(-0.383, 0.924)
 };
 
+vec4 color;
+vec4 border;
+
 vec4 numberToColor(int i) {
     int bitSize = (1 << 6);
     int r = (i % bitSize) << 2;
@@ -49,7 +52,8 @@ vec4 numberToColor(int i) {
 void emitMiddle(){
     distanceFromMiddle = 0;
     gl_Position = geoMiddle[0];
-    fragColor = color;;
+    fragColor = color;
+    fragBorder = border;
     EmitVertex();
 }
 
@@ -57,11 +61,19 @@ void emitOffset(vec2 offset){
     distanceFromMiddle = 1;
     gl_Position = geoMiddle[0] + projectionMatrix * vec4(offset * nodeRadius, 0.0, 0.0);
     fragColor = color;
+    fragBorder = border;
     EmitVertex();
 }
 
 void main() {
-    color = doUniqueColor ? numberToColor(geoID) : geoColor[0];
+    if (doUniqueColor){
+        color = numberToColor(geoID);
+        border = color;
+
+    } else {
+        color = geoColor[0];
+        border = geoBorder[0];
+    }
 
     for (int i = 0; i < nrOfOffsets; i++){
         emitOffset(offsets[i]);
