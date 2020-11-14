@@ -39,7 +39,7 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
      * @param initialState the initial state of the button. If true, the button will be enabled
      */
     public SToggleButton(String text, int minWidth, int minHeight, boolean initialState) {
-        super(text, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER, minWidth, minHeight);
+        super(text, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_MIDDLE, minWidth, minHeight);
         this.state = initialState;
         this.isPressed = initialState;
     }
@@ -73,7 +73,7 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
     }
 
     @Override
-    public void onRelease(int button, int xSc, int ySc) {
+    public void onRelease(int button) {
         setActive(!state);
     }
 

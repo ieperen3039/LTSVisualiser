@@ -102,6 +102,7 @@ public abstract class SComponent {
         return this;
     }
 
+    /** @see #contains(int, int) */
     public boolean contains(Vector2i v) {
         return contains(v.x, v.y);
     }
@@ -144,7 +145,7 @@ public abstract class SComponent {
      * @param height the preferred height
      * @return this
      */
-    public final SComponent setSize(int width, int height) {
+    public SComponent setSize(int width, int height) {
         width = Math.max(width, minWidth());
         height = Math.max(height, minHeight());
 

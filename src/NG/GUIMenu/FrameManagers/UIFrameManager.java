@@ -34,7 +34,7 @@ public interface UIFrameManager
         frame.validateLayout();
 
         int x = 50;
-        int y = 50;
+        int y = 200;
 
         SComponent component = getComponentAt(x, y);
         while (component != null) {
@@ -129,4 +129,5 @@ public interface UIFrameManager
      */
     void clear();
 
+    void onScroll(float value);
 }

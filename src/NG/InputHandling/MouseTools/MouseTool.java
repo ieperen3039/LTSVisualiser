@@ -2,14 +2,12 @@ package NG.InputHandling.MouseTools;
 
 import NG.Camera.Camera;
 import NG.Core.Main;
-import NG.GUIMenu.Components.SComponent;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.Graph.Graph;
 import NG.Graph.State;
 import NG.Graph.Transition;
 import NG.InputHandling.MouseListener;
 import NG.InputHandling.MouseReleaseListener;
-import NG.InputHandling.MouseScrollListener;
 import org.joml.Vector2i;
 
 /**
@@ -57,10 +55,10 @@ public abstract class MouseTool implements MouseListener {
     public abstract void onEdgeClick(int button, Graph graph, Transition edge);
 
     @Override
-    public void onRelease(int button, int xSc, int ySc) {
+    public void onRelease(int button) {
         // this prevents the case when a mouse-down caused a mouse tool switch
         if (releaseListener != null) {
-            releaseListener.onRelease(button, xSc, ySc);
+            releaseListener.onRelease(button);
             releaseListener = null;
         }
     }
@@ -70,14 +68,8 @@ public abstract class MouseTool implements MouseListener {
         Vector2i pos = root.window().getMousePosition();
         UIFrameManager gui = root.gui();
 
-        SComponent component = gui.getComponentAt(pos.x, pos.y);
-
-        if (component != null) {
-            if (component instanceof MouseScrollListener) {
-                MouseScrollListener listener = (MouseScrollListener) component;
-                listener.onScroll(value);
-            }
-
+        if (gui.covers(pos.x, pos.y)) {
+            gui.onScroll(value);
             return;
         }
 
@@ -91,12 +83,12 @@ public abstract class MouseTool implements MouseListener {
     }
 
     @Override
-    public final void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
-        root.gui().mouseMoved(xDelta, yDelta, xPos, yPos);
+    public final void onMouseMove(int xDelta, int yDelta, float xPos, float yPos) {
+        root.gui().onMouseMove(xDelta, yDelta, xPos, yPos);
         if (root.gui().covers((int) xPos, (int) yPos)) return;
 
-        root.camera().mouseMoved(xDelta, yDelta, xPos, yPos);
-        root.getVisibleGraph().mouseMoved(xDelta, yDelta, xPos, yPos);
+        root.camera().onMouseMove(xDelta, yDelta, xPos, yPos);
+        root.getVisibleGraph().onMouseMove(xDelta, yDelta, xPos, yPos);
     }
 
     /**

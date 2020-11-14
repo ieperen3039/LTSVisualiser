@@ -12,7 +12,7 @@ public class SComponentProperties {
     public boolean wantHzGrow = true;
     public boolean wantVtGrow = true;
     public NGFonts.TextType textType = NGFonts.TextType.REGULAR;
-    public SFrameLookAndFeel.Alignment alignment = SFrameLookAndFeel.Alignment.CENTER;
+    public SFrameLookAndFeel.Alignment alignment = SFrameLookAndFeel.Alignment.CENTER_MIDDLE;
 
     public SComponentProperties() {
     }

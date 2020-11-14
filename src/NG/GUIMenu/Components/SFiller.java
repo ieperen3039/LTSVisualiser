@@ -20,6 +20,18 @@ public class SFiller extends SComponent {
         this(0, 0);
     }
 
+    public static SFiller horizontal() {
+        SFiller f = new SFiller();
+        f.setGrowthPolicy(true, false);
+        return f;
+    }
+
+    public static SFiller vertical() {
+        SFiller f = new SFiller();
+        f.setGrowthPolicy(false, true);
+        return f;
+    }
+
     @Override
     public int minWidth() {
         return minWidth;

@@ -56,14 +56,14 @@ public class FlatCamera implements Camera {
     }
 
     @Override
-    public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
+    public void onMouseMove(int xDelta, int yDelta, float xPos, float yPos) {
         if (!isHeld) return;
 
         focus.add(xDelta * xMoveScalar, yDelta * yMoveScalar, 0);
     }
 
     @Override
-    public void onRelease(int button, int xSc, int ySc) {
+    public void onRelease(int button) {
         isHeld = false;
     }
 

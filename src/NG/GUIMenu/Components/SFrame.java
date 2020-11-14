@@ -1,9 +1,7 @@
 package NG.GUIMenu.Components;
 
-import NG.GUIMenu.LayoutManagers.GridLayoutManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
-import NG.Tools.Logger;
 import org.joml.Vector2i;
 import org.joml.Vector2ic;
 
@@ -12,13 +10,14 @@ import org.joml.Vector2ic;
  * control over the contents of the SFrame.
  * @author Geert van Ieperen. Created on 20-9-2018.
  */
-public class SFrame extends SPanel {
+public class SFrame extends SDecorator {
     public static final int FRAME_TITLE_BAR_SIZE = 50;
 
     private final String title;
-    private final STextArea titleComponent;
-    private final SContainer bodyComponent;
     private boolean isDisposed = false;
+
+    private final SContainer bodyComponent;
+    private STextArea titleComponent;
 
     /**
      * Creates a SFrame with the given title, width and height
@@ -36,30 +35,32 @@ public class SFrame extends SPanel {
      * @see SPanel
      */
     public SFrame(String title, int width, int height, boolean manipulable) {
-        super(new GridLayoutManager(1, 2));
-        setGrowthPolicy(false, false);
+        super(
+                new SPanel(1, 2, true, true)
+        );
         this.title = title;
 
+        SComponent upperBar;
         if (manipulable) {
-            SExtendedTextArea titleComponent = new SExtendedTextArea(
+            STextArea text = new STextArea(
                     title, 0, FRAME_TITLE_BAR_SIZE, true,
-                    NGFonts.TextType.TITLE, SFrameLookAndFeel.Alignment.CENTER
+                    NGFonts.TextType.TITLE, SFrameLookAndFeel.Alignment.CENTER_MIDDLE
             );
-            this.titleComponent = titleComponent;
-            titleComponent.setDragListener((dx, dy, x, y) -> addToPosition(dx, dy));
-            titleComponent.setClickListener((x, y, b) -> Logger.DEBUG.print(minWidth(), getSize()));
+            titleComponent = text;
 
-            SContainer titleBar = SContainer.row(
-                    titleComponent, new SCloseButton(this)
-            );
-            add(new SPanel(titleBar), new Vector2i(0, 0));
+            upperBar = new SListeners.DragListener(
+                    new SPanel(SContainer.row(
+                            text, new SCloseButton(this)
+                    ))
+            ).setDragListener((dx, dy, x, y) -> addToPosition(dx, dy));
 
         } else {
             titleComponent = new STextArea(title, FRAME_TITLE_BAR_SIZE, 0, true, NGFonts.TextType.TITLE, SFrameLookAndFeel.Alignment.CENTER_TOP);
-            add(new SPanel(titleComponent), new Vector2i(0, 0));
+            upperBar = new SPanel(titleComponent);
         }
-
         bodyComponent = SContainer.singleton(new SFiller());
+
+        add(upperBar, new Vector2i(0, 0));
         add(bodyComponent, new Vector2i(0, 1));
 
         setSize(width, height);
@@ -85,13 +86,26 @@ public class SFrame extends SPanel {
         titleComponent.setText(title);
     }
 
+    private SPanel makeUpperBar(String frameTitle) {
+        SExtendedTextArea title = new SExtendedTextArea(
+                frameTitle, 0, FRAME_TITLE_BAR_SIZE, true,
+                NGFonts.TextType.TITLE, SFrameLookAndFeel.Alignment.CENTER_MIDDLE
+        );
+        titleComponent = title;
+        title.setDragListener((dx, dy, x, y) -> addToPosition(dx, dy));
+
+        return new SPanel(SContainer.row(
+                title, new SCloseButton(this)
+        ));
+    }
+
     /**
      * sets the area below the title bar to contain the given component. The size of this component is determined by
      * this frame.
      * @param comp the new middle component
      * @return this
      */
-    public SFrame setMainPanel(SComponent comp) {
+    public SDecorator setMainPanel(SComponent comp) {
         bodyComponent.add(comp, null);
         invalidateLayout();
         return this;
@@ -107,12 +121,19 @@ public class SFrame extends SPanel {
     @Override
     public void draw(SFrameLookAndFeel design, Vector2ic screenPosition) {
         if (!isVisible()) return;
+        validateLayout();
+        design.draw(SFrameLookAndFeel.UIComponent.PANEL, screenPosition, getSize());
         super.draw(design, screenPosition);
     }
 
     @Override
     public String toString() {
         return "SFrame (" + title + ")";
+    }
+
+    @Override
+    public Vector2i getScreenPosition() {
+        return new Vector2i(getPosition());
     }
 
     /**

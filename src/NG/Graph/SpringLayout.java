@@ -255,6 +255,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     private void computeNodeAttractionForces(Map<NG.Graph.State, Vector3f> nodeForces, Transition edge) {
+        if (edge.from == edge.to) return;
+
         Vector3f aForce = nodeForces.computeIfAbsent(edge.from, node -> new Vector3f());
         Vector3f bForce = nodeForces.computeIfAbsent(edge.to, node -> new Vector3f());
 
@@ -353,8 +355,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
     /** returns repulsion on a, affected by b */
     public static Vector3f getRepulsion(Vector3fc a, Vector3fc b, float natLength, float repulsion) {
-        Vector3f otherToThis = new Vector3f(a).sub(b);
-        float length = otherToThis.length();
+        Vector3f bToA = new Vector3f(a).sub(b);
+        float length = bToA.length();
 
         if (length < 1f / 32) {
             return Vectors.randomOrb().normalize(100);
@@ -362,7 +364,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         } else {
             float lengthFraction = Math.max(length / 2.0f, natLength / 10);
             float r = repulsion / (lengthFraction * lengthFraction * lengthFraction);
-            return otherToThis.mul(r);
+            return bToA.mul(r);
         }
     }
 }

@@ -44,7 +44,7 @@ public class SCloseButton extends SComponent implements MouseReleaseListener, Mo
     @Override
     public void draw(SFrameLookAndFeel design, Vector2ic scPos) {
         design.draw(state ? BUTTON_PRESSED : BUTTON_ACTIVE, scPos, getSize());
-        design.drawText(scPos, getSize(), "X", NGFonts.TextType.ACCENT, SFrameLookAndFeel.Alignment.CENTER);
+        design.drawText(scPos, getSize(), "X", NGFonts.TextType.ACCENT, SFrameLookAndFeel.Alignment.CENTER_MIDDLE);
 
 //        try {
 //            design.drawIconButton(position, dimensions, null, state);
@@ -59,7 +59,7 @@ public class SCloseButton extends SComponent implements MouseReleaseListener, Mo
     }
 
     @Override
-    public void onRelease(int button, int x, int y) {
+    public void onRelease(int button) {
         if (state && button == GLFW_MOUSE_BUTTON_LEFT) {
             closeAction.run();
         }

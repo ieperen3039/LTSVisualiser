@@ -79,7 +79,7 @@ public class SSlider extends SComponent implements MouseDragListener, MouseClick
     }
 
     @Override
-    public void mouseDragged(int xDelta, int yDelta, float xPos, float yPos) {
+    public void onMouseDrag(int xDelta, int yDelta, float xPos, float yPos) {
         int componentXPos = getScreenPosition().x + dragBarWidth / 2;
         int componentXSize = getWidth() - dragBarWidth;
         float fraction = (xPos - componentXPos) / componentXSize;

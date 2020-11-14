@@ -114,7 +114,10 @@ public class Menu extends SDecorator {
                                 }, "*.aut"), BUTTON_PROPS
                         ),
                         new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS),
-                        new SButton("Load Mu-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
+                        SContainer.row(
+                                new SButton("Load HML-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
+                                new SButton("Clear Formula", () -> graph.resetColors(GraphElement.Priority.MU_FORMULA), BUTTON_PROPS)
+                        ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // graph information panel
@@ -178,8 +181,6 @@ public class Menu extends SDecorator {
                         ),
                         new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
-                        new SToggleButton("Accurate Render Timing", BUTTON_PROPS, renderLoop.accurateTiming)
-                                .addStateChangeListener(s -> renderLoop.accurateTiming = s),
                         new SFiller()
                 )).setGrowthPolicy(false, true)
         ));

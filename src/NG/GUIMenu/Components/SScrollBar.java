@@ -25,7 +25,7 @@ class SScrollBar extends SComponent implements MouseScrollListener {
     private static final int SCROLL_BUTTON_SIZE = 30;
     private static final int DRAG_BAR_MIN_SIZE = 15;
     private static final SComponentProperties SCROLL_BUTTON_PROPS = new SComponentProperties(
-            SCROLL_BAR_WIDTH, SCROLL_BUTTON_SIZE, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER
+            SCROLL_BAR_WIDTH, SCROLL_BUTTON_SIZE, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_MIDDLE
     );
     private final List<SScrollBarListener> listeners = new ArrayList<>();
     private final SComponent[] elements;
@@ -33,6 +33,7 @@ class SScrollBar extends SComponent implements MouseScrollListener {
     private final STextComponent scrollUp;
     private final STextComponent scrollDown;
     private final SDragBar dragBar;
+    private float cumulativeScroll = 0;
 
     private int minimumInd;
     private int maximumInd;
@@ -100,16 +101,18 @@ class SScrollBar extends SComponent implements MouseScrollListener {
 
     @Override
     public void doValidateLayout() {
+        super.doValidateLayout();
+
+        scrollUp.setSize(scrollUp.getWidth(), scrollUp.getHeight());
         scrollUp.validateLayout();
-        scrollDown.validateLayout();
 
         positionDragbar(dragBarOffsetFraction);
+        dragBar.setSize(dragBar.getWidth(), dragBar.getHeight());
         dragBar.validateLayout();
 
+        scrollDown.setSize(scrollDown.getWidth(), scrollDown.getHeight());
         scrollDown.setPosition(0, getHeight() - SCROLL_BUTTON_SIZE);
         scrollDown.validateLayout();
-
-        super.doValidateLayout();
     }
 
     private void positionDragbar(float fraction) {
@@ -134,12 +137,12 @@ class SScrollBar extends SComponent implements MouseScrollListener {
 
     @Override
     public int minWidth() {
-        return Math.max(dragBar.minWidth(), Math.max(scrollDown.minWidth(), scrollUp.minWidth()));
+        return SCROLL_BAR_WIDTH;
     }
 
     @Override
     public int minHeight() {
-        return scrollUp.minHeight() + scrollDown.minHeight() + dragBar.minHeight();
+        return 2 * SCROLL_BUTTON_SIZE + DRAG_BAR_MIN_SIZE;
     }
 
     @Override
@@ -186,7 +189,18 @@ class SScrollBar extends SComponent implements MouseScrollListener {
 
     @Override
     public void onScroll(float value) {
-        setDragbarFraction(dragBarOffsetFraction - value * SCROLL_SPEED);
+//        setDragbarFraction(dragBarOffsetFraction - value * 0.02f);
+
+        cumulativeScroll += value;
+        while (cumulativeScroll > 1) {
+            up();
+            cumulativeScroll -= 1;
+        }
+
+        while (cumulativeScroll < 0) {
+            down();
+            cumulativeScroll += 1;
+        }
     }
 
     private void setDragbarFraction(float newFraction) {
@@ -243,12 +257,12 @@ class SScrollBar extends SComponent implements MouseScrollListener {
         }
 
         @Override
-        public void mouseDragged(int xDelta, int yDelta, float xPos, float yPos) {
-            setDragbarFraction(dragBarOffsetFraction + ((float) yDelta / (getDragBarSpace() - getHeight())));
+        public void onMouseDrag(int xDelta, int yDelta, float xPos, float yPos) {
+            setDragbarFraction(dragBarOffsetFraction + ((float) yDelta / getDragBarSpace()));
         }
 
         @Override
-        public void onRelease(int button, int xSc, int ySc) {
+        public void onRelease(int button) {
             alignDragBar();
         }
 

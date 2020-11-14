@@ -10,23 +10,20 @@ public abstract class FixedPoint implements Formula {
     public final char character;
     /** the index of this fixed point, starting from right. */
     public final int index;
-    /** the next enclosing fixed point */
-    public final FixedPoint parent;
     /** the variable representing this fixed point */
     public final FixedPointVariable variable;
     /** the formula contained by this fixed point */
     public Formula right;
-    /** open or closed **/
-    private boolean open;
     /** List of descendant fixpoints **/
-    private ArrayList<FixedPoint> fixedPointsDesc = new ArrayList<>();
+    private final ArrayList<FixedPoint> fixedPointsDesc = new ArrayList<>();
     /** List of descendant fixpoint variables **/
-    private ArrayList<FixedPointVariable> varDesc = new ArrayList<>();
+    private final ArrayList<FixedPointVariable> varDesc = new ArrayList<>();
+    /** open or closed **/
+    private boolean open = false;
 
-    public FixedPoint(char character, int index, FixedPoint parent, boolean open) {
+    public FixedPoint(char character, int index) {
         this.character = character;
         this.index = index;
-        this.parent = parent;
         this.variable = new FixedPointVariable(this, character);
     }
 
@@ -73,10 +70,6 @@ public abstract class FixedPoint implements Formula {
         this.fixedPointsDesc.remove(fp);
     }
 
-    public void resetFixedPoint() {
-        this.fixedPointsDesc.clear();
-    }
-
     public ArrayList<FixedPointVariable> getVarDesc() {
         return varDesc;
     }
@@ -87,9 +80,5 @@ public abstract class FixedPoint implements Formula {
 
     public void removeVar(FixedPointVariable var) {
         this.varDesc.remove(var);
-    }
-
-    public void resetVar() {
-        this.varDesc.clear();
     }
 }

@@ -14,10 +14,12 @@ public abstract class STextComponent extends SComponent {
     protected final int minWidth;
     protected final NGFonts.TextType textType;
     protected final SFrameLookAndFeel.Alignment alignment;
+
+    private String text;
+
     /** minimum border to the left and right of the text */
     protected int minXBorder = TEXT_MIN_X_BORDER;
     protected int textWidth;
-    private String text;
     private boolean textWidthIsInvalid = true;
     private int maximumCharacters = -1;
 
@@ -78,9 +80,9 @@ public abstract class STextComponent extends SComponent {
         }
 
         if (textWidthIsInvalid) {
+            invalidateLayout();
             textWidth = design.getTextWidth(text, textType);
             textWidthIsInvalid = false;
-            invalidateLayout();
 
         } else {
             design.drawText(screenPosition, getSize(), text, textType, alignment);

@@ -1,17 +1,15 @@
 package NG.GUIMenu.Components;
 
 import NG.GUIMenu.LayoutManagers.SingleElementLayout;
-import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.GUIMenu.SComponentProperties;
 import NG.Tools.Logger;
-import org.joml.Vector2ic;
 
 /**
  * an area with fixed minimum size that can show components or be hidden. Components are stretched to fit the designated
  * area. If the minimum size of the component is too large for this area, an assertion is thrown.
  * @author Geert van Ieperen created on 12-7-2019.
  */
-public class SComponentArea extends SContainer {
+public class SComponentArea extends SContainer.GhostContainer {
     private static final SFiller FILLER = new SFiller();
     private int width;
     private int height;
@@ -42,13 +40,17 @@ public class SComponentArea extends SContainer {
 
     public void show(SComponent element) {
         validateLayout();
-        if (element.minWidth() < getWidth() && element.minHeight() < getHeight()) {
+        int width = getWidth();
+        int height = getHeight();
+
+        if (element.minWidth() <= width && element.minHeight() <= height) {
+            element.setSize(width, height);
             add(element, null);
             setVisible(true);
-        } else {
-            Logger.ASSERT.print("Element too large to show", element, getSize(), element.getSize());
-        }
 
+        } else {
+            Logger.ASSERT.print("Element too large to show", element, element.getSize(), getSize());
+        }
     }
 
     @Override
@@ -59,10 +61,5 @@ public class SComponentArea extends SContainer {
     @Override
     public int minHeight() {
         return height;
-    }
-
-    @Override
-    public void draw(SFrameLookAndFeel design, Vector2ic screenPosition) {
-        drawChildren(design, screenPosition);
     }
 }

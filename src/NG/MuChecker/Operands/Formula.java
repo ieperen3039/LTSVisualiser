@@ -11,4 +11,11 @@ public interface Formula {
     boolean equals(Object other);
 
     StateSet eval(SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder);
+
+    /**
+     * @return true if either label is true, or they are equal.
+     */
+    static boolean labelMatch(String label1, String label2) {
+        return label1.equals("true") || label2.equals("true") || label2.equals(label1);
+    }
 }

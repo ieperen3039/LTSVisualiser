@@ -14,9 +14,9 @@ import static NG.GUIMenu.Rendering.SFrameLookAndFeel.UIComponent.SELECTION;
  * @author Geert van Ieperen. Created on 28-9-2018.
  */
 public class SProgressBar extends SComponent {
-    private final Supplier<Float> progress;
     private int minWidth;
     private int minHeight;
+    private final Supplier<Float> progress;
 
     public SProgressBar(Supplier<Float> progress, SComponentProperties properties) {
         this.progress = progress;

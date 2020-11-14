@@ -8,8 +8,8 @@ import NG.MuChecker.StateSet;
  * @author Geert van Ieperen created on 15-2-2020.
  */
 public class LargestFixedPoint extends FixedPoint {
-    public LargestFixedPoint(char fixVarName, int index, FixedPoint parent, boolean open) {
-        super(fixVarName, index, parent, open);
+    public LargestFixedPoint(char fixVarName, int index) {
+        super(fixVarName, index);
     }
 
     @Override

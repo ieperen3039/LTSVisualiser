@@ -6,7 +6,7 @@ import org.joml.Vector2ic;
 import java.util.Collection;
 
 /**
- * A class for building containers that can only be modified by the implementing class
+ * A helper class for building specific containers
  * @author Geert van Ieperen created on 21-2-2020.
  */
 public abstract class SDecorator extends SComponent {
@@ -54,10 +54,9 @@ public abstract class SDecorator extends SComponent {
 
     @Override
     public void doValidateLayout() {
-        super.doValidateLayout();
-
         contents.setSize(getWidth(), getHeight());
         contents.validateLayout();
+        setSize(getWidth(), getHeight());
     }
 
     @Override

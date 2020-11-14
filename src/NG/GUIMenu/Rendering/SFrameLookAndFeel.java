@@ -10,8 +10,8 @@ import org.joml.Vector2ic;
  */
 public interface SFrameLookAndFeel {
     enum Alignment {
-        LEFT, CENTER, RIGHT,
-        CENTER_TOP,
+        LEFT_TOP, CENTER_TOP, RIGHT_TOP,
+        LEFT_MIDDLE, CENTER_MIDDLE, RIGHT_MIDDLE
     }
 
     enum UIComponent {

@@ -16,6 +16,7 @@ import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.MuChecker.FormulaParser;
 import NG.MuChecker.ModelChecker;
+import NG.MuChecker.Operands.*;
 import NG.MuChecker.StateSet;
 import NG.Rendering.GLFWWindow;
 import NG.Rendering.RenderLoop;
@@ -49,8 +50,12 @@ public class Main {
     public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(220, 150, 0); // yellow
     public static final Color4f HOVER_COLOR = Color4f.rgb(44, 58, 190); // blue
     public static final Color4f PATH_COLOR = Color4f.rgb(200, 83, 0); // orange
+    public static final Color4f INITAL_STATE_COLOR = Color4f.rgb(4, 150, 13); // green
+
     public static final Color4f MU_FORMULA_COLOR = Color4f.rgb(255, 0, 255); // purple-pink
-    public static final Color4f INITAL_STATE_COLOR = Color4f.rgb(4, 120, 13);
+    public static final Color4f MU_FORMULA_UNAVOIDABLE = Color4f.rgb(200, 0, 0); // red
+    public static final Color4f MU_FORMULA_UNREACHABLE = Color4f.rgb(0, 200, 0); // green
+
 
     private static final Version VERSION = new Version(0, 2);
     private static final Pattern PATTERN_COMMA = Pattern.compile(",");
@@ -513,6 +518,34 @@ public class Main {
                     state.addColor(MU_FORMULA_COLOR, MU_FORMULA);
                 }
                 graph.getNodeMesh().scheduleReload();
+
+                List<FixedPoint> fixedPoints = formulaParser.getFixedPoints();
+
+                FixedPoint fp1 = new SmallestFixedPoint('_', fixedPoints.size());
+                fixedPoints.forEach(fp1::addDescendant);
+                fp1.setRight(new LogicalOr(formulaParser.get(), new Box("true", fp1.variable)));
+
+                StateSet unavoidables = new ModelChecker(graph, formulaParser).call();
+                Logger.INFO.printf("Unavoidable for %d states", unavoidables.size());
+                for (Transition edge : graph.edges) {
+                    if (unavoidables.contains(edge.to)) {
+                        edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
+                    }
+                }
+                graph.getEdgeMesh().scheduleReload();
+
+                FixedPoint fp2 = new LargestFixedPoint('_', fixedPoints.size());
+                fixedPoints.forEach(fp2::addDescendant);
+                fp2.setRight(new LogicalAnd(new Negation(formulaParser.get()), new Box("true", fp2.variable)));
+
+                StateSet unreachables = new ModelChecker(graph, formulaParser).call();
+                Logger.INFO.printf("Unreachable for %d states", unreachables.size());
+                for (Transition edge : graph.edges) {
+                    if (unreachables.contains(edge.to) && !unreachables.contains(edge.from)) {
+                        edge.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
+                    }
+                }
+                graph.getEdgeMesh().scheduleReload();
             });
             thread.setDaemon(true);
             thread.start();

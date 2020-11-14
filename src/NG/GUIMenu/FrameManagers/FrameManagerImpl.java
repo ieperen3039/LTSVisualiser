@@ -8,10 +8,7 @@ import NG.GUIMenu.Components.SFrame;
 import NG.GUIMenu.Rendering.NVGOverlay;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.GUIMenu.Rendering.WindowsLF;
-import NG.InputHandling.KeyTypeListener;
-import NG.InputHandling.MouseClickListener;
-import NG.InputHandling.MouseDragListener;
-import NG.InputHandling.MouseReleaseListener;
+import NG.InputHandling.*;
 import NG.Rendering.GLFWWindow;
 import NG.Tools.Logger;
 import org.joml.Vector2i;
@@ -24,17 +21,17 @@ import java.util.*;
  * @author Geert van Ieperen. Created on 20-9-2018.
  */
 public class FrameManagerImpl implements UIFrameManager {
-    private final Deque<SFrame> frames; // the first element in this list has focus
     protected Main root;
     protected MouseDragListener dragListener = null;
     protected MouseReleaseListener releaseListener = null;
     protected KeyTypeListener typeListener = null;
+
+    private final Deque<SFrame> frames; // the first element in this list has focus
     private SComponent mainPanel;
     private SComponent modalComponent;
     private SComponent hoveredComponent;
 
     private SFrameLookAndFeel lookAndFeel;
-
 
     public FrameManagerImpl() {
         this.frames = new ArrayDeque<>();
@@ -233,20 +230,45 @@ public class FrameManagerImpl implements UIFrameManager {
 
     private void processClick(int button, SComponent component, int xSc, int ySc) {
 //        Logger.DEBUG.print(component);
-        if (component instanceof MouseClickListener) {
-            MouseClickListener cl = (MouseClickListener) component;
-            // by def. of MouseRelativeClickListener, give relative coordinates
-            Vector2i pos = component.getScreenPosition();
-            cl.onClick(button, xSc - pos.x, ySc - pos.y);
-        }
 
-        if (component instanceof MouseDragListener) {
-            dragListener = (MouseDragListener) component;
-        }
+        // click listener
+        SComponent target = component;
+        do {
+            if (target instanceof MouseClickListener) {
+                MouseClickListener cl = (MouseClickListener) target;
+                // by def. of MouseRelativeClickListener, give relative coordinates
+                Vector2i pos = component.getScreenPosition();
+                cl.onClick(button, xSc - pos.x, ySc - pos.y);
+                break;
+            }
 
-        if (component instanceof MouseReleaseListener) {
-            releaseListener = (MouseReleaseListener) component;
-        }
+            target = target.getParent().orElse(null);
+
+        } while (target != null);
+
+        // drag listener
+        target = component;
+        do {
+            if (target instanceof MouseDragListener) {
+                dragListener = (MouseDragListener) target;
+                break;
+            }
+
+            target = target.getParent().orElse(null);
+
+        } while (target != null);
+
+        // release listener
+        target = component;
+        do {
+            if (target instanceof MouseReleaseListener) {
+                releaseListener = (MouseReleaseListener) target;
+                break;
+            }
+
+            target = target.getParent().orElse(null);
+
+        } while (target != null);
     }
 
     @Override
@@ -280,21 +302,35 @@ public class FrameManagerImpl implements UIFrameManager {
     }
 
     @Override
-    public void onRelease(int button, int xSc, int ySc) {
+    public void onRelease(int button) {
         dragListener = null;
         if (releaseListener == null) return;
-        releaseListener.onRelease(button, xSc, ySc);
+        releaseListener.onRelease(button);
         releaseListener = null;
     }
 
-    @Override
-    public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
+    public void onMouseMove(int xDelta, int yDelta, float xPos, float yPos) {
         if (hoveredComponent != null) hoveredComponent.setHovered(false);
         hoveredComponent = getComponentAt((int) xPos, (int) yPos);
         if (hoveredComponent != null) hoveredComponent.setHovered(true);
 
         if (dragListener != null) {
-            dragListener.mouseDragged(xDelta, yDelta, xPos, yPos);
+            dragListener.onMouseDrag(xDelta, yDelta, xPos, yPos);
         }
+    }
+
+    @Override
+    public void onScroll(float value) {
+        SComponent target = hoveredComponent;
+        do {
+            if (target instanceof MouseScrollListener) {
+                MouseScrollListener listener = (MouseScrollListener) target;
+                listener.onScroll(value);
+                break;
+            }
+
+            target = target.getParent().orElse(null);
+
+        } while (target != null);
     }
 }

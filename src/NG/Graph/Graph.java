@@ -61,7 +61,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     }
 
     @Override
-    public void mouseMoved(int xDelta, int yDelta, float xPos, float yPos) {
+    public void onMouseMove(int xDelta, int yDelta, float xPos, float yPos) {
         if (selectedNode == null) {
             Transition oldHoveredEdge = hoveredEdge;
             State oldHoveredNode = hoveredNode;
@@ -115,7 +115,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     }
 
     @Override
-    public void onRelease(int button, int xSc, int ySc) {
+    public void onRelease(int button) {
         if (selectedNode != null) {
             if (!selectedNode.stayFixed) {
                 selectedNode.isFixed = false;

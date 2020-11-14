@@ -1,5 +1,7 @@
 package NG.GUIMenu.Components;
 
+import NG.GUIMenu.LayoutManagers.GridLayoutManager;
+import NG.GUIMenu.SComponentProperties;
 import org.joml.Vector2i;
 import org.joml.Vector2ic;
 
@@ -25,9 +27,21 @@ public class SExclusiveButtonRow extends SDecorator {
      * @param elements   the names of the buttons. There will be as much buttons as names.
      */
     public SExclusiveButtonRow(boolean horizontal, String[] elements) {
-        super(
-                (horizontal ? new SPanel(elements.length, 1) : new SPanel(1, elements.length))
-        );
+        this(horizontal, elements, new SComponentProperties());
+    }
+
+    /**
+     * creates a row of buttons that display the given texts. There will be {@code elements.length} buttons, regardless
+     * of the contents of elements. If {@code elements} contains null elements, those buttons will have no text.
+     * @param horizontal       if true, buttons are positioned in a row. if false, buttons are stacked in a column
+     * @param elements         the names of the buttons. There will be as much buttons as names.
+     * @param buttonProperties
+     */
+    public SExclusiveButtonRow(boolean horizontal, String[] elements, SComponentProperties buttonProperties) {
+        super(new SContainer.GhostContainer(
+                new GridLayoutManager(horizontal ? elements.length : 1, horizontal ? 1 : elements.length)
+        ));
+
         selectionListeners = new ArrayList<>();
         deselectionListeners = new ArrayList<>();
 
@@ -36,10 +50,15 @@ public class SExclusiveButtonRow extends SDecorator {
 
         for (int i = 0; i < elements.length; i++) {
             String label = elements[i] == null ? "" : elements[i];
-            SToggleButton button = new SToggleButton(label) {
+            SToggleButton button = new SToggleButton(label, buttonProperties) {
                 @Override // override to ignore deselection by click
                 public void onClick(int button, int xSc, int ySc) {
-                    if (!isActive()) setActive(true);
+                    if (!isActive()) super.onClick(button, xSc, ySc);
+                }
+
+                @Override // override to ignore deselection by click
+                public void onRelease(int button) {
+                    if (!isActive()) super.onRelease(button);
                 }
             };
             int index = i;

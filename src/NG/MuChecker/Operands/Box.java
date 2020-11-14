@@ -53,7 +53,7 @@ public class Box implements Formula {
             for (int i = 0; i < nrOfConnections; i++) {
                 Transition edge = connections.left(i);
 
-                if (edge.from.equals(s) && edge.label.equals(label)) {
+                if (edge.from.equals(s) && Formula.labelMatch(edge.label, label)) {
                     out.add(edge.to);
                 }
             }

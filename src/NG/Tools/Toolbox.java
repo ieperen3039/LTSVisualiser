@@ -298,7 +298,7 @@ public final class Toolbox {
         return ((b - a) * fraction) + a;
     }
 
-    public static void display(Exception e) {
+    public static void display(Throwable e) {
         Logger.ERROR.print(e);
         int rng = random.nextInt(ERROR_MESSAGES.length);
 

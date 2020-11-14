@@ -166,12 +166,12 @@ public class BaseLF implements SFrameLookAndFeel {
         }
 
         switch (align) {
-            case LEFT:
+            case LEFT_MIDDLE:
                 hud.text(x, y + (height / 2), actualSize,
                         font, EnumSet.of(ALIGN_LEFT), textColor, text, width
                 );
                 break;
-            case CENTER:
+            case CENTER_MIDDLE:
                 hud.text(x, y + (height / 2), actualSize,
                         font, EnumSet.noneOf(NVGOverlay.Alignment.class), textColor, text, width
                 );
@@ -181,7 +181,7 @@ public class BaseLF implements SFrameLookAndFeel {
                         font, EnumSet.of(ALIGN_TOP), textColor, text, width
                 );
                 break;
-            case RIGHT:
+            case RIGHT_MIDDLE:
                 hud.text(x, y + (height / 2), actualSize,
                         font, EnumSet.of(ALIGN_RIGHT), textColor, text, width
                 );

@@ -6,6 +6,7 @@ import NG.Graph.Graph;
 import NG.InputHandling.KeyControl;
 import NG.Rendering.GLFWWindow;
 import NG.Tools.Logger;
+import NG.Tools.Toolbox;
 import org.joml.Vector2i;
 import org.lwjgl.glfw.*;
 
@@ -76,6 +77,7 @@ public class MouseToolCallbacks implements ToolElement {
                 // Caught an error while executing an input handler.
                 // Look at the second element of the stack trace
                 Logger.ERROR.print(ex);
+                Toolbox.display(ex);
             }
         });
     }
@@ -102,7 +104,7 @@ public class MouseToolCallbacks implements ToolElement {
                 execute(() -> currentTool.onClick(button, pos.x, pos.y));
 
             } else if (action == GLFW_RELEASE) {
-                execute(() -> currentTool.onRelease(button, pos.x, pos.y));
+                execute(() -> currentTool.onRelease(button));
             }
         }
     }
@@ -128,7 +130,7 @@ public class MouseToolCallbacks implements ToolElement {
                 xGiven += xDiff;
                 yGiven += yDiff;
             }
-            execute(() -> currentTool.mouseMoved(xDiff, yDiff, xFloat, yFloat));
+            execute(() -> currentTool.onMouseMove(xDiff, yDiff, xFloat, yFloat));
         }
     }
 

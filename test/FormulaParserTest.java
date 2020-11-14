@@ -36,12 +36,12 @@ public class FormulaParserTest {
     public void testParserFixedPoint() {
         {
             Formula formula = new FormulaParser("mu X.X").get();
-            SmallestFixedPoint xFix = new SmallestFixedPoint('X', 0, null, false);
+            SmallestFixedPoint xFix = new SmallestFixedPoint('X', 0);
             assertEquals(xFix.setRight(xFix.variable), formula);
         }
         {
             Formula formula = new FormulaParser("nu X.X").get();
-            LargestFixedPoint xFix = new LargestFixedPoint('X', 0, null, false);
+            LargestFixedPoint xFix = new LargestFixedPoint('X', 0);
             assertEquals(xFix.setRight(xFix.variable), formula);
         }
     }
@@ -75,8 +75,8 @@ public class FormulaParserTest {
         {
             Formula formula = new FormulaParser("mu X.(<a>X || nu Y.(false || (true && [a]Y)))").get();
 
-            SmallestFixedPoint xFix = new SmallestFixedPoint('X', 0, null, false);
-            LargestFixedPoint yFix = new LargestFixedPoint('Y', 1, xFix, false);
+            SmallestFixedPoint xFix = new SmallestFixedPoint('X', 0);
+            LargestFixedPoint yFix = new LargestFixedPoint('Y', 1);
 
             xFix.setRight(new LogicalOr(
                     new Diamond("a", xFix.variable),

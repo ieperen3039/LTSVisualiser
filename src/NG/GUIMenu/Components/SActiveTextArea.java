@@ -18,7 +18,7 @@ public class SActiveTextArea extends STextComponent {
     }
 
     public SActiveTextArea(Supplier<String> supplier, int minHeight) {
-        this(supplier, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.LEFT, 0, minHeight);
+        this(supplier, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.LEFT_MIDDLE, 0, minHeight);
     }
 
     public SActiveTextArea(

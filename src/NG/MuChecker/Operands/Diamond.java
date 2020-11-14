@@ -46,7 +46,7 @@ public class Diamond implements Formula {
             for (int i = 0; i < nrOfConnections; i++) {
                 Transition transition = connections.left(i);
 
-                if (transition.to.equals(s) && transition.label.equals(label)) {
+                if (transition.to.equals(s) && Formula.labelMatch(label, transition.label)) {
                     result.add(connections.right(i));
                 }
             }

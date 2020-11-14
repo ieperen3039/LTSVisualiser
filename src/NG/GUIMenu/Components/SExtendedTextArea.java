@@ -39,28 +39,31 @@ public class SExtendedTextArea extends STextArea
     }
 
     @Override
-    public void mouseDragged(int xDelta, int yDelta, float xPos, float yPos) {
+    public void onMouseDrag(int xDelta, int yDelta, float xPos, float yPos) {
         if (dragListener != null) {
-            dragListener.mouseDragged(xDelta, yDelta, xPos, yPos);
+            dragListener.onMouseDrag(xDelta, yDelta, xPos, yPos);
         }
     }
 
     @Override
-    public void onRelease(int button, int xSc, int ySc) {
+    public void onRelease(int button) {
         if (releaseListener != null) {
-            releaseListener.onRelease(button, xSc, ySc);
+            releaseListener.onRelease(button);
         }
     }
 
-    public void setDragListener(MouseDragListener dragListener) {
+    public SExtendedTextArea setDragListener(MouseDragListener dragListener) {
         this.dragListener = dragListener;
+        return this;
     }
 
-    public void setClickListener(MouseClickListener clickListener) {
+    public SExtendedTextArea setClickListener(MouseClickListener clickListener) {
         this.clickListener = clickListener;
+        return this;
     }
 
-    public void setReleaseListener(MouseReleaseListener releaseListener) {
+    public SExtendedTextArea setReleaseListener(MouseReleaseListener releaseListener) {
         this.releaseListener = releaseListener;
+        return this;
     }
 }

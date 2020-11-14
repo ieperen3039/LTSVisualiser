@@ -22,7 +22,7 @@ public class STextArea extends STextComponent {
     }
 
     public STextArea(String text, int minHeight) {
-        this(text, minHeight, 0, true, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.LEFT);
+        this(text, minHeight, 0, true, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.LEFT_MIDDLE);
     }
 
     @Override
