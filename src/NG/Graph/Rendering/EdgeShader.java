@@ -30,9 +30,7 @@ public class EdgeShader implements ShaderProgram {
     private static final Path FRAGMENT_PATH = Directory.shaders.getPath("edges", "fragment.frag");
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
 
-    private static final boolean DO_GRADIENT = false;
-    private static final int NUM_TAIL_SECTIONS = 6;
-    private static final int NUM_HEAD_SECTIONS = 4;
+    public EdgeShape currentShape = EdgeShape.ARROW;
 
     private static final float HEAD_WIDTH = NODE_RADIUS * 1.0f;
     private static final float EDGE_WIDTH = HEAD_WIDTH * 0.5f;
@@ -52,6 +50,23 @@ public class EdgeShader implements ShaderProgram {
     private final int doClickUID;
     private final int doGradientUID;
     private final int edgeIndexOffsetUID;
+
+    public enum EdgeShape {
+        ARROW(4, 6, false),
+        TAPERED(6, 0, false),
+        GRADIENT(0, 6, true),
+        MINIMUM(3, 0, false);
+
+        private final int headSections;
+        private final int tailSections;
+        private final boolean gradient;
+
+        EdgeShape(int headSections, int tailSections, boolean gradient) {
+            this.headSections = headSections;
+            this.tailSections = tailSections;
+            this.gradient = gradient;
+        }
+    }
 
     public EdgeShader() throws IOException {
         programID = glCreateProgram();
@@ -96,11 +111,11 @@ public class EdgeShader implements ShaderProgram {
         glUniform1f(radiusUID, NODE_RADIUS);
         glUniform1f(edgeSizeUID, EDGE_WIDTH);
         glUniform1f(headSizeUID, HEAD_WIDTH);
-        glUniform1i(tailSectionUID, NUM_TAIL_SECTIONS);
-        glUniform1i(headSectionUID, NUM_HEAD_SECTIONS);
+        glUniform1i(tailSectionUID, currentShape.tailSections);
+        glUniform1i(headSectionUID, currentShape.headSections);
         glUniform1i(edgeIndexOffsetUID, nrOfNodes);
         glUniform1i(doClickUID, 0);
-        glUniform1i(doGradientUID, DO_GRADIENT ? 1 : 0);
+        glUniform1i(doGradientUID, currentShape.gradient ? 1 : 0);
     }
 
     private void writeMatrix(Matrix4f view, int transformUID) {

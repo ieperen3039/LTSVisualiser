@@ -77,23 +77,23 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             if (oldHoveredNode != null) {
                 if (oldHoveredNode != hoveredNode) {
                     forNodeClass(oldHoveredNode.classIndex, n -> n.resetColor(GraphElement.Priority.HOVER));
-                    getNodeMesh().scheduleReload();
+                    getNodeMesh().scheduleColorReload();
                 }
 
             } else if (oldHoveredEdge != null) {
                 if (oldHoveredEdge != hoveredEdge) {
                     forAttribute(oldHoveredEdge.label, e -> e.resetColor(GraphElement.Priority.HOVER));
-                    getEdgeMesh().scheduleReload();
+                    getEdgeMesh().scheduleColorReload();
                 }
             }
 
             if (hoveredNode != null) {
                 forNodeClass(hoveredNode.classIndex, n -> n.addColor(Main.HOVER_COLOR, GraphElement.Priority.HOVER));
-                getNodeMesh().scheduleReload();
+                getNodeMesh().scheduleColorReload();
 
             } else if (hoveredEdge != null) {
                 forAttribute(hoveredEdge.label, edge -> edge.addColor(Main.HOVER_COLOR, GraphElement.Priority.HOVER));
-                getEdgeMesh().scheduleReload();
+                getEdgeMesh().scheduleColorReload();
             }
 
         } else {

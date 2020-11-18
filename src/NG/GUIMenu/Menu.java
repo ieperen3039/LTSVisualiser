@@ -9,6 +9,7 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.*;
+import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.GraphColorTool;
 import NG.Graph.Rendering.GraphElement;
 import NG.InputHandling.MouseTools.MouseTool;
@@ -39,6 +40,7 @@ public class Menu extends SDecorator {
     public static final int MAX_CHARACTERS_ACTION_LABELS = 35;
     public static final File BASE_FILE_CHOOSER_DIRECTORY = Directory.graphs.getDirectory();
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
+    public static final List<EdgeShader.EdgeShape> EDGE_SHAPE_LIST = Arrays.asList(EdgeShader.EdgeShape.values());
 
     private static final PairList<String, Color4f> paintColors = new PairList.Builder<String, Color4f>()
             .add("Red", Color4f.rgb(200, 25, 25))
@@ -83,17 +85,11 @@ public class Menu extends SDecorator {
         colorToggleButton = new SToggleButton("Activate Painting", BUTTON_PROPS)
                 .addStateChangeListener(on -> inputHandling.setMouseTool(on ? colorTool : null));
 
-        // dropdown for what graph is displayed
-        SDropDown displayMethodDropdown = new SDropDown(
-                frameManager, BUTTON_PROPS, 0, DISPLAY_METHOD_LIST,
-                displayMethod -> displayMethod.name().replace("_", " ")
-        ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)));
-
         // automatic barnes-hut (de)activation
         if (main.graph().getNrOfNodes() < 500) {
             updateLoop.setBarnesHutTheta(0);
         } else if (updateLoop.getBarnesHutTheta() == 0) {
-            updateLoop.setBarnesHutTheta(0.5f);
+            updateLoop.setBarnesHutTheta(0.8f);
         }
 
         if (main.graph().getNrOfEdges() > 10_000) {
@@ -138,10 +134,20 @@ public class Menu extends SDecorator {
                         new SimulationSliderUI(updateLoop),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
+                        // edge shape
+                        new STextArea("Edge Shape", BUTTON_PROPS),
+                        new SDropDown(
+                                frameManager, BUTTON_PROPS, 0, EDGE_SHAPE_LIST
+                        ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
                         // Display manipulation
                         new SPanel(SContainer.column(
                                 new STextArea("Display method", BUTTON_PROPS),
-                                displayMethodDropdown,
+                                new SDropDown(
+                                        frameManager, BUTTON_PROPS, 0, DISPLAY_METHOD_LIST,
+                                        displayMethod -> displayMethod.name().replace("_", " ")
+                                ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i))),
 
                                 new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
                                         .addStateChangeListener(main::set3DView),
@@ -287,8 +293,8 @@ public class Menu extends SDecorator {
                 edge.to.addColor(PATH_COLOR, GraphElement.Priority.PATH);
             }
 
-            graph.getEdgeMesh().scheduleReload();
-            graph.getNodeMesh().scheduleReload();
+            graph.getEdgeMesh().scheduleColorReload();
+            graph.getNodeMesh().scheduleColorReload();
         }
     }
 

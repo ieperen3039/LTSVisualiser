@@ -28,7 +28,8 @@ public class NodeMesh implements Mesh {
     private boolean isLoaded = false;
     private final List<State> bulk = new ArrayList<>();
     private int nrOfParticles = 0;
-    private boolean doReload = false;
+    private boolean doPositionReload = false;
+    private boolean doColorReload = false;
 
     public void addNode(State p) {
         bulk.add(p);
@@ -40,7 +41,16 @@ public class NodeMesh implements Mesh {
         FloatBuffer positionBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
         FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
         FloatBuffer borderBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
-        put(bulk, positionBuffer, colorBuffer, borderBuffer);
+
+        for (int i = 0; i < bulk.size(); i++) {
+            State p = bulk.get(i);
+
+            p.position.get(i * 3, positionBuffer);
+            p.getColor().put(colorBuffer);
+            p.border.put(borderBuffer);
+        }
+        colorBuffer.flip();
+        borderBuffer.flip();
 
         try {
             vaoId = glGenVertexArrays();
@@ -63,17 +73,37 @@ public class NodeMesh implements Mesh {
         Toolbox.checkGLError(toString());
     }
 
-    private void reload() {
+    private void reloadPositions() {
         FloatBuffer positionBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
-        FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
-        FloatBuffer borderBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
 
-        put(bulk, positionBuffer, colorBuffer, borderBuffer);
+        for (int i = 0; i < bulk.size(); i++) {
+            State p = bulk.get(i);
+            p.position.get(i * 3, positionBuffer);
+        }
 
         try {
             glBindBuffer(GL_ARRAY_BUFFER, posMidVboID);
             glBufferData(GL_ARRAY_BUFFER, positionBuffer, GL_STREAM_DRAW);
 
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        } finally {
+            MemoryUtil.memFree(positionBuffer);
+        }
+    }
+
+    private void reloadColors() {
+        FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+        FloatBuffer borderBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+
+        for (State p : bulk) {
+            p.getColor().put(colorBuffer);
+            p.border.put(borderBuffer);
+        }
+        colorBuffer.flip();
+        borderBuffer.flip();
+
+        try {
             glBindBuffer(GL_ARRAY_BUFFER, colorVboID);
             glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STREAM_DRAW);
 
@@ -83,14 +113,17 @@ public class NodeMesh implements Mesh {
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         } finally {
-            MemoryUtil.memFree(positionBuffer);
             MemoryUtil.memFree(colorBuffer);
             MemoryUtil.memFree(borderBuffer);
         }
     }
 
-    public void scheduleReload() {
-        doReload = true;
+    public void schedulePositionReload() {
+        doPositionReload = true;
+    }
+
+    public void scheduleColorReload() {
+        doColorReload = true;
     }
 
     public List<State> nodeList() {
@@ -104,7 +137,17 @@ public class NodeMesh implements Mesh {
     public void render(SGL.Painter lock) {
         if (!isLoaded) {
             writeToGL();
-        } else if (doReload) reload();
+
+        } else {
+            if (doPositionReload) {
+                reloadPositions();
+                doPositionReload = false;
+            }
+            if (doColorReload) {
+                reloadColors();
+                doColorReload = false;
+            }
+        }
 
         glBindVertexArray(vaoId);
         glEnableVertexAttribArray(0);
@@ -130,20 +173,6 @@ public class NodeMesh implements Mesh {
         glDeleteVertexArrays(vaoId);
         vaoId = 0;
         Toolbox.checkGLError(toString());
-    }
-
-    private static void put(
-            List<State> bulk, FloatBuffer positionBuffer, FloatBuffer colorBuffer, FloatBuffer borderBuffer
-    ) {
-        for (int i = 0; i < bulk.size(); i++) {
-            State p = bulk.get(i);
-
-            p.position.get(i * 3, positionBuffer);
-            p.getColor().put(colorBuffer);
-            p.border.put(borderBuffer);
-        }
-        colorBuffer.flip();
-        borderBuffer.flip();
     }
 
     private static int loadToGL(FloatBuffer buffer, int index, int itemSize, int usage) {

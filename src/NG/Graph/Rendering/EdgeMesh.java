@@ -31,7 +31,8 @@ public class EdgeMesh implements Mesh {
     private int colorVBO;
     private boolean isLoaded = false;
     private int nrOfParticles = 0;
-    private boolean doReload = false;
+    private boolean doPositionReload = false;
+    private boolean doColorReload = false;
 
     public void addParticle(State a, State b, String label) {
         addParticle(new Transition(a, b, label));
@@ -49,7 +50,16 @@ public class EdgeMesh implements Mesh {
         FloatBuffer bPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
         FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
 
-        put(bulk, aPosBuffer, handleBuffer, bPosBuffer, colorBuffer);
+        for (int i = 0; i < bulk.size(); i++) {
+            Transition p = bulk.get(i);
+
+            p.fromPosition.get(i * 3, aPosBuffer);
+            p.handlePos.get(i * 3, handleBuffer);
+            p.toPosition.get(i * 3, bPosBuffer);
+            p.getColor().put(colorBuffer);
+        }
+
+        colorBuffer.flip();
 
         try {
             vaoId = glGenVertexArrays();
@@ -74,14 +84,19 @@ public class EdgeMesh implements Mesh {
         Toolbox.checkGLError(toString());
     }
 
-    private void reload() {
+    private void reloadPositions() {
         FloatBuffer aPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
         FloatBuffer handlePosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
         FloatBuffer bPosBuffer = MemoryUtil.memAllocFloat(3 * nrOfParticles);
-        FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
 
         try {
-            put(bulk, aPosBuffer, handlePosBuffer, bPosBuffer, colorBuffer);
+            for (int i = 0; i < bulk.size(); i++) {
+                Transition p = bulk.get(i);
+
+                p.fromPosition.get(i * 3, aPosBuffer);
+                p.handlePos.get(i * 3, handlePosBuffer);
+                p.toPosition.get(i * 3, bPosBuffer);
+            }
 
             aPosBuffer.rewind();
             handlePosBuffer.rewind();
@@ -95,21 +110,41 @@ public class EdgeMesh implements Mesh {
             glBindBuffer(GL_ARRAY_BUFFER, bPositionVBO);
             glBufferData(GL_ARRAY_BUFFER, bPosBuffer, GL_STREAM_DRAW);
 
-            glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STREAM_DRAW);
-
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         } finally {
             MemoryUtil.memFree(aPosBuffer);
             MemoryUtil.memFree(handlePosBuffer);
             MemoryUtil.memFree(bPosBuffer);
+        }
+    }
+
+    private void reloadColors() {
+        FloatBuffer colorBuffer = MemoryUtil.memAllocFloat(4 * nrOfParticles);
+
+        try {
+            for (Transition p : bulk) {
+                p.getColor().put(colorBuffer);
+            }
+
+            colorBuffer.flip();
+
+            glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+            glBufferData(GL_ARRAY_BUFFER, colorBuffer, GL_STREAM_DRAW);
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        } finally {
             MemoryUtil.memFree(colorBuffer);
         }
     }
 
-    public void scheduleReload() {
-        doReload = true;
+    public void schedulePositionReload() {
+        doPositionReload = true;
+    }
+
+    public void scheduleColorReload() {
+        doColorReload = true;
     }
 
     public List<Transition> edgeList() {
@@ -123,7 +158,17 @@ public class EdgeMesh implements Mesh {
     public void render(SGL.Painter lock) {
         if (!isLoaded) {
             writeToGL();
-        } else if (doReload) reload();
+
+        } else {
+            if (doPositionReload) {
+                reloadPositions();
+                doPositionReload = false;
+            }
+            if (doColorReload) {
+                reloadColors();
+                doColorReload = false;
+            }
+        }
 
         glBindVertexArray(vaoId);
         glEnableVertexAttribArray(0); // a pos
@@ -150,22 +195,6 @@ public class EdgeMesh implements Mesh {
         glDeleteVertexArrays(vaoId);
         vaoId = 0;
         Toolbox.checkGLError(toString());
-    }
-
-    private static void put(
-            List<Transition> bulk, FloatBuffer aPosBuffer, FloatBuffer handleBuffer, FloatBuffer bPosBuffer,
-            FloatBuffer colorBuffer
-    ) {
-        for (int i = 0; i < bulk.size(); i++) {
-            Transition p = bulk.get(i);
-
-            p.fromPosition.get(i * 3, aPosBuffer);
-            p.handlePos.get(i * 3, handleBuffer);
-            p.toPosition.get(i * 3, bPosBuffer);
-            p.getColor().put(colorBuffer);
-        }
-
-        colorBuffer.flip();
     }
 
     private static int loadToGL(FloatBuffer buffer, int index, int itemSize, int usage) {

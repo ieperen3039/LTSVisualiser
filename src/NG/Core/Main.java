@@ -84,6 +84,7 @@ public class Main {
     private final LazyInit<NodeClustering> nodeCluster;
     private final LazyInit<IgnoringGraph> subGraph;
     private DisplayMethod displayMethod = DisplayMethod.HIGHLIGHT_ACTIONS;
+    private EdgeShader edgeShader;
 
     public enum DisplayMethod {
         HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
@@ -140,7 +141,8 @@ public class Main {
         renderer.renderSequence(new NodeShader())
                 .add(this::renderNodes);
 
-        renderer.renderSequence(new EdgeShader())
+        edgeShader = new EdgeShader();
+        renderer.renderSequence(edgeShader)
                 .add((gl1, root) -> {
                     glDepthMask(false); // read but not write
                     renderEdges(gl1, root);
@@ -173,7 +175,10 @@ public class Main {
     }
 
     public void onNodePositionChange() {
-        if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED) {
+        if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED
+                || displayMethod == DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS
+                || displayMethod == DisplayMethod.CONFLUENCE
+        ) {
             if (doComputeSourceLayout) {
                 nodeCluster.get().pullClusterPositions();
 
@@ -191,8 +196,8 @@ public class Main {
         }
 
         Graph graph = getVisibleGraph();
-        graph.getNodeMesh().scheduleReload();
-        graph.getEdgeMesh().scheduleReload();
+        graph.getNodeMesh().schedulePositionReload();
+        graph.getEdgeMesh().schedulePositionReload();
     }
 
     public Camera camera() {
@@ -298,6 +303,7 @@ public class Main {
 
     public void setDisplayMethod(DisplayMethod method) {
         this.displayMethod = method;
+        Logger.DEBUG.print("Set display method", displayMethod);
 
         if (method == DisplayMethod.CLUSTER_ON_SELECTED || method == DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS) {
             NodeClustering nodeClustering = nodeCluster.get();
@@ -498,12 +504,11 @@ public class Main {
     public void selectAttribute(String label, boolean on) {
         if (on) {
             graph.forAttribute(label, edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
-            graph.getEdgeMesh().scheduleReload();
         } else {
             graph.forAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
         }
 
-        graph.getEdgeMesh().scheduleReload();
+        graph.getEdgeMesh().scheduleColorReload();
         nodeCluster.ifPresent(g -> g.addEdgeAttribute(label, on));
         subGraph.ifPresent(g -> g.update(getMarkedLabels()));
     }
@@ -523,7 +528,7 @@ public class Main {
                 for (State state : result) {
                     state.addColor(MU_FORMULA_COLOR, MU_FORMULA);
                 }
-                graph.getNodeMesh().scheduleReload();
+                graph.getNodeMesh().scheduleColorReload();
 
                 List<FixedPoint> fixedPoints = formulaParser.getFixedPoints();
 
@@ -543,7 +548,7 @@ public class Main {
 //                        edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
 //                    }
 //                }
-                graph.getEdgeMesh().scheduleReload();
+                graph.getEdgeMesh().scheduleColorReload();
 
                 FixedPoint fp2 = new LargestFixedPoint('_', fixedPoints.size());
                 fixedPoints.forEach(fp2::addDescendant);
@@ -562,7 +567,7 @@ public class Main {
                         edge.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
                     }
                 }
-                graph.getEdgeMesh().scheduleReload();
+                graph.getEdgeMesh().scheduleColorReload();
 
                 StateSet states = new StateSet(unavoidables);
                 states.intersect(unreachables);
@@ -575,5 +580,9 @@ public class Main {
         } catch (FileNotFoundException e) {
             Logger.ERROR.print(e);
         }
+    }
+
+    public void setEdgeShape(EdgeShader.EdgeShape edgeShape) {
+        edgeShader.currentShape = edgeShape;
     }
 }
