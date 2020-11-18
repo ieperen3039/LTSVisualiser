@@ -31,7 +31,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private final int numThreads;
     private float natLength = 2f;
     private float repulsion = 5f;
-    private float attraction = 2.5f; // 1/100th of what LTSGraph uses
+    private float attraction = 1f; // 1/100th of what LTSGraph uses
     private float speed = 0;
     private float edgeRepulsion = 0.1f;
 

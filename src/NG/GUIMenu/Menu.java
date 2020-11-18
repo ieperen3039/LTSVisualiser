@@ -293,7 +293,7 @@ public class Menu extends SDecorator {
     }
 
     private static class SimulationSliderUI extends SPanel {
-        public static final float SPEED_MAXIMUM = 2f / (1 << 11);
+        public static final float SPEED_MAXIMUM = 1f / (1 << 8);
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{
@@ -301,10 +301,10 @@ public class Menu extends SDecorator {
                             new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
                     }, {
                             new STextArea("Attraction", BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
+                    new SSlider(0, 5f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
                     }, {
                             new STextArea("Repulsion", BUTTON_PROPS),
-                            new SSlider(0, 20f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
+                    new SSlider(0, 25f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
                     }, {
                             new STextArea("Natural Length", BUTTON_PROPS),
                             new SSlider(0, 10f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
