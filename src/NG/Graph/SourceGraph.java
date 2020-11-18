@@ -82,7 +82,7 @@ public class SourceGraph extends Graph {
         PairList<Transition, State> pairs = mapping.get(node);
 
         for (int i = 0; i < pairs.size(); i++) {
-            if (pairs.left(i).from == pairs.right(i)) {
+            if (pairs.left(i).from == node) {
                 return false;
             }
         }
