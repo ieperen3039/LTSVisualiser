@@ -53,8 +53,8 @@ public class Main {
     public static final Color4f INITAL_STATE_COLOR = Color4f.rgb(4, 150, 13); // green
 
     public static final Color4f MU_FORMULA_COLOR = Color4f.rgb(255, 0, 255); // purple-pink
-    public static final Color4f MU_FORMULA_UNAVOIDABLE = Color4f.rgb(200, 0, 0); // red
-    public static final Color4f MU_FORMULA_UNREACHABLE = Color4f.rgb(0, 200, 0); // green
+    public static final Color4f MU_FORMULA_UNREACHABLE = Color4f.rgb(200, 0, 0, 0.5f); // red
+    public static final Color4f MU_FORMULA_UNAVOIDABLE = Color4f.rgb(0, 200, 0, 0.5f); // green
 
 
     private static final Version VERSION = new Version(0, 2);
@@ -527,11 +527,16 @@ public class Main {
 
                 StateSet unavoidables = new ModelChecker(graph, formulaParser).call();
                 Logger.INFO.printf("Unavoidable for %d states", unavoidables.size());
-                for (Transition edge : graph.edges) {
-                    if (unavoidables.contains(edge.to)) {
-                        edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
+                for (State state : unavoidables) {
+                    if (!result.contains(state)) {
+                        state.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
                     }
                 }
+//                for (Transition edge : graph.edges) {
+//                    if (unavoidables.contains(edge.to)) {
+//                        edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
+//                    }
+//                }
                 graph.getEdgeMesh().scheduleReload();
 
                 FixedPoint fp2 = new LargestFixedPoint('_', fixedPoints.size());
@@ -539,13 +544,24 @@ public class Main {
                 fp2.setRight(new LogicalAnd(new Negation(formulaParser.get()), new Box("true", fp2.variable)));
 
                 StateSet unreachables = new ModelChecker(graph, formulaParser).call();
+                unreachables.diff(result); // remove all states where the property holds
                 Logger.INFO.printf("Unreachable for %d states", unreachables.size());
+                for (State state : unreachables) {
+                    if (!result.contains(state)) {
+                        state.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
+                    }
+                }
                 for (Transition edge : graph.edges) {
                     if (unreachables.contains(edge.to) && !unreachables.contains(edge.from)) {
                         edge.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
                     }
                 }
                 graph.getEdgeMesh().scheduleReload();
+
+                StateSet states = new StateSet(unavoidables);
+                states.intersect(unreachables);
+                assert states.isEmpty() : String.format("%d unavoidable and unreachable states: %s", states.size(), states);
+
             });
             thread.setDaemon(true);
             thread.start();

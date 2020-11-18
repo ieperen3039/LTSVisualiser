@@ -322,7 +322,7 @@ public class FrameManagerImpl implements UIFrameManager {
     @Override
     public void onScroll(float value) {
         SComponent target = hoveredComponent;
-        do {
+        while (target != null) {
             if (target instanceof MouseScrollListener) {
                 MouseScrollListener listener = (MouseScrollListener) target;
                 listener.onScroll(value);
@@ -330,7 +330,7 @@ public class FrameManagerImpl implements UIFrameManager {
             }
 
             target = target.getParent().orElse(null);
-
-        } while (target != null);
+        }
+        ;
     }
 }

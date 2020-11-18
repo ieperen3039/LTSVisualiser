@@ -115,7 +115,7 @@ public class Menu extends SDecorator {
                         ),
                         new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS),
                         SContainer.row(
-                                new SButton("Load HML-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
+                                new SButton("Load Modal Mu-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
                                 new SButton("Clear Formula", () -> graph.resetColors(GraphElement.Priority.MU_FORMULA), BUTTON_PROPS)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),

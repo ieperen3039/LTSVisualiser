@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
  */
 public class FormulaParser {
     private static final int MAX_PRIORITY = 10;
+    private static final int NEGATION_PRIORITY = 4;
     private static final int AND_OR_PRIORITY = 3;
     private static final int DIAMOND_BOX_PRIORITY = 2;
     private static final int FIXED_POINT_PRIORITY = 1;
@@ -28,9 +29,9 @@ public class FormulaParser {
     private int variableNumber = 0;
 
     /**
-     * Parses the formula contained in the given file. The formula must be of the shape
+     * Parses the formula contained in the given file. The formula must be part of Modal Mu-calculus, and of the shape
      * <p>
-     * {@code f; g ::= false | true | X | (f&&g) | (f||g) | <a>f | [a]f | mu X.f | nu X.f}
+     * {@code f; g ::= false | true | !f | X | (f&&g) | (f||g) | <a>f | [a]f | mu X.f | nu X.f}
      * @param formulaFile the file with the formula to parse
      */
     public FormulaParser(File formulaFile) throws FileNotFoundException {
@@ -48,7 +49,7 @@ public class FormulaParser {
         }
 
         ParseReturn result = parseRecursive(formula.toString(), 0, MAX_PRIORITY);
-        assert result.end == formula.length();
+        assert result.end == formula.length() : "Reached end of formula, with open elements";
 
         root = result.formula;
     }
@@ -89,7 +90,7 @@ public class FormulaParser {
             char firstChar = formula.charAt(i);
             String remainder = formula.substring(i);
 
-            if (firstChar == ' ') { // skip spaces
+            if (firstChar == ' ' || firstChar == '\t') { // skip spaces
                 i++;
 
             } else if (remainder.startsWith("true")) {
@@ -102,104 +103,109 @@ public class FormulaParser {
                 current = new False();
                 i += 5;
 
-            } else {
-                if (remainder.startsWith("&&")) {
-                    if (currentPriority <= AND_OR_PRIORITY) return new ParseReturn(current, i);
-                    // runs until closing parenthesis
-                    ParseReturn right = parseRecursive(formula, i + 2, AND_OR_PRIORITY);
-                    // now close the opening parenthesis
-                    return new ParseReturn(new LogicalAnd(current, right.formula), right.end);
+            } else if (firstChar == '!') {
+                if (currentPriority < NEGATION_PRIORITY) return new ParseReturn(current, i);
+                assert current == null : String.format("current == '%s'", current);
+                ParseReturn recursion = parseRecursive(formula, i + 1, NEGATION_PRIORITY);
+                current = new Negation(recursion.formula);
+                i = recursion.end;
 
-                } else if (remainder.startsWith("||")) {
-                    if (currentPriority <= AND_OR_PRIORITY) return new ParseReturn(current, i);
-                    // runs until closing parenthesis
-                    ParseReturn right = parseRecursive(formula, i + 2, AND_OR_PRIORITY);
-                    // now close the opening parenthesis
-                    return new ParseReturn(new LogicalOr(current, right.formula), right.end);
+            } else if (remainder.startsWith("&&")) {
+                if (currentPriority < AND_OR_PRIORITY) return new ParseReturn(current, i);
+                // runs until closing parenthesis
+                ParseReturn right = parseRecursive(formula, i + 2, AND_OR_PRIORITY);
+                // now close the opening parenthesis
+                return new ParseReturn(new LogicalAnd(current, right.formula), right.end);
 
-                } else if (remainder.startsWith("mu ") || remainder.startsWith("nu ")) {
-                    if (currentPriority <= FIXED_POINT_PRIORITY) return new ParseReturn(current, i);
-                    assert current == null : String.format("current == '%s'", current);
-                    assert formula.charAt(i + 4) == '.';
+            } else if (remainder.startsWith("||")) {
+                if (currentPriority < AND_OR_PRIORITY) return new ParseReturn(current, i);
+                // runs until closing parenthesis
+                ParseReturn right = parseRecursive(formula, i + 2, AND_OR_PRIORITY);
+                // now close the opening parenthesis
+                return new ParseReturn(new LogicalOr(current, right.formula), right.end);
 
-                    char fixVarName = formula.charAt(i + 3);
-                    assert !fixedPointDict.containsKey(fixVarName) : "Reused variable " + formula.charAt(i + 1);
+            } else if (remainder.startsWith("mu ") || remainder.startsWith("nu ")) {
+                if (currentPriority < FIXED_POINT_PRIORITY) return new ParseReturn(current, i);
+                assert current == null : String.format("current == '%s'", current);
+                assert formula.charAt(i + 4) == '.';
 
-                    boolean smallestFixedPoint = remainder.startsWith("mu ");
+                char fixVarName = formula.charAt(i + 3);
+                assert !fixedPointDict.containsKey(fixVarName) : "Reused variable " + fixVarName;
 
-                    FixedPoint fp;
-                    if (smallestFixedPoint) {
-                        fp = new SmallestFixedPoint(fixVarName, variableNumber++);
-                    } else {
-                        fp = new LargestFixedPoint(fixVarName, variableNumber++);
-                    }
+                boolean smallestFixedPoint = remainder.startsWith("mu ");
 
-                    fixedPoints.add(fp);
-                    fixedPointDict.put(fixVarName, fp);
-
-                    for (FixedPoint parent : currentParentFixPoints) {
-                        parent.addDescendant(fp);
-                    }
-
-                    currentParentFixPoints.add(fp);
-                    ParseReturn right = parseRecursive(formula, i + 5, MAX_PRIORITY);
-                    currentParentFixPoints.remove();
-
-                    current = fp.setRight(right.formula);
-                    i = right.end;
-
-                } else if (firstChar == '(') {
-                    assert current == null : String.format("current == '%s'", current);
-                    ParseReturn inside = parseRecursive(formula, start + 1, MAX_PRIORITY);
-                    current = inside.formula;
-
-                    i = inside.end;
-
-                } else if (firstChar == ')') {
-                    return new ParseReturn(current, i + 1);
-
-                } else if (firstChar == '<') {
-                    if (currentPriority < DIAMOND_BOX_PRIORITY) return new ParseReturn(current, i);
-                    assert current == null : String.format("current == '%s'", current);
-
-                    int closing = i + 1;
-                    while (formula.charAt(closing) != '>') closing++;
-                    ParseReturn right = parseRecursive(formula, closing + 1, DIAMOND_BOX_PRIORITY);
-                    current = new Diamond(formula.substring(i + 1, closing), right.formula);
-
-                    i = right.end;
-
-                } else if (firstChar == '[') {
-                    if (current != null && currentPriority < DIAMOND_BOX_PRIORITY) return new ParseReturn(current, i);
-                    assert current == null : String.format("current == '%s'", current);
-
-                    int closing = i + 1;
-                    while (formula.charAt(closing) != ']') closing++;
-                    ParseReturn right = parseRecursive(formula, closing + 1, DIAMOND_BOX_PRIORITY);
-                    current = new Box(formula.substring(i + 1, closing), right.formula);
-
-                    i = right.end;
-
+                FixedPoint fp;
+                if (smallestFixedPoint) {
+                    fp = new SmallestFixedPoint(fixVarName, variableNumber++);
                 } else {
-                    final FixedPoint fixedPoint = fixedPointDict.get(firstChar);
-
-                    if (fixedPoint == null) {
-                        throw new IllegalArgumentException(String.format(
-                                "Unexpected character '%s' starting at '%s' on line %d",
-                                firstChar, formula.substring(i, i + 10), i
-                        ));
-                    }
-                    FixedPointVariable variable = fixedPoint.variable;
-
-                    for (FixedPoint fx : currentParentFixPoints) {
-                        fx.addVar(variable);
-                    }
-
-                    assert current == null : String.format("current == '%s'", current);
-                    current = variable;
-
-                    i++;
+                    fp = new LargestFixedPoint(fixVarName, variableNumber++);
                 }
+
+                fixedPoints.add(fp);
+                fixedPointDict.put(fixVarName, fp);
+
+                for (FixedPoint parent : currentParentFixPoints) {
+                    parent.addDescendant(fp);
+                }
+
+                currentParentFixPoints.add(fp);
+                ParseReturn right = parseRecursive(formula, i + 5, MAX_PRIORITY);
+                currentParentFixPoints.remove();
+
+                current = fp.setRight(right.formula);
+                i = right.end;
+
+            } else if (firstChar == '(') {
+                assert current == null : String.format("current == '%s'", current);
+                ParseReturn inside = parseRecursive(formula, start + 1, MAX_PRIORITY);
+                current = inside.formula;
+
+                i = inside.end;
+
+            } else if (firstChar == ')') {
+                return new ParseReturn(current, i + 1);
+
+            } else if (firstChar == '<') {
+                if (currentPriority < DIAMOND_BOX_PRIORITY) return new ParseReturn(current, i);
+                assert current == null : String.format("current == '%s'", current);
+
+                int closing = i + 1;
+                while (formula.charAt(closing) != '>') closing++;
+                ParseReturn right = parseRecursive(formula, closing + 1, DIAMOND_BOX_PRIORITY);
+                current = new Diamond(formula.substring(i + 1, closing), right.formula);
+
+                i = right.end;
+
+            } else if (firstChar == '[') {
+                if (current != null && currentPriority < DIAMOND_BOX_PRIORITY) return new ParseReturn(current, i);
+                assert current == null : String.format("current == '%s'", current);
+
+                int closing = i + 1;
+                while (formula.charAt(closing) != ']') closing++;
+                ParseReturn right = parseRecursive(formula, closing + 1, DIAMOND_BOX_PRIORITY);
+                current = new Box(formula.substring(i + 1, closing), right.formula);
+
+                i = right.end;
+
+            } else {
+                final FixedPoint fixedPoint = fixedPointDict.get(firstChar);
+
+                if (fixedPoint == null) {
+                    throw new IllegalArgumentException(String.format(
+                            "Unexpected character '%s' starting at '%s' on line %d",
+                            firstChar, formula.substring(i, i + 10), i
+                    ));
+                }
+                FixedPointVariable variable = fixedPoint.variable;
+
+                for (FixedPoint fx : currentParentFixPoints) {
+                    fx.addVar(variable);
+                }
+
+                assert current == null : String.format("current == '%s'", current);
+                current = variable;
+
+                i++;
             }
         }
 
