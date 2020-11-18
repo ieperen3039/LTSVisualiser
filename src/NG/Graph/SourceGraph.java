@@ -7,6 +7,7 @@ import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 import NG.MuChecker.StateSet;
+import NG.Tools.Logger;
 import NG.Tools.Vectors;
 
 import java.io.File;
@@ -28,7 +29,8 @@ public class SourceGraph extends Graph {
     public final Transition[] edges;
     private final String[] actionLabels;
     // maps nodes to their neighbours
-    private final Map<State, PairList<Transition, State>> mapping;
+    private final Map<State, PairList<Transition, State>> incomingTransitions;
+    private final Map<State, PairList<Transition, State>> outgoingTransitions;
 
     private final NodeMesh nodeMesh;
     private final EdgeMesh edgeMesh;
@@ -38,7 +40,8 @@ public class SourceGraph extends Graph {
     private SourceGraph(Main root, int numStates, int numTransitions, float natLength) {
         super(root);
         this.natLength = natLength;
-        this.mapping = new HashMap<>();
+        this.incomingTransitions = new HashMap<>();
+        this.outgoingTransitions = new HashMap<>();
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
 
@@ -73,26 +76,38 @@ public class SourceGraph extends Graph {
             getEdgeMesh().addParticle(edge);
         }
 
+        // initial state
         State initialState = getInitialState();
         initialState.addColor(INITAL_STATE_COLOR, GraphElement.Priority.BASE);
         initialState.border = INITAL_STATE_COLOR;
+
+        // collect confluent classes
+        Collection<List<State>> confluentStates = new ConfluenceDetector(this).call();
+        Logger.DEBUG.print(confluentStates.size() + " confluent groups");
+
+        for (List<State> list : confluentStates) {
+            int classIndex = list.get(0).classIndex;
+
+            for (State state : list) {
+                state.classIndex = classIndex;
+            }
+        }
     }
 
     public boolean isDeadlocked(State node) {
-        PairList<Transition, State> pairs = mapping.get(node);
-
-        for (int i = 0; i < pairs.size(); i++) {
-            if (pairs.left(i).from == node) {
-                return false;
-            }
-        }
-
-        return true;
+        if (!outgoingTransitions.containsKey(node)) return true;
+        assert (!outgoingTransitions.get(node).isEmpty());
+        return false;
     }
 
     @Override
-    public PairList<Transition, State> connectionsOf(State node) {
-        return mapping.getOrDefault(node, PairList.empty());
+    public PairList<Transition, State> incomingOf(State node) {
+        return incomingTransitions.getOrDefault(node, PairList.empty());
+    }
+
+    @Override
+    public PairList<Transition, State> outgoingOf(State node) {
+        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     @Override
@@ -193,8 +208,8 @@ public class SourceGraph extends Graph {
 
             graph.actionLabels[edgeIndex] = label;
             graph.edges[edgeIndex] = edge;
-            graph.mapping.computeIfAbsent(startState, s -> new PairList<>()).add(edge, endState);
-            graph.mapping.computeIfAbsent(endState, s -> new PairList<>()).add(edge, startState);
+            graph.outgoingTransitions.computeIfAbsent(startState, s -> new PairList<>()).add(edge, endState);
+            graph.incomingTransitions.computeIfAbsent(endState, s -> new PairList<>()).add(edge, startState);
 
             edgeIndex++;
         }

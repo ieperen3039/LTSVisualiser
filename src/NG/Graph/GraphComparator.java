@@ -18,7 +18,9 @@ public class GraphComparator extends Graph {
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.2f);
     public static final Color4f COMBINED_COLOR = Color4f.rgb(0, 0, 0, 0.8f);
 
-    private final Map<State, PairList<Transition, State>> mapping;
+    private final Map<State, PairList<Transition, State>> incomingTransitions;
+    private final Map<State, PairList<Transition, State>> outgoingTransitions;
+
     private final Collection<String> attributes;
     private final NodeMesh nodeMesh = new NodeMesh();
     private final EdgeMesh edgeMesh = new EdgeMesh();
@@ -26,7 +28,8 @@ public class GraphComparator extends Graph {
 
     public GraphComparator(Graph a, Graph b) {
         super(a.root);
-        this.mapping = new HashMap<>();
+        this.incomingTransitions = new HashMap<>();
+        this.outgoingTransitions = new HashMap<>();
         this.attributes = new ArrayList<>(a.getEdgeAttributes());
 
         // edge case: trivial graphs
@@ -191,7 +194,7 @@ public class GraphComparator extends Graph {
 
                 edgeMesh.addParticle(newEdge);
                 newEdge.addColor(COMBINED_COLOR, GraphElement.Priority.BASE);
-                mapping.computeIfAbsent(generatedNode, s -> new PairList<>()).add(newEdge, newNode);
+                outgoingTransitions.computeIfAbsent(generatedNode, s -> new PairList<>()).add(newEdge, newNode);
 
                 if (!exists) {
                     nodeMesh.addNode(newNode);
@@ -241,7 +244,7 @@ public class GraphComparator extends Graph {
 
         edgeMesh.addParticle(newEdge);
         newEdge.addColor(color, GraphElement.Priority.BASE);
-        mapping.computeIfAbsent(parentNode, s -> new PairList<>()).add(newEdge, newNode);
+        outgoingTransitions.computeIfAbsent(parentNode, s -> new PairList<>()).add(newEdge, newNode);
 
         if (!exists) {
             nodeMesh.addNode(newNode);
@@ -258,10 +261,13 @@ public class GraphComparator extends Graph {
     }
 
     @Override
-    public PairList<Transition, State> connectionsOf(
-            State node
-    ) {
-        return mapping.getOrDefault(node, PairList.empty());
+    public PairList<Transition, State> incomingOf(State node) {
+        return incomingTransitions.getOrDefault(node, PairList.empty());
+    }
+
+    @Override
+    public PairList<Transition, State> outgoingOf(State node) {
+        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     @Override

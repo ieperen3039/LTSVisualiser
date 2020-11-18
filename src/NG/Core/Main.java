@@ -86,7 +86,7 @@ public class Main {
     private DisplayMethod displayMethod = DisplayMethod.HIGHLIGHT_ACTIONS;
 
     public enum DisplayMethod {
-        HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS
+        HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
     }
 
     public Main(Settings settings) throws IOException {
@@ -308,6 +308,11 @@ public class Main {
             for (int i = 0; i < actionLabels.length; i++) {
                 nodeClustering.addEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
             }
+
+        } else if (method == DisplayMethod.CONFLUENCE) {
+            NodeClustering nodeClustering = nodeCluster.get();
+            Map<State, State> leaderMap = new ConfluenceDetector(graph).getLeaderMap();
+            nodeClustering.createCluster(leaderMap, false);
         }
 
         springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
@@ -395,6 +400,7 @@ public class Main {
             case HIDE_ACTIONS:
                 return subGraph.get();
 
+            case CONFLUENCE:
             case CLUSTER_ON_SELECTED:
             case CLUSTER_ON_SELECTED_IGNORE_LOOPS:
                 return nodeCluster.get();

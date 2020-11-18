@@ -125,7 +125,16 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
     }
 
-    public abstract PairList<Transition, State> connectionsOf(State node);
+    public abstract PairList<Transition, State> incomingOf(State node);
+
+    public abstract PairList<Transition, State> outgoingOf(State node);
+
+    public PairList<Transition, State> connectionsOf(State node) {
+        PairList<Transition, State> pairs = new PairList<>();
+        pairs.addAll(incomingOf(node));
+        pairs.addAll(outgoingOf(node));
+        return pairs;
+    }
 
     public abstract NodeMesh getNodeMesh();
 

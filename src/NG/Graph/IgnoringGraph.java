@@ -17,7 +17,8 @@ public class IgnoringGraph extends Graph {
     private final Graph source;
     private final Collection<String> edgeAttributes;
     private final EdgeMesh edgeMesh;
-    private final Map<State, PairList<Transition, State>> mapping;
+    private final Map<State, PairList<Transition, State>> incomingTransitions;
+    private final Map<State, PairList<Transition, State>> outgoingTransitions;
 
     public IgnoringGraph(Graph source, Collection<String> ignoredLabels) {
         super(source.root);
@@ -25,7 +26,8 @@ public class IgnoringGraph extends Graph {
         this.edgeMesh = new EdgeMesh();
         this.edgeAttributes = new HashSet<>(source.getEdgeAttributes());
         this.edgeAttributes.removeAll(ignoredLabels);
-        this.mapping = new HashMap<>();
+        this.incomingTransitions = new HashMap<>();
+        this.outgoingTransitions = new HashMap<>();
 
         List<Transition> edges = source.getEdgeMesh().edgeList();
         for (Transition sourceEdge : edges) {
@@ -37,8 +39,8 @@ public class IgnoringGraph extends Graph {
 
             edgeMesh.addParticle(newEdge);
 
-            mapping.computeIfAbsent(sourceEdge.from, s -> new PairList<>()).add(newEdge, sourceEdge.to);
-            mapping.computeIfAbsent(sourceEdge.to, s -> new PairList<>()).add(newEdge, sourceEdge.from);
+            outgoingTransitions.computeIfAbsent(sourceEdge.from, s -> new PairList<>()).add(newEdge, sourceEdge.to);
+            incomingTransitions.computeIfAbsent(sourceEdge.to, s -> new PairList<>()).add(newEdge, sourceEdge.from);
         }
     }
 
@@ -64,8 +66,13 @@ public class IgnoringGraph extends Graph {
     }
 
     @Override
-    public PairList<Transition, State> connectionsOf(State node) {
-        return mapping.getOrDefault(node, PairList.empty());
+    public PairList<Transition, State> incomingOf(State node) {
+        return incomingTransitions.getOrDefault(node, PairList.empty());
+    }
+
+    @Override
+    public PairList<Transition, State> outgoingOf(State node) {
+        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     @Override

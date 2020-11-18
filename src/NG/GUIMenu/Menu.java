@@ -113,7 +113,7 @@ public class Menu extends SDecorator {
                                     main.setGraph(file);
                                 }, "*.aut"), BUTTON_PROPS
                         ),
-                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS),
+//                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS), // replaced by confluence detection
                         SContainer.row(
                                 new SButton("Load Modal Mu-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
                                 new SButton("Clear Formula", () -> graph.resetColors(GraphElement.Priority.MU_FORMULA), BUTTON_PROPS)

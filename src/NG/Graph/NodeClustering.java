@@ -13,7 +13,9 @@ import static NG.Core.Main.INITAL_STATE_COLOR;
  * @author Geert van Ieperen created on 5-8-2020.
  */
 public class NodeClustering extends Graph {
-    private final Map<State, PairList<Transition, State>> neighbourMapping = new HashMap<>();
+    // maps nodes to their neighbours
+    private final Map<State, PairList<Transition, State>> incomingTransitions = new HashMap<>();
+    private final Map<State, PairList<Transition, State>> outgoingTransitions = new HashMap<>();
 
     // maps a new cluster node to the set of elements representing that cluster
     private final Map<State, Collection<State>> clusterMapping = new HashMap<>();
@@ -44,7 +46,8 @@ public class NodeClustering extends Graph {
      */
     public synchronized void createCluster(Map<State, State> clusterLeaderMap, boolean showSelfLoop) {
         clusterMapping.clear();
-        neighbourMapping.clear();
+        incomingTransitions.clear();
+        outgoingTransitions.clear();
 
         NodeMesh nodes = sourceGraph.getNodeMesh();
         EdgeMesh edges = sourceGraph.getEdgeMesh();
@@ -100,15 +103,17 @@ public class NodeClustering extends Graph {
 
             // already exists an equal edge
             // even for non-deterministic graphs, this does not change the meaning of the graph
-            if (edgeExists(neighbourMapping, aTarget, bTarget, edge.label)) continue;
+            if (edgeExists(outgoingTransitions, aTarget, bTarget, edge.label)) continue;
 
             Transition newEdge = new Transition(aTarget, bTarget, edge.label);
             newEdge.handlePos.set(edge.handlePos);
             clusterEdges.addParticle(newEdge);
 
-            neighbourMapping.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bTarget);
-            neighbourMapping.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aTarget);
+            outgoingTransitions.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bTarget);
+            incomingTransitions.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aTarget);
         }
+
+        isDirty = false;
     }
 
     /** Sets the position of the clustered nodes to the average of its source */
@@ -159,9 +164,13 @@ public class NodeClustering extends Graph {
     }
 
     @Override
-    public PairList<Transition, State> connectionsOf(State node) {
-        checkDirty();
-        return neighbourMapping.getOrDefault(node, PairList.empty());
+    public PairList<Transition, State> incomingOf(State node) {
+        return incomingTransitions.getOrDefault(node, PairList.empty());
+    }
+
+    @Override
+    public PairList<Transition, State> outgoingOf(State node) {
+        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     private Map<State, State> attributeCluster(Set<String> attributeLabels) {
