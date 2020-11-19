@@ -102,12 +102,16 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // graph file selector
-                        new SButton(
-                                "Load Graph", () -> openFileDialog(
-                                file -> {
-                                    this.currentGraphFile = file;
-                                    main.setGraph(file);
-                                }, "*.aut"), BUTTON_PROPS
+                        new SButton("Load Graph",
+                                () -> openFileDialog(
+                                        file -> {
+                                            currentGraphFile = file;
+                                            main.setGraph(file);
+                                        }, "*.aut"
+                                ), BUTTON_PROPS
+                        ),
+                        new SButton("Load second Graph",
+                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
                         ),
 //                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS), // replaced by confluence detection
                         SContainer.row(

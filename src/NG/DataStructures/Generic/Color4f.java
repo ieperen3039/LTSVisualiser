@@ -139,14 +139,19 @@ public class Color4f implements Serializable {
      * @see #darken(float)
      */
     public Color4f intensify(float scalar) {
-        return overlay(new Color4f(scalar, scalar, scalar, alpha));
+        return new Color4f(
+                inverseMul(red, scalar),
+                inverseMul(green, scalar),
+                inverseMul(blue, scalar),
+                alpha
+        );
     }
 
     /**
-     * darken this color by linearly fading it to black. does not affect alpha, and is not the inverse of {@link
+     * darken this color by linearly fading it to black. Does not affect alpha, and is not the inverse of {@link
      * #intensify(float)}
      * @param scalar a factor in [0, 1], where 0 gives no change, and 1 makes this color effectively black
-     * @return the new color, darkened up
+     * @return the new color, darkened
      * @see #intensify(float)
      */
     public Color4f darken(float scalar) {
@@ -155,6 +160,19 @@ public class Color4f implements Serializable {
                 green * (1 - scalar),
                 blue * (1 - scalar),
                 alpha
+        );
+    }
+
+    /**
+     * replaces the transparency with white, creating an opaque variation of this color
+     * @return the color if it was on a white background.
+     */
+    public Color4f opaque() {
+        return new Color4f(
+                inverseMul(red, alpha),
+                inverseMul(green, alpha),
+                inverseMul(blue, alpha),
+                1
         );
     }
 

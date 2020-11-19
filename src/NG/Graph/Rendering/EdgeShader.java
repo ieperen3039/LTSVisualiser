@@ -30,8 +30,6 @@ public class EdgeShader implements ShaderProgram {
     private static final Path FRAGMENT_PATH = Directory.shaders.getPath("edges", "fragment.frag");
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
 
-    public EdgeShape currentShape = EdgeShape.ARROW;
-
     private static final float HEAD_WIDTH = NODE_RADIUS * 1.0f;
     private static final float EDGE_WIDTH = HEAD_WIDTH * 0.5f;
 
@@ -67,6 +65,8 @@ public class EdgeShader implements ShaderProgram {
             this.gradient = gradient;
         }
     }
+
+    public EdgeShape currentShape = EdgeShape.ARROW;
 
     public EdgeShader() throws IOException {
         programID = glCreateProgram();

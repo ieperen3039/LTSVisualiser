@@ -260,11 +260,11 @@ public class Main {
                 graph = newGraph;
                 graph.init();
 
-                springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
-
                 nodeCluster.drop();
                 graphComparator.drop();
                 subGraph.drop();
+
+                springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
 
                 onNodePositionChange();
                 Logger.INFO.print("Loaded graph with " + graph.states.length + " nodes and " + graph.edges.length + " edges");
@@ -292,6 +292,8 @@ public class Main {
 
                 graphComparator.drop();
             }
+            setDisplayMethod(DisplayMethod.COMPARE_GRAPHS);
+            onNodePositionChange();
         });
     }
 

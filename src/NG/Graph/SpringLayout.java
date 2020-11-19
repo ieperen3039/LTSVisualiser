@@ -4,6 +4,7 @@ import NG.Core.AbstractGameLoop;
 import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.DataStructures.Generic.PairList;
+import NG.Tools.Logger;
 import NG.Tools.TimeObserver;
 import NG.Tools.Vectors;
 import org.joml.Math;
@@ -51,6 +52,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     public synchronized void setGraph(Graph graph) {
+        Logger.DEBUG.print("set graph to " + graph.getClass());
         this.graph = graph;
     }
 
