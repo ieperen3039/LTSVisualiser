@@ -36,6 +36,8 @@ public abstract class GraphElement {
         }
     }
 
+    public abstract String identifier();
+
     public void resetColor(Priority priority) {
         if (priority == BASE) throw new IllegalArgumentException("Cannot remove priority " + BASE);
         int index = colors.indexOfLeft(priority);

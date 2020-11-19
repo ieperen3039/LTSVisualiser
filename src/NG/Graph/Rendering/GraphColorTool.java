@@ -15,11 +15,9 @@ import static NG.Graph.Rendering.GraphElement.Priority.USER_COLOR;
  */
 public class GraphColorTool extends MouseTool {
     private Color4f color;
-    private Runnable onLeftClick;
 
-    public GraphColorTool(Main root, Runnable onLeftClick, Color4f initialColor) {
+    public GraphColorTool(Main root, Color4f initialColor) {
         super(root);
-        this.onLeftClick = onLeftClick;
         this.color = initialColor;
     }
 
@@ -40,15 +38,6 @@ public class GraphColorTool extends MouseTool {
 
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             edge.resetColor(USER_COLOR);
-        }
-    }
-
-    @Override
-    protected void onAirClick(int button, int x, int y) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            onLeftClick.run();
-        } else {
-            super.onAirClick(button, x, y);
         }
     }
 

@@ -13,7 +13,6 @@ import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.GraphColorTool;
 import NG.Graph.Rendering.GraphElement;
 import NG.InputHandling.MouseTools.MouseTool;
-import NG.InputHandling.MouseTools.MouseToolCallbacks;
 import NG.Rendering.RenderLoop;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
@@ -51,16 +50,13 @@ public class Menu extends SDecorator {
             .get();
 
     private final Main main;
-    private final GraphColorTool colorTool;
 
     public String[] actionLabels = new String[0];
     public SToggleButton[] attributeButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
-    private SToggleButton colorToggleButton;
 
     public Menu(Main main) {
         this.main = main;
-        this.colorTool = new GraphColorTool(main, () -> colorToggleButton.setActive(false), paintColors.right(0));
         reloadUI();
     }
 
@@ -69,21 +65,18 @@ public class Menu extends SDecorator {
         RenderLoop renderLoop = main.renderer;
         SpringLayout updateLoop = main.getSpringLayout();
         UIFrameManager frameManager = main.gui();
-        MouseToolCallbacks inputHandling = main.inputHandling();
+        GraphColorTool colorTool = new GraphColorTool(main, paintColors.right(0));
 
         actionLabels = graph.getEdgeAttributes().stream().distinct().sorted().toArray(String[]::new);
 
         attributeButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
             String label = actionLabels[i];
-            attributeButtons[i] = new SToggleButton(label, BUTTON_PROPS)
-                    .addStateChangeListener(on -> main.selectAttribute(label, on));
+            attributeButtons[i] = new SToggleButton(label, BUTTON_PROPS);
+            attributeButtons[i].addStateChangeListener(on -> main.selectAttribute(label, on));
             attributeButtons[i].setActive(false);
             attributeButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
         }
-
-        colorToggleButton = new SToggleButton("Activate Painting", BUTTON_PROPS)
-                .addStateChangeListener(on -> inputHandling.setMouseTool(on ? colorTool : null));
 
         // automatic barnes-hut (de)activation
         if (main.graph().getNrOfNodes() < 500) {
@@ -128,7 +121,7 @@ public class Menu extends SDecorator {
                                 ), BUTTON_PROPS),
                                 new SActiveTextArea(() -> {
                                     GraphElement element = main.getVisibleGraph().getHovered();
-                                    return element == null ? "-" : element.toString();
+                                    return element == null ? "-" : element.identifier();
                                 }, WAILA_TEXT_PROPERTIES)
                                         .setMaximumCharacters(150)
                         )),
@@ -141,7 +134,8 @@ public class Menu extends SDecorator {
                         // edge shape
                         new STextArea("Edge Shape", BUTTON_PROPS),
                         new SDropDown(
-                                frameManager, BUTTON_PROPS, 0, EDGE_SHAPE_LIST
+                                frameManager, BUTTON_PROPS,
+                                EDGE_SHAPE_LIST.indexOf(main.getEdgeShape()), EDGE_SHAPE_LIST
                         ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -149,7 +143,8 @@ public class Menu extends SDecorator {
                         new SPanel(SContainer.column(
                                 new STextArea("Display method", BUTTON_PROPS),
                                 new SDropDown(
-                                        frameManager, BUTTON_PROPS, 0, DISPLAY_METHOD_LIST,
+                                        frameManager, BUTTON_PROPS,
+                                        DISPLAY_METHOD_LIST.indexOf(main.getDisplayMethod()), DISPLAY_METHOD_LIST,
                                         displayMethod -> displayMethod.name().replace("_", " ")
                                 ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i))),
 
@@ -162,7 +157,7 @@ public class Menu extends SDecorator {
 
                         // color tool
                         SContainer.row(
-                                colorToggleButton,
+                                colorTool.button("Activate Painting", BUTTON_PROPS),
                                 new SButton(
                                         "Reset colors",
                                         () -> graph.resetColors(GraphElement.Priority.USER_COLOR),
@@ -181,14 +176,8 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // auxiliary buttons
-                        new SButton("Find shortest path",
-                                () -> main.inputHandling().setMouseTool(new PathVisualisationTool(main)),
-                                BUTTON_PROPS
-                        ),
-                        new SButton("Center camera on...",
-                                () -> main.inputHandling().setMouseTool(new CameraCenterTool(main)),
-                                BUTTON_PROPS
-                        ),
+                        new PathVisualisationTool(main).button("Find shortest path", BUTTON_PROPS),
+                        new CameraCenterTool(main).button("Center camera on...", BUTTON_PROPS),
                         new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SFiller()

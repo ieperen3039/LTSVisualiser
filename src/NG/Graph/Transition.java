@@ -28,6 +28,11 @@ public class Transition extends GraphElement {
 
     @Override
     public String toString() {
+        return String.format("(%s -%s-> %s)", from.identifier(), label, to.identifier());
+    }
+
+    @Override
+    public String identifier() {
         return "Action " + label;
     }
 }

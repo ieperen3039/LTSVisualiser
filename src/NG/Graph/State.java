@@ -2,6 +2,7 @@ package NG.Graph;
 
 import NG.DataStructures.Generic.Color4f;
 import NG.Graph.Rendering.GraphElement;
+import NG.Tools.Vectors;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -37,6 +38,11 @@ public class State extends GraphElement {
 
     @Override
     public String toString() {
+        return "Node " + label + " @" + Vectors.toString(position);
+    }
+
+    @Override
+    public String identifier() {
         return "Node " + label;
     }
 }

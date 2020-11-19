@@ -327,6 +327,10 @@ public class Main {
         onNodePositionChange();
     }
 
+    public DisplayMethod getDisplayMethod() {
+        return displayMethod;
+    }
+
     public void applyFileMarkings(File file) {
         try (Scanner scanner = new Scanner(file)) {
             synchronized (graphLock) {
@@ -586,5 +590,9 @@ public class Main {
 
     public void setEdgeShape(EdgeShader.EdgeShape edgeShape) {
         edgeShader.currentShape = edgeShape;
+    }
+
+    public EdgeShader.EdgeShape getEdgeShape() {
+        return edgeShader.currentShape;
     }
 }

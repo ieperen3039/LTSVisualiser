@@ -2,13 +2,16 @@ package NG.InputHandling.MouseTools;
 
 import NG.Camera.Camera;
 import NG.Core.Main;
+import NG.GUIMenu.Components.SToggleButton;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
+import NG.GUIMenu.SComponentProperties;
 import NG.Graph.Graph;
 import NG.Graph.State;
 import NG.Graph.Transition;
 import NG.InputHandling.MouseListener;
 import NG.InputHandling.MouseReleaseListener;
 import org.joml.Vector2i;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * @author Geert van Ieperen created on 24-4-2020.
@@ -17,10 +20,18 @@ public abstract class MouseTool implements MouseListener {
     protected Main root;
 
     private MouseReleaseListener releaseListener;
+    private Runnable onCancel = null;
 
     public MouseTool(Main root) {
         this.root = root;
         releaseListener = root.camera();
+    }
+
+    public SToggleButton button(String buttonText, SComponentProperties properties) {
+        SToggleButton button = new SToggleButton(buttonText, properties);
+        button.addStateChangeListener(on -> root.inputHandling().setMouseTool(on ? this : null));
+        onCancel = () -> button.setActive(false);
+        return button;
     }
 
     @Override
@@ -45,6 +56,11 @@ public abstract class MouseTool implements MouseListener {
     }
 
     protected void onAirClick(int button, int x, int y) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && onCancel != null) {
+            onCancel.run();
+            return;
+        }
+
         Camera camera = root.camera();
         camera.onClick(button, x, y);
         releaseListener = camera;
