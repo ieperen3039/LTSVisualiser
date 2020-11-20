@@ -22,5 +22,8 @@ public class Settings {
     public float CAMERA_ZOOM_SPEED = 0.1f;
     public float MAX_CAMERA_DIST = Z_FAR * 0.75f;
     public float MIN_CAMERA_DIST = Z_NEAR * 2f;
+
+    public static final boolean ADVANCED_MANIPULATION = false;
+    // other
     public boolean DEBUG = false;
 }

@@ -2,6 +2,7 @@ package NG.Graph;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
+import NG.DataStructures.Generic.Pair;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.GraphElement;
@@ -10,12 +11,15 @@ import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseTools.MouseTool;
 import NG.Rendering.GLFWWindow;
+import NG.Settings.Settings;
 import NG.Tools.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
@@ -110,7 +114,21 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
     }
 
-    public void setNodePosition(State node, Vector3f newPosition) {
+    protected void setNodePosition(State node, Vector3f newPosition) {
+        if (Settings.ADVANCED_MANIPULATION) {
+            Vector3f movement = new Vector3f(newPosition).sub(node.position);
+            Vector3f hMove = new Vector3f(movement).mul(0.5f);
+            Vector3f qMove = new Vector3f(movement).mul(0.75f);
+
+            Set<State> uniqueValues = new HashSet<>();
+            for (Pair<Transition, State> pair : connectionsOf(node)) {
+                pair.left.handlePos.add(qMove);
+                if (uniqueValues.add(pair.right)) {
+                    pair.right.position.add(hMove);
+                }
+            }
+        }
+
         node.position.set(newPosition);
     }
 

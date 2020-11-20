@@ -67,7 +67,7 @@ public interface Camera extends ToolElement, MouseListener {
         Matrix4f vpMatrix = new Matrix4f();
 
         if (isIsometric()) {
-            float visionSize = (vectorToFocus().length() - Settings.Z_NEAR);
+            float visionSize = (vectorToFocus().length() - Settings.Z_NEAR) / 2;
             vpMatrix.setOrthoSymmetric(aspectRatio * visionSize, visionSize, Settings.Z_NEAR, Settings.Z_FAR);
         } else {
             vpMatrix.setPerspective(Settings.FOV, aspectRatio, Settings.Z_NEAR, Settings.Z_FAR);
