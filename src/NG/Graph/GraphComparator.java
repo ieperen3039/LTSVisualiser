@@ -2,16 +2,16 @@ package NG.Graph;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
+import NG.DataStructures.Generic.Pair;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
+import NG.MuChecker.StateSet;
 import NG.Tools.Vectors;
+import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Compares two deterministic graphs
@@ -113,29 +113,18 @@ public class GraphComparator extends Graph {
 
         for (int i = 0; i < aSize; i++) {
             if (!aMatching[i]) {
-                add(generatedNode, aGraph, "A", A_COLOR, seen, aConnections, i);
+                State node = aConnections.right(i);
+                Transition transition = aConnections.left(i);
+                add(generatedNode, aGraph, "A", A_COLOR, seen, i, node, transition);
             }
         }
 
         for (int j = 0; j < bSize; j++) {
             if (!bMatching[j]) {
-                add(generatedNode, bGraph, "B", B_COLOR, seen, bConnections, j);
+                State node = bConnections.right(j);
+                Transition transition = bConnections.left(j);
+                add(generatedNode, bGraph, "B", B_COLOR, seen, j, node, transition);
             }
-        }
-    }
-
-    /**
-     * adds all children of targetNode to this graph, as a not-matching side-graph of the given color, where each node
-     * has the given prefix.
-     */
-    private void addChildren(
-            State parentNode, State targetNode, String prefix, Color4f color,
-            Map<State, State> seen, Graph graph
-    ) {
-        PairList<Transition, State> connections = graph.connectionsOf(targetNode);
-        for (int i = 0; i < connections.size(); i++) {
-            if (connections.left(i).from != targetNode) continue;
-            add(parentNode, graph, prefix, color, seen, connections, i);
         }
     }
 
@@ -145,12 +134,8 @@ public class GraphComparator extends Graph {
      */
     private void add(
             State parentNode, Graph graph, String prefix, Color4f color,
-            Map<State, State> seen, PairList<Transition, State> connections,
-            int index
+            Map<State, State> seen, int index, State node, Transition edge
     ) {
-        State node = connections.right(index);
-        Transition edge = connections.left(index);
-
         boolean exists = seen.containsKey(node);
         State newNode = exists ? seen.get(node) : new State(node.position, prefix + node.label, index, index);
         Transition newEdge = new Transition(parentNode, newNode, edge.label);
@@ -158,13 +143,161 @@ public class GraphComparator extends Graph {
         edgeMesh.addParticle(newEdge);
         newEdge.addColor(color, GraphElement.Priority.BASE);
         outgoingTransitions.computeIfAbsent(parentNode, s -> new PairList<>()).add(newEdge, newNode);
+        incomingTransitions.computeIfAbsent(newNode, s -> new PairList<>()).add(newEdge, parentNode);
 
         if (!exists) {
             nodeMesh.addNode(newNode);
             newNode.addColor(color.opaque(), GraphElement.Priority.BASE);
 
             seen.put(node, newNode);
-            addChildren(newNode, node, prefix, color, seen, graph);
+
+            PairList<Transition, State> connections = graph.connectionsOf(node);
+            for (int i = 0; i < connections.size(); i++) {
+                State right = connections.right(i);
+                Transition left = connections.left(i);
+                add(newNode, graph, prefix, color, seen, i, right, left);
+            }
+        }
+    }
+
+    /**
+     * Computes the largest bi-similar subgraph between two graphs. Based on the HKC algorithm described in {@code
+     * https://hal.archives-ouvertes.fr/hal-00639716v5/document.}
+     * <p>
+     * (Filippo Bonchi, Damien Pous. Checking NFA equivalence with bisimulations up to congruence. Jan 2013.)
+     * @param alpha one graph
+     * @param beta  another graph
+     */
+    private void nonDeterministicEquivalence(SourceGraph alpha, SourceGraph beta) {
+        PairList<StateSet, StateSet> relations = new PairList<>();
+        Deque<HKCStep> todo = new ArrayDeque<>();
+        int nodeIndex = 0;
+
+        todo.add(new HKCStep(alpha, alpha.getInitialState(), beta, beta.getInitialState()));
+
+        while (!todo.isEmpty()) {
+            HKCStep element = todo.remove();
+            StateSet unrelatedLeft = new StateSet(element.a);
+            StateSet unrelatedRight = new StateSet(element.b);
+
+            // ignore this new relation if this is congruent in relations
+            int nrRelations = relations.size();
+            for (int i = 0; i < nrRelations; i++) {
+                // if the relation matches, all the states in this relation are not unrelated
+                StateSet rLeft = relations.left(i);
+                StateSet rRight = relations.right(i);
+
+                if (rLeft.isSubsetOf(element.a) && rRight.isSubsetOf(element.b)) {
+                    unrelatedLeft.removeAll(rLeft);
+                    unrelatedRight.removeAll(rRight);
+//                    if (unrelatedLeft.isEmpty() && unrelatedRight.isEmpty()) break;
+                }
+            }
+
+            if (unrelatedLeft.isEmpty() && unrelatedRight.isEmpty()) continue;
+
+            Map<String, StateSet> deltaSharpA = getTransitionMap(element.a);
+            Map<String, StateSet> deltaSharpB = getTransitionMap(element.b);
+
+            Set<String> allLabels = new HashSet<>(deltaSharpA.keySet());
+            allLabels.addAll(deltaSharpB.keySet());
+
+            for (String label : allLabels) {
+                StateSet alphaStates = deltaSharpA.get(label);
+                StateSet betaStates = deltaSharpB.get(label);
+
+                if (alphaStates == null) {
+                    // TODO
+                } else if (betaStates == null) {
+                    // TODO
+                } else {
+                    todo.add(new HKCStep(alphaStates, betaStates, label, null));
+                }
+            }
+
+            relations.add(element.a, element.b);
+
+            // now add the new node and transitions
+            Vector3f position = element.getAveragePosition();
+            String label = element.getCombinedName();
+            State newNode = new State(position, label, nodeIndex, nodeIndex);
+            nodeIndex++;
+            nodeMesh.addNode(newNode);
+
+            Transition newEdge = new Transition(element.source, newNode, element.label);
+
+            edgeMesh.addParticle(newEdge);
+            newEdge.addColor(COMBINED_COLOR, GraphElement.Priority.BASE);
+            outgoingTransitions.computeIfAbsent(element.source, s -> new PairList<>()).add(newEdge, newNode);
+            incomingTransitions.computeIfAbsent(newNode, s -> new PairList<>()).add(newEdge, element.source);
+        }
+    }
+
+    /**
+     * Collects all next transitions from the given set of states, and groups them by label.
+     * @param states an initial set of states S
+     * @return the map l -> S', where for each s in S', there is a state p in S such that p -l-> s
+     */
+    private Map<String, StateSet> getTransitionMap(StateSet states) {
+        // delta-sharp(S)(a) means "the union of all states reached with an a-label from all states of S"
+        Map<String, StateSet> deltaSharpA = new HashMap<>();
+        for (State alphaState : states) {
+            for (Pair<Transition, State> outAlpha : outgoingOf(alphaState)) {
+                String label = outAlpha.left.label;
+                deltaSharpA.computeIfAbsent(label, s -> StateSet.noneOf(states.universe))
+                        .add(outAlpha.right);
+            }
+        }
+        return deltaSharpA;
+    }
+
+    private static class HKCStep {
+        public final StateSet a;
+        public final StateSet b;
+        public final String label;
+        public final State source;
+
+        public HKCStep(SourceGraph aGraph, State a, SourceGraph bGraph, State b) {
+            this.a = aGraph.getEmptySet();
+            this.a.add(a);
+            this.b = bGraph.getEmptySet();
+            this.b.add(b);
+            this.label = "";
+            this.source = null;
+        }
+
+        public HKCStep(StateSet a, StateSet b, String label, State source) {
+            this.a = a;
+            this.b = b;
+            this.label = label;
+            this.source = source;
+        }
+
+        private Vector3f getAveragePosition() {
+            int nrElts = 0;
+            Vector3f position = new Vector3f();
+            for (State state : a) {
+                position.add(state.position);
+                nrElts++;
+            }
+            for (State state : b) {
+                position.add(state.position);
+                nrElts++;
+            }
+            position.div(nrElts);
+            return position;
+        }
+
+        private String getCombinedName() {
+            StringJoiner joiner = new StringJoiner(",");
+            for (State state : a) {
+                joiner.add(state.toString());
+            }
+            for (State state : b) {
+                joiner.add(state.toString());
+            }
+
+            return joiner.toString();
         }
     }
 
