@@ -20,7 +20,6 @@ import NG.MuChecker.Operands.*;
 import NG.MuChecker.StateSet;
 import NG.Rendering.GLFWWindow;
 import NG.Rendering.RenderLoop;
-import NG.Rendering.Shaders.SGL;
 import NG.Resources.LazyInit;
 import NG.Settings.Settings;
 import NG.Tools.Directory;
@@ -139,13 +138,21 @@ public class Main {
         secondGraph.init();
 
         renderer.renderSequence(new NodeShader())
-                .add(this::renderNodes);
+                .add((gl, root) -> {
+                    synchronized (graphLock) {
+                        Graph target = getVisibleGraph();
+                        gl.render(target.getNodeMesh());
+                    }
+                });
 
         edgeShader = new EdgeShader();
         renderer.renderSequence(edgeShader)
-                .add((gl1, root) -> {
+                .add((gl, root) -> {
                     glDepthMask(false); // read but not write
-                    renderEdges(gl1, root);
+                    synchronized (graphLock) {
+                        Graph target = getVisibleGraph();
+                        gl.render(target.getEdgeMesh());
+                    }
                     glDepthMask(true);
                 });
 
@@ -381,20 +388,6 @@ public class Main {
         }
 
         return markedEdges;
-    }
-
-    private void renderEdges(SGL gl, Main root) {
-        synchronized (graphLock) {
-            Graph target = getVisibleGraph();
-            gl.render(target.getEdgeMesh());
-        }
-    }
-
-    private void renderNodes(SGL gl, Main root) {
-        synchronized (graphLock) {
-            Graph target = getVisibleGraph();
-            gl.render(target.getNodeMesh());
-        }
     }
 
     public int getClickShaderResult() {
