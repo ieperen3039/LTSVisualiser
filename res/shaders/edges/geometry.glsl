@@ -2,7 +2,7 @@
 
 
 layout (points) in;
-layout (triangle_strip, max_vertices = 23) out;
+layout (triangle_strip, max_vertices = 23) out;// at most 10 sections
 
 in vec3[1] a;
 in vec3[1] b;

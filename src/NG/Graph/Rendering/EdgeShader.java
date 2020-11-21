@@ -30,8 +30,8 @@ public class EdgeShader implements ShaderProgram {
     private static final Path FRAGMENT_PATH = Directory.shaders.getPath("edges", "fragment.frag");
     private static final Path GEOMETRY_PATH = Directory.shaders.getPath("edges", "geometry.glsl");
 
-    private static final float HEAD_WIDTH = NODE_RADIUS * 1.0f;
-    private static final float EDGE_WIDTH = HEAD_WIDTH * 0.5f;
+    private static final float HEAD_WIDTH = NODE_RADIUS * 1.5f;
+    private static final float EDGE_WIDTH = HEAD_WIDTH * 0.6f;
 
     private final int programID;
     private final int vertexShaderID;
@@ -51,9 +51,8 @@ public class EdgeShader implements ShaderProgram {
 
     public enum EdgeShape {
         ARROW(4, 6, false),
-        TAPERED(6, 0, false),
-        GRADIENT(0, 6, true),
-        MINIMUM(3, 0, false);
+        TAPERED(10, 0, false),
+        GRADIENT(0, 10, true);
 
         private final int headSections;
         private final int tailSections;
