@@ -215,7 +215,7 @@ public class Menu extends SDecorator {
                 Camera camera = main.camera();
                 camera.set(node.position);
             }
-            main.inputHandling().setMouseTool(null);
+            disableThis();
         }
 
         @Override
@@ -224,7 +224,7 @@ public class Menu extends SDecorator {
                 Camera camera = main.camera();
                 camera.set(edge.handlePos);
             }
-            main.inputHandling().setMouseTool(null);
+            disableThis();
         }
 
     }
@@ -247,7 +247,7 @@ public class Menu extends SDecorator {
 
             } else {
                 colorPath(startNode, node);
-                root.inputHandling().setMouseTool(null);
+                disableThis();
             }
         }
 
@@ -260,7 +260,7 @@ public class Menu extends SDecorator {
 
             } else {
                 colorPath(startNode, edge.from);
-                root.inputHandling().setMouseTool(null);
+                disableThis();
             }
         }
 

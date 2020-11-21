@@ -57,7 +57,7 @@ public abstract class MouseTool implements MouseListener {
 
     protected void onAirClick(int button, int x, int y) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && onCancel != null) {
-            onCancel.run();
+            disableThis();
             return;
         }
 
@@ -67,6 +67,15 @@ public abstract class MouseTool implements MouseListener {
     }
 
     public abstract void onNodeClick(int button, Graph graph, State node);
+
+    public void disableThis() {
+        if (onCancel == null) {
+            root.inputHandling().setMouseTool(null);
+
+        } else {
+            onCancel.run();
+        }
+    }
 
     public abstract void onEdgeClick(int button, Graph graph, Transition edge);
 
