@@ -203,6 +203,9 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         for (Transition edge : getEdgeMesh().edgeList()) {
             edge.resetColor(path);
         }
+
+        getNodeMesh().scheduleColorReload();
+        getEdgeMesh().scheduleColorReload();
     }
 
     public static class ManipulationTool extends MouseTool {

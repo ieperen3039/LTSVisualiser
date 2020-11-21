@@ -25,7 +25,7 @@ public class SDropDown extends SComponent implements MouseClickListener {
     private final String[] values;
     private final DropDownOptions optionPane;
     private final UIFrameManager gui;
-    private List<Consumer<Integer>> stateChangeListeners = new ArrayList<>();
+    private final List<Consumer<Integer>> stateChangeListeners = new ArrayList<>();
 
     private int current;
     private boolean isOpened = false;
@@ -98,18 +98,13 @@ public class SDropDown extends SComponent implements MouseClickListener {
         this.minHeight = properties.minHeight;
         this.minWidth = properties.minWidth;
 
-        int candidate = 0;
         String[] arr = new String[values.size()];
         for (int i = 0; i < values.size(); i++) {
             T elt = values.get(i);
             arr[i] = stringExtractor.apply(elt);
-
-            if (elt.equals(initial)) {
-                candidate = i;
-            }
         }
 
-        this.current = candidate;
+        this.current = initial;
         this.values = arr;
         this.optionPane = new DropDownOptions(arr);
         this.gui = gui;
@@ -174,6 +169,7 @@ public class SDropDown extends SComponent implements MouseClickListener {
             close();
 
         } else {
+            isOpened = true;
             Vector2i scPos = getScreenPosition();
             optionPane.setPosition(scPos.x, scPos.y + getHeight());
             optionPane.setSize(getWidth(), 0);
@@ -190,6 +186,7 @@ public class SDropDown extends SComponent implements MouseClickListener {
 
     private void close() {
         optionPane.setVisible(false);
+        isOpened = false;
     }
 
     private class DropDownOptions extends SDecorator implements MouseClickListener {

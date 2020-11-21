@@ -15,7 +15,7 @@ public abstract class GraphElement {
     public Color4f border = Color4f.BLACK;
 
     public enum Priority {
-        MAXIMUM, HOVER, USER_COLOR, MU_FORMULA, PATH, IGNORE, EXTERNAL, FIXATE_POSITION, ATTRIBUTE, BASE
+        MAXIMUM, HOVER, USER_COLOR, PATH, IGNORE, EXTERNAL, ATTRIBUTE, MU_FORMULA, FIXATE_POSITION, BASE
     }
 
     public Color4f getColor() {

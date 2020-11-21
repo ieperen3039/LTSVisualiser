@@ -31,7 +31,7 @@ import static NG.Core.Main.PATH_COLOR;
  * @author Geert van Ieperen created on 7-8-2020.
  */
 public class Menu extends SDecorator {
-    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 28, true, false);
+    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 25, true, false);
     public static final SComponentProperties WAILA_TEXT_PROPERTIES = new SComponentProperties(
             150, 50, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
     );
@@ -230,41 +230,42 @@ public class Menu extends SDecorator {
     }
 
     private static class PathVisualisationTool extends MouseTool {
-        private final Graph graph;
         private State startNode = null;
 
         public PathVisualisationTool(Main root) {
             super(root);
-            graph = root.getVisibleGraph();
-            graph.resetColors(GraphElement.Priority.PATH);
         }
 
         @Override
         public void onNodeClick(int button, Graph graph, State node) {
             if (startNode == null) {
+                graph.resetColors(GraphElement.Priority.PATH);
                 startNode = node;
                 node.addColor(PATH_COLOR, GraphElement.Priority.PATH);
 
             } else {
-                colorPath(startNode, node);
+                colorPath(startNode, node, graph);
                 disableThis();
+                startNode = null;
             }
         }
 
         @Override
         public void onEdgeClick(int button, Graph graph, Transition edge) {
             if (startNode == null) {
+                graph.resetColors(GraphElement.Priority.PATH);
                 startNode = edge.to;
                 edge.addColor(PATH_COLOR, GraphElement.Priority.PATH);
                 edge.to.addColor(PATH_COLOR, GraphElement.Priority.PATH);
 
             } else {
-                colorPath(startNode, edge.from);
+                colorPath(startNode, edge.from, graph);
                 disableThis();
+                startNode = null;
             }
         }
 
-        private void colorPath(State startNode, State endNode) {
+        private void colorPath(State startNode, State endNode, Graph graph) {
             GraphPathFinder dijkstra = new GraphPathFinder(startNode, endNode, graph);
 
             Logger.DEBUG.print("Searching path from " + startNode + " to " + endNode);
@@ -276,6 +277,7 @@ public class Menu extends SDecorator {
 
                 startNode.addColor(Color4f.RED, GraphElement.Priority.PATH);
                 endNode.addColor(Color4f.RED, GraphElement.Priority.PATH);
+                graph.getNodeMesh().scheduleColorReload();
                 return;
             }
 
@@ -306,7 +308,7 @@ public class Menu extends SDecorator {
                     new SSlider(0, 25f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
                     }, {
                             new STextArea("Natural Length", BUTTON_PROPS),
-                            new SSlider(0, 10f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
+                    new SSlider(0, 5f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
                     }, {
                             new STextArea("Handle Repulsion", BUTTON_PROPS),
                             new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)

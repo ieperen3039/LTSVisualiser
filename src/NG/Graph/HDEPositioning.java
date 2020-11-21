@@ -1,7 +1,5 @@
 package NG.Graph;
 
-import NG.Tools.Toolbox;
-
 import java.util.*;
 
 /**
@@ -83,6 +81,8 @@ public class HDEPositioning {
         for (int i = 0; i < initialDimensions; i++) {
             // compute all distances to pivot
             Map<State, Integer> distances = getAllDistances(pivot, mapping);
+            int bestPivotDistance = 0;
+            int bestPivotIndex = 0;
 
             for (int j = 0; j < nodes.length; j++) {
                 State node = nodes[j];
@@ -93,11 +93,16 @@ public class HDEPositioning {
                 coordinates[j][i] = dist;
 
                 // also look for the best next pivot
-                anchorDistance[j] = Math.min(anchorDistance[j], dist);
+                int thisAnchorDist = Math.min(anchorDistance[j], dist);
+                anchorDistance[j] = thisAnchorDist;
+                if (thisAnchorDist > bestPivotDistance) {
+                    bestPivotDistance = thisAnchorDist;
+                    bestPivotIndex = j;
+                }
             }
 
             // next pivot is the furthest away from the known pivots
-            pivot = nodes[Toolbox.random.nextInt(nodes.length)];
+            pivot = nodes[bestPivotIndex];
         }
 
         return coordinates;

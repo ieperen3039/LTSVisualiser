@@ -51,10 +51,9 @@ public class Main {
     public static final Color4f PATH_COLOR = Color4f.rgb(200, 83, 0); // orange
     public static final Color4f INITAL_STATE_COLOR = Color4f.rgb(4, 150, 13); // green
 
-    public static final Color4f MU_FORMULA_COLOR = Color4f.rgb(255, 0, 255); // purple-pink
-    public static final Color4f MU_FORMULA_UNREACHABLE = Color4f.rgb(200, 0, 0, 0.5f); // red
-    public static final Color4f MU_FORMULA_UNAVOIDABLE = Color4f.rgb(0, 200, 0, 0.5f); // green
-
+    public static final Color4f MU_FORMULA_COLOR = Color4f.rgb(220, 150, 0); // yellow
+    public static final Color4f MU_FORMULA_UNREACHABLE = Color4f.rgb(200, 0, 0, 0.8f); // red
+    public static final Color4f MU_FORMULA_UNAVOIDABLE = Color4f.rgb(0, 100, 0, 0.8f); // green
 
     private static final Version VERSION = new Version(0, 2);
     private static final Pattern PATTERN_COMMA = Pattern.compile(",");
@@ -533,33 +532,41 @@ public class Main {
 
                 FixedPoint fp1 = new SmallestFixedPoint('_', fixedPoints.size());
                 fixedPoints.forEach(fp1::addDescendant);
-                fp1.setRight(new LogicalOr(formulaParser.get(), new Box("true", fp1.variable)));
+                Formula unavoidable = fp1.setRight(
+                        new LogicalOr(formulaParser.get(), new Box("true", fp1.variable))
+                );
 
-                StateSet unavoidables = new ModelChecker(graph, formulaParser).call();
+                fixedPoints.add(0, fp1);
+                StateSet unavoidables = new ModelChecker(graph, unavoidable, fixedPoints).call();
+                fixedPoints.remove(fp1);
+
                 Logger.INFO.printf("Unavoidable for %d states", unavoidables.size());
                 for (State state : unavoidables) {
-                    if (!result.contains(state)) {
+                    if (!result.contains(state)) { // only color states that are not in the result itself
                         state.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
                     }
                 }
-//                for (Transition edge : graph.edges) {
-//                    if (unavoidables.contains(edge.to)) {
-//                        edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
-//                    }
-//                }
+                for (Transition edge : graph.edges) {
+                    if (unavoidables.contains(edge.to)) {
+                        edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
+                    }
+                }
                 graph.getEdgeMesh().scheduleColorReload();
 
                 FixedPoint fp2 = new LargestFixedPoint('_', fixedPoints.size());
                 fixedPoints.forEach(fp2::addDescendant);
-                fp2.setRight(new LogicalAnd(new Negation(formulaParser.get()), new Box("true", fp2.variable)));
+                Formula unreachable = fp2.setRight(
+                        new LogicalAnd(new Negation(formulaParser.get()), new Box("true", fp2.variable))
+                );
 
-                StateSet unreachables = new ModelChecker(graph, formulaParser).call();
-                unreachables.diff(result); // remove all states where the property holds
+                fixedPoints.add(0, fp2);
+                StateSet unreachables = new ModelChecker(graph, unreachable, fixedPoints).call();
+                fixedPoints.remove(fp2);
+
                 Logger.INFO.printf("Unreachable for %d states", unreachables.size());
                 for (State state : unreachables) {
-                    if (!result.contains(state)) {
-                        state.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
-                    }
+                    assert !result.contains(state);
+                    state.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
                 }
                 for (Transition edge : graph.edges) {
                     if (unreachables.contains(edge.to) && !unreachables.contains(edge.from)) {
@@ -570,7 +577,7 @@ public class Main {
 
                 StateSet states = new StateSet(unavoidables);
                 states.intersect(unreachables);
-                assert states.isEmpty() : String.format("%d unavoidable and unreachable states: %s", states.size(), states);
+                assert states.isEmpty() : String.format("%d unavoidable and unreachable states", states.size());
 
             });
             thread.setDaemon(true);

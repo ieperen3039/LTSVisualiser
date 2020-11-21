@@ -13,21 +13,27 @@ import java.util.concurrent.Callable;
  */
 public class ModelChecker implements Callable<StateSet> {
     private final SourceGraph ltsGraph;
-    private final FormulaParser formula;
+    private final Formula muFormula;
+    private final List<FixedPoint> fixedPoints;
 
     public enum Binder {
         NU, MU, NONE
     }
 
-    public ModelChecker(SourceGraph ltsGraph, FormulaParser formula) {
-        this.ltsGraph = ltsGraph;
-        this.formula = formula;
+    public ModelChecker(SourceGraph graph, FormulaParser formula) {
+        this(graph, formula.get(), formula.getFixedPoints());
+    }
+
+    public ModelChecker(
+            SourceGraph graph, Formula formula, List<FixedPoint> fixedPoints
+    ) {
+        this.ltsGraph = graph;
+        this.muFormula = formula;
+        this.fixedPoints = fixedPoints;
     }
 
     @Override
     public StateSet call() {
-        Formula muFormula = formula.get();
-        List<FixedPoint> fixedPoints = formula.getFixedPoints();
         StateSet[] environment = new StateSet[fixedPoints.size()];
 
         for (int i = 0; i < fixedPoints.size(); i++) {
