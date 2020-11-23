@@ -51,7 +51,11 @@ public class GraphComparator extends Graph {
         initialState.border = Main.INITAL_STATE_COLOR;
         nodeMesh.addNode(initialState);
 
-        addMatching(initialState, a, a.getInitialState(), b, b.getInitialState(), new HashMap<>());
+        HashMap<State, State> seen = new HashMap<>();
+        seen.put(a.getInitialState(), initialState);
+        seen.put(b.getInitialState(), initialState);
+
+        addMatching(initialState, a, a.getInitialState(), b, b.getInitialState(), seen);
     }
 
     /**
@@ -100,6 +104,9 @@ public class GraphComparator extends Graph {
                     incomingTransitions.computeIfAbsent(newNode, s -> new PairList<>()).add(newEdge, generatedNode);
 
                     if (!exists) {
+                        bNode.position.set(aNode.position);
+                        bEdge.handlePos.set(aEdge.handlePos);
+
                         seen.put(aNode, newNode);
                         seen.put(bNode, newNode);
                         nodeMesh.addNode(newNode);
@@ -151,8 +158,9 @@ public class GraphComparator extends Graph {
 
             seen.put(node, newNode);
 
-            PairList<Transition, State> connections = graph.connectionsOf(node);
+            PairList<Transition, State> connections = graph.outgoingOf(node);
             for (int i = 0; i < connections.size(); i++) {
+                assert (connections.left(i).from == node);
                 State right = connections.right(i);
                 Transition left = connections.left(i);
                 add(newNode, graph, prefix, color, seen, i, right, left);
