@@ -13,6 +13,7 @@ in int[1] geoID;
 out vec4 fragColor;
 
 vec4 color;
+bool shouldGradient;
 
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
@@ -51,11 +52,11 @@ void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, float fracti
     vec4 perpendicular = vec4(normalize(vec2(scDir.y, -scDir.x)) * width, 0, 0);
 
     gl_Position = projectionMatrix * (scPos + perpendicular);
-    fragColor = doGradient ? vec4(color.xyz, (1 - fraction) * color.a) : color;
+    fragColor = shouldGradient ? vec4(color.xyz, (1 - fraction) * color.a) : color;
     EmitVertex();
 
     gl_Position = projectionMatrix * (scPos - perpendicular);
-    fragColor = doGradient ? vec4(color.xyz, (1 - fraction) * color.a) : color;
+    fragColor = shouldGradient ? vec4(color.xyz, (1 - fraction) * color.a) : color;
     EmitVertex();
 }
 
@@ -63,13 +64,15 @@ void main() {
     if (doUniqueColor){
         if (geoColor[0].a < 0.09) {
             return;
-        }
-        else {
+
+        } else {
             color = numberToColor(geoID);
         }
+        shouldGradient = false;
 
     } else {
         color = geoColor[0];
+        shouldGradient = doGradient;
     }
 
     float headHSize = 0.5 * headSize;

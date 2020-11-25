@@ -29,6 +29,7 @@ public class GraphComparator extends Graph {
     private final NodeMesh nodeMesh = new NodeMesh();
     private final EdgeMesh edgeMesh = new EdgeMesh();
     private final State initialState;
+    private int index = 0;
 
     public GraphComparator(Graph a, Graph b) {
         super(a.root);
@@ -46,7 +47,7 @@ public class GraphComparator extends Graph {
             if (!attributes.contains(attribute)) attributes.add(attribute);
         }
 
-        this.initialState = new State(a.getInitialState().position, "initial", 0, 0);
+        this.initialState = new State(a.getInitialState().position, "initial", index, index++);
         initialState.addColor(Main.INITAL_STATE_COLOR, GraphElement.Priority.BASE);
         initialState.border = Main.INITAL_STATE_COLOR;
         nodeMesh.addNode(initialState);
@@ -86,7 +87,7 @@ public class GraphComparator extends Graph {
                 Transition bEdge = bConnections.left(j);
 
                 if (aEdge.label.equals(bEdge.label)) {
-                    assert !bMatching[j] : String.format("Non-deterministic match : %s at nodes (%d | %d)", bEdge.label, a.index, b.index);
+//                    assert !bMatching[j] : String.format("Non-deterministic match : %s at nodes (%d | %d)", bEdge.label, a.index, b.index);
                     // match found
                     aMatching[i] = true;
                     bMatching[j] = true;
@@ -95,7 +96,9 @@ public class GraphComparator extends Graph {
                     State bNode = bConnections.right(j);
 
                     boolean exists = seen.containsKey(aNode);
-                    State newNode = exists ? seen.get(aNode) : new State(aNode.position, "A" + aNode.label + "|B" + bNode.label, i, aNode.classIndex);
+                    State newNode = exists ? seen.get(aNode) : new State(
+                            aNode.position, "A" + aNode.label + "|B" + bNode.label, index, index++
+                    );
                     Transition newEdge = new Transition(generatedNode, newNode, aEdge.label);
 
                     edgeMesh.addParticle(newEdge);
@@ -122,7 +125,7 @@ public class GraphComparator extends Graph {
             if (!aMatching[i]) {
                 State node = aConnections.right(i);
                 Transition transition = aConnections.left(i);
-                add(generatedNode, aGraph, "A", A_COLOR, seen, i, node, transition);
+                add(generatedNode, aGraph, "A", A_COLOR, seen, node, transition);
             }
         }
 
@@ -130,7 +133,7 @@ public class GraphComparator extends Graph {
             if (!bMatching[j]) {
                 State node = bConnections.right(j);
                 Transition transition = bConnections.left(j);
-                add(generatedNode, bGraph, "B", B_COLOR, seen, j, node, transition);
+                add(generatedNode, bGraph, "B", B_COLOR, seen, node, transition);
             }
         }
     }
@@ -141,10 +144,10 @@ public class GraphComparator extends Graph {
      */
     private void add(
             State parentNode, Graph graph, String prefix, Color4f color,
-            Map<State, State> seen, int index, State node, Transition edge
+            Map<State, State> seen, State node, Transition edge
     ) {
         boolean exists = seen.containsKey(node);
-        State newNode = exists ? seen.get(node) : new State(node.position, prefix + node.label, index, index);
+        State newNode = exists ? seen.get(node) : new State(node.position, prefix + node.label, index, index++);
         Transition newEdge = new Transition(parentNode, newNode, edge.label);
 
         edgeMesh.addParticle(newEdge);
@@ -163,7 +166,7 @@ public class GraphComparator extends Graph {
                 assert (connections.left(i).from == node);
                 State right = connections.right(i);
                 Transition left = connections.left(i);
-                add(newNode, graph, prefix, color, seen, i, right, left);
+                add(newNode, graph, prefix, color, seen, right, left);
             }
         }
     }

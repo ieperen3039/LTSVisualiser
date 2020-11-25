@@ -54,6 +54,7 @@ public class Menu extends SDecorator {
     public String[] actionLabels = new String[0];
     public SToggleButton[] attributeButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
+    private SDropDown displayMethodDropDown;
 
     public Menu(Main main) {
         this.main = main;
@@ -104,7 +105,14 @@ public class Menu extends SDecorator {
                                 ), BUTTON_PROPS
                         ),
                         new SButton("Load second Graph",
-                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
+                                () -> openFileDialog(
+                                        file -> {
+                                            main.setSecondaryGraph(file);
+                                            displayMethodDropDown.setCurrent( // displayMethodDropDown is assigned later
+                                                    DISPLAY_METHOD_LIST.indexOf(Main.DisplayMethod.COMPARE_GRAPHS)
+                                            );
+                                        }, "*.aut"
+                                ), BUTTON_PROPS
                         ),
 //                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS), // replaced by confluence detection
                         SContainer.row(
@@ -142,7 +150,7 @@ public class Menu extends SDecorator {
                         // Display manipulation
                         new SPanel(SContainer.column(
                                 new STextArea("Display method", BUTTON_PROPS),
-                                new SDropDown(
+                                displayMethodDropDown = new SDropDown(
                                         frameManager, BUTTON_PROPS,
                                         DISPLAY_METHOD_LIST.indexOf(main.getDisplayMethod()), DISPLAY_METHOD_LIST,
                                         displayMethod -> displayMethod.name().replace("_", " ")
@@ -186,22 +194,18 @@ public class Menu extends SDecorator {
     }
 
     private void openFileDialog(Consumer<File> action, String extension) {
-        Frame parent = new Frame();
-        try {
-            FileDialog fd = new FileDialog(parent, "Choose a file", FileDialog.LOAD);
-            fd.setDirectory(BASE_FILE_CHOOSER_DIRECTORY.getAbsolutePath());
-            fd.setFile(extension);
-            fd.setVisible(true);
+        FileDialog fd = new FileDialog((Frame) null, "Choose a file", FileDialog.LOAD);
+        fd.setDirectory(BASE_FILE_CHOOSER_DIRECTORY.getAbsolutePath());
+        fd.setFile(extension);
+        fd.setVisible(true);
 
-            String filename = fd.getFile();
-            if (filename != null) {
-                String directory = fd.getDirectory();
-                action.accept(Paths.get(directory, filename).toFile());
-            }
-
-        } finally {
-            parent.dispose();
+        String filename = fd.getFile();
+        if (filename != null) {
+            String directory = fd.getDirectory();
+            action.accept(Paths.get(directory, filename).toFile());
         }
+
+        fd.dispose();
     }
 
     private class CameraCenterTool extends MouseTool {
