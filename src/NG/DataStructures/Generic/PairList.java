@@ -355,7 +355,7 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
 
         @Override
         public int characteristics() {
-            return ORDERED | SIZED | NONNULL | IMMUTABLE;
+            return ORDERED | SIZED | NONNULL;
         }
     }
 
@@ -365,8 +365,8 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
         public Builder() {
         }
 
-        public Builder(L2 left, R2 right) {
-            list.add(left, right);
+        public Builder(PairList<L2, R2> source) {
+            list.addAll(source);
         }
 
         public Builder<L2, R2> add(L2 left, R2 right) {

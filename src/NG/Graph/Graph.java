@@ -196,12 +196,12 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
     public abstract void cleanup();
 
-    public void resetColors(GraphElement.Priority path) {
+    public void resetColors(GraphElement.Priority priority) {
         for (State node : getNodeMesh().nodeList()) {
-            node.resetColor(path);
+            node.resetColor(priority);
         }
         for (Transition edge : getEdgeMesh().edgeList()) {
-            edge.resetColor(path);
+            edge.resetColor(priority);
         }
 
         getNodeMesh().scheduleColorReload();

@@ -43,7 +43,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     public SpringLayout(int iterationsPerSecond, int numThreads) {
         super("layout", iterationsPerSecond);
         this.numThreads = numThreads;
-        executor = Executors.newFixedThreadPool(this.numThreads);
+        executor = Executors.newFixedThreadPool(numThreads);
     }
 
     @Override

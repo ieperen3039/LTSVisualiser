@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static NG.Graph.Rendering.GraphElement.Priority.MU_FORMULA;
@@ -80,7 +81,8 @@ public class Main {
     private SourceGraph graph;
     private SourceGraph secondGraph;
     private final LazyInit<NodeClustering> nodeCluster;
-    private final LazyInit<IgnoringGraph> subGraph;
+    private final LazyInit<IgnoringGraph> ignoringGraph;
+    private final LazyInit<NodeClustering> confluenceGraph;
     private DisplayMethod displayMethod = DisplayMethod.HIGHLIGHT_ACTIONS;
     private EdgeShader edgeShader;
 
@@ -115,8 +117,9 @@ public class Main {
         springLayout = new SpringLayout(MAX_ITERATIONS_PER_SECOND, NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
+        confluenceGraph = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
         graphComparator = new LazyInit<>(() -> new GraphComparator(graph, secondGraph), Graph::cleanup);
-        subGraph = new LazyInit<>(() -> new IgnoringGraph(graph, getMarkedLabels()), Graph::cleanup);
+        ignoringGraph = new LazyInit<>(() -> new IgnoringGraph(graph, getMarkedLabels()), Graph::cleanup);
     }
 
     /**
@@ -183,13 +186,20 @@ public class Main {
     public void onNodePositionChange() {
         if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED
                 || displayMethod == DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS
-                || displayMethod == DisplayMethod.CONFLUENCE
         ) {
             if (doComputeSourceLayout) {
                 nodeCluster.get().pullClusterPositions();
 
             } else {
                 nodeCluster.get().pushClusterPositions();
+            }
+
+        } else if (displayMethod == DisplayMethod.CONFLUENCE) {
+            if (doComputeSourceLayout) {
+                confluenceGraph.get().pullClusterPositions();
+
+            } else {
+                confluenceGraph.get().pushClusterPositions();
             }
         }
 
@@ -198,7 +208,7 @@ public class Main {
         }
 
         if (displayMethod == DisplayMethod.HIDE_ACTIONS && doComputeSourceLayout) {
-            subGraph.get().updateEdges();
+            ignoringGraph.get().updateEdges();
         }
 
         Graph graph = getVisibleGraph();
@@ -268,7 +278,7 @@ public class Main {
 
                 nodeCluster.drop();
                 graphComparator.drop();
-                subGraph.drop();
+                ignoringGraph.drop();
 
                 springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
 
@@ -320,13 +330,19 @@ public class Main {
             String[] actionLabels = menu.actionLabels;
             SToggleButton[] attributeButtons = menu.attributeButtons;
             for (int i = 0; i < actionLabels.length; i++) {
-                nodeClustering.addEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
+                nodeClustering.setEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
             }
 
         } else if (method == DisplayMethod.CONFLUENCE) {
-            NodeClustering nodeClustering = nodeCluster.get();
+            NodeClustering nodeClustering = confluenceGraph.get();
             Map<State, State> leaderMap = new ConfluenceDetector(graph).getLeaderMap();
             nodeClustering.createCluster(leaderMap, false);
+
+            String[] actionLabels = menu.actionLabels;
+            SToggleButton[] attributeButtons = menu.attributeButtons;
+            for (int i = 0; i < actionLabels.length; i++) {
+                nodeClustering.setEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
+            }
         }
 
         springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
@@ -402,12 +418,14 @@ public class Main {
                 return secondGraph;
 
             case HIDE_ACTIONS:
-                return subGraph.get();
+                return ignoringGraph.get();
 
-            case CONFLUENCE:
             case CLUSTER_ON_SELECTED:
             case CLUSTER_ON_SELECTED_IGNORE_LOOPS:
                 return nodeCluster.get();
+
+            case CONFLUENCE:
+                return confluenceGraph.get();
 
             case COMPARE_GRAPHS:
                 return graphComparator.get();
@@ -500,15 +518,21 @@ public class Main {
     }
 
     public void selectAttribute(String label, boolean on) {
-        if (on) {
-            graph.forAttribute(label, edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
-        } else {
-            graph.forAttribute(label, e -> e.resetColor(GraphElement.Priority.ATTRIBUTE));
-        }
+        Consumer<Transition> action = on ?
+                (edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE)) :
+                (edge -> edge.resetColor(GraphElement.Priority.ATTRIBUTE));
 
+        graph.forAttribute(label, action);
         graph.getEdgeMesh().scheduleColorReload();
-        nodeCluster.ifPresent(g -> g.addEdgeAttribute(label, on));
-        subGraph.ifPresent(g -> g.update(getMarkedLabels()));
+
+        secondGraph.forAttribute(label, action);
+        secondGraph.getEdgeMesh().scheduleColorReload();
+
+        confluenceGraph.ifPresent(g -> g.forAttribute(label, action));
+        confluenceGraph.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
+
+        nodeCluster.ifPresent(g -> g.setEdgeAttribute(label, on));
+        ignoringGraph.ifPresent(g -> g.update(getMarkedLabels()));
     }
 
     public void applyMuFormulaMarking(File file) {

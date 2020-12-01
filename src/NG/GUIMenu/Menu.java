@@ -41,7 +41,7 @@ public class Menu extends SDecorator {
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
     public static final List<EdgeShader.EdgeShape> EDGE_SHAPE_LIST = Arrays.asList(EdgeShader.EdgeShape.values());
 
-    private static final PairList<String, Color4f> paintColors = new PairList.Builder<String, Color4f>()
+    private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
             .add("Red", Color4f.rgb(200, 25, 25))
             .add("Green", Color4f.rgb(4, 120, 13))
             .add("Orange", Color4f.rgb(220, 105, 20))
@@ -66,7 +66,7 @@ public class Menu extends SDecorator {
         RenderLoop renderLoop = main.renderer;
         SpringLayout updateLoop = main.getSpringLayout();
         UIFrameManager frameManager = main.gui();
-        GraphColorTool colorTool = new GraphColorTool(main, paintColors.right(0));
+        GraphColorTool colorTool = new GraphColorTool(main, PAINT_COLORS.right(0));
 
         actionLabels = graph.getEdgeAttributes().stream().distinct().sorted().toArray(String[]::new);
 
@@ -80,13 +80,13 @@ public class Menu extends SDecorator {
         }
 
         // automatic barnes-hut (de)activation
-        if (main.graph().getNrOfNodes() < 500) {
+        if (graph.getNrOfNodes() < 500) {
             updateLoop.setBarnesHutTheta(0);
         } else if (updateLoop.getBarnesHutTheta() == 0) {
-            updateLoop.setBarnesHutTheta(0.8f);
+            updateLoop.setBarnesHutTheta(1.0f);
         }
 
-        if (main.graph().getNrOfEdges() > 10_000) {
+        if (graph.getNrOfEdges() > 10_000) {
             updateLoop.setEdgeRepulsionFactor(0);
         }
 
@@ -116,8 +116,13 @@ public class Menu extends SDecorator {
                         ),
 //                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS), // replaced by confluence detection
                         SContainer.row(
-                                new SButton("Load Modal Mu-Formula", () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"), BUTTON_PROPS),
-                                new SButton("Clear Formula", () -> graph.resetColors(GraphElement.Priority.MU_FORMULA), BUTTON_PROPS)
+                                new SButton("Load Modal Mu-Formula",
+                                        () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"),
+                                        BUTTON_PROPS
+                                ),
+                                new SCloseButton(BUTTON_PROPS.minHeight,
+                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.MU_FORMULA)
+                                )
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -166,14 +171,12 @@ public class Menu extends SDecorator {
                         // color tool
                         SContainer.row(
                                 colorTool.button("Activate Painting", BUTTON_PROPS),
-                                new SButton(
-                                        "Reset colors",
-                                        () -> graph.resetColors(GraphElement.Priority.USER_COLOR),
-                                        BUTTON_PROPS
+                                new SCloseButton(BUTTON_PROPS.minHeight,
+                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
                                 )
                         ),
-                        new SDropDown(frameManager, BUTTON_PROPS, 0, paintColors, p -> p.left)
-                                .addStateChangeListener(i -> colorTool.setColor(paintColors.right(i))),
+                        new SDropDown(frameManager, BUTTON_PROPS, 0, PAINT_COLORS, p -> p.left)
+                                .addStateChangeListener(i -> colorTool.setColor(PAINT_COLORS.right(i))),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // attribute coloring
@@ -184,7 +187,12 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // auxiliary buttons
-                        new PathVisualisationTool(main).button("Find shortest path", BUTTON_PROPS),
+                        SContainer.row(
+                                new PathVisualisationTool(main).button("Find shortest path", BUTTON_PROPS),
+                                new SCloseButton(BUTTON_PROPS.minHeight,
+                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.PATH)
+                                )
+                        ),
                         new CameraCenterTool(main).button("Center camera on...", BUTTON_PROPS),
                         new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),

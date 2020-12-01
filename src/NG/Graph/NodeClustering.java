@@ -218,16 +218,14 @@ public class NodeClustering extends Graph {
         return edgeAttributeCluster;
     }
 
-    public void addEdgeAttribute(String label, boolean on) {
+    public synchronized void setEdgeAttribute(String label, boolean on) {
         if (on) {
             edgeAttributeCluster.add(label);
         } else {
             edgeAttributeCluster.remove(label);
         }
 
-        synchronized (this) {
-            isDirty = true;
-        }
+        isDirty = true;
     }
 
     @Override
