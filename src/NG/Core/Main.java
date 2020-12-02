@@ -105,7 +105,7 @@ public class Main {
         GLFWWindow.Settings videoSettings = new GLFWWindow.Settings(settings);
 
         window = new GLFWWindow(Settings.GAME_NAME, videoSettings, true);
-        renderer = new RenderLoop(this.settings.TARGET_FPS);
+        renderer = new RenderLoop(settings.TARGET_FPS);
         inputHandler = new MouseToolCallbacks();
         keyControl = inputHandler.getKeyControl();
         frameManager = new FrameManagerImpl();
@@ -117,7 +117,10 @@ public class Main {
         springLayout = new SpringLayout(MAX_ITERATIONS_PER_SECOND, NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
-        confluenceGraph = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
+        confluenceGraph = new LazyInit<>(
+                () -> new NodeClustering(graph, new ConfluenceDetector(graph).getLeaderMap(), false, "tau"),
+                Graph::cleanup
+        );
         graphComparator = new LazyInit<>(() -> new GraphComparator(graph, secondGraph), Graph::cleanup);
         ignoringGraph = new LazyInit<>(() -> new IgnoringGraph(graph, getMarkedLabels()), Graph::cleanup);
     }
@@ -277,6 +280,7 @@ public class Main {
                 graph.init();
 
                 nodeCluster.drop();
+                confluenceGraph.drop();
                 graphComparator.drop();
                 ignoringGraph.drop();
 
@@ -334,14 +338,14 @@ public class Main {
             }
 
         } else if (method == DisplayMethod.CONFLUENCE) {
-            NodeClustering nodeClustering = confluenceGraph.get();
-            Map<State, State> leaderMap = new ConfluenceDetector(graph).getLeaderMap();
-            nodeClustering.createCluster(leaderMap, false);
+            NodeClustering cGraph = confluenceGraph.get();
 
             String[] actionLabels = menu.actionLabels;
             SToggleButton[] attributeButtons = menu.attributeButtons;
             for (int i = 0; i < actionLabels.length; i++) {
-                nodeClustering.setEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
+                if (attributeButtons[i].isActive()) {
+                    cGraph.forAttribute(actionLabels[i], edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
+                }
             }
         }
 

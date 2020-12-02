@@ -79,6 +79,9 @@ public class Menu extends SDecorator {
             attributeButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
         }
 
+        // disable iterative layout
+        updateLoop.setSpeed(0);
+
         // automatic barnes-hut (de)activation
         if (graph.getNrOfNodes() < 500) {
             updateLoop.setBarnesHutTheta(0);
@@ -86,6 +89,7 @@ public class Menu extends SDecorator {
             updateLoop.setBarnesHutTheta(1.0f);
         }
 
+        // automatic edge repulsion deactivation
         if (graph.getNrOfEdges() > 10_000) {
             updateLoop.setEdgeRepulsionFactor(0);
         }

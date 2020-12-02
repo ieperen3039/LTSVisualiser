@@ -33,6 +33,13 @@ public class NodeClustering extends Graph {
         createCluster(Collections.emptyMap(), true);
     }
 
+    public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop, String... labels) {
+        this(graph);
+        Collections.addAll(edgeAttributeCluster, labels);
+        createCluster(leaderMap, showSelfLoop);
+        this.showSelfLoop = showSelfLoop;
+    }
+
     @Override
     public void setNodePosition(State node, Vector3f newPosition) {
         super.setNodePosition(node, newPosition);
@@ -90,8 +97,6 @@ public class NodeClustering extends Graph {
 
         // add all edges
         for (Transition edge : edges.edgeList()) {
-            if (edgeAttributeCluster.contains(edge.label)) continue;
-
             State aNode = edge.from;
             State bNode = edge.to;
 
@@ -99,7 +104,7 @@ public class NodeClustering extends Graph {
             State bTarget = newNodes.get(getClusterLeader(clusterLeaderMap, bNode));
 
             // self loop
-            if (aTarget == bTarget && !showSelfLoop) continue;
+            if (aTarget == bTarget && (!showSelfLoop || edgeAttributeCluster.contains(edge.label))) continue;
 
             // already exists an equal edge
             // even for non-deterministic graphs, this does not change the meaning of the graph
