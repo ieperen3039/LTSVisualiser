@@ -19,7 +19,8 @@ import java.util.StringJoiner;
 public class Boot {
     public static void main(String[] args) throws Exception {
         Settings settings = new Settings();
-        Logger.setLoggingLevel(Logger.INFO);
+//        Logger.setLoggingLevel(Logger.INFO);
+        Logger.setLoggingLevel(Logger.DEBUG);
 
         new FlagManager()
                 .addFlag("debug", () -> Logger.setLoggingLevel(Logger.DEBUG))

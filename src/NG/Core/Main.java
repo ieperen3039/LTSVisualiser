@@ -175,6 +175,11 @@ public class Main {
 
         renderer.run();
 
+        // log timing results when closing
+        Logger.DEBUG.print('\n' + springLayout.timer.resultsTable()
+                + '\n' + renderer.timer.resultsTable()
+        );
+
         window.close();
         springLayout.stopLoop();
 
