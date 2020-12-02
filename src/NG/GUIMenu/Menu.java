@@ -40,6 +40,7 @@ public class Menu extends SDecorator {
     public static final File BASE_FILE_CHOOSER_DIRECTORY = Directory.graphs.getDirectory();
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
     public static final List<EdgeShader.EdgeShape> EDGE_SHAPE_LIST = Arrays.asList(EdgeShader.EdgeShape.values());
+    public static final float SPEED_MAXIMUM = 1f / (1 << 8);
 
     private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
             .add("Red", Color4f.rgb(200, 25, 25))
@@ -55,6 +56,8 @@ public class Menu extends SDecorator {
     public SToggleButton[] attributeButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
     private SDropDown displayMethodDropDown;
+
+    private SFrame displayOptionsFrame = null;
 
     public Menu(Main main) {
         this.main = main;
@@ -79,6 +82,28 @@ public class Menu extends SDecorator {
             attributeButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
         }
 
+        if (displayOptionsFrame != null) displayOptionsFrame.dispose();
+        displayOptionsFrame = new SFrame("Display Options", SContainer.column(
+                // edge shape
+                new STextArea("Edge Shape", BUTTON_PROPS),
+                new SDropDown(
+                        frameManager, BUTTON_PROPS,
+                        EDGE_SHAPE_LIST.indexOf(main.getEdgeShape()), EDGE_SHAPE_LIST
+                ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
+                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
+                        .addStateChangeListener(main::set3DView),
+                new SToggleButton("Only compute layout of primary graph", BUTTON_PROPS, false)
+                        .addStateChangeListener(main::doSourceLayout),
+
+                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+                new SButton("Log Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
+                new SButton("Log Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS)
+        ));
+        displayOptionsFrame.setVisible(false);
+        main.gui().addFrame(displayOptionsFrame);
+
         // disable iterative layout
         updateLoop.setSpeed(0);
 
@@ -99,14 +124,25 @@ public class Menu extends SDecorator {
                 new SPanel(SContainer.column(
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        // graph file selector
+                        // file selectors
                         new SButton("Load Graph",
-                                () -> openFileDialog(
-                                        file -> {
-                                            currentGraphFile = file;
-                                            main.setGraph(file);
-                                        }, "*.aut"
-                                ), BUTTON_PROPS
+                                () -> {
+                                    // log timing results as the click happens
+                                    Logger.DEBUG.print(currentGraphFile.getName()
+                                            + '\n' + updateLoop.timer.resultsTable()
+                                            + '\n' + renderLoop.timer.resultsTable()
+                                    );
+                                    // now load the graph
+                                    openFileDialog(
+                                            file -> {
+                                                currentGraphFile = file;
+                                                main.setGraph(file);
+                                            }, "*.aut"
+                                    );
+                                    // reset timers
+                                    renderLoop.defer(renderLoop.timer::reset);
+                                    updateLoop.defer(updateLoop.timer::reset);
+                                }, BUTTON_PROPS
                         ),
                         new SButton("Load second Graph",
                                 () -> openFileDialog(
@@ -118,7 +154,6 @@ public class Menu extends SDecorator {
                                         }, "*.aut"
                                 ), BUTTON_PROPS
                         ),
-//                        new SButton("Load Node Classes", () -> openFileDialog(main::applyFileMarkings, "*.aut"), BUTTON_PROPS), // replaced by confluence detection
                         SContainer.row(
                                 new SButton("Load Modal Mu-Formula",
                                         () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"),
@@ -132,10 +167,11 @@ public class Menu extends SDecorator {
 
                         // graph information panel
                         new SPanel(SContainer.column(
-                                new STextArea(String.format(
+                                new STextArea(String.format( // always about the primary graph
                                         currentGraphFile.getName() + ": %d nodes, %d edges",
                                         graph.getNrOfNodes(), graph.getNrOfEdges()
                                 ), BUTTON_PROPS),
+                                // the WAILA element
                                 new SActiveTextArea(() -> {
                                     GraphElement element = main.getVisibleGraph().getHovered();
                                     return element == null ? "-" : element.identifier();
@@ -148,14 +184,6 @@ public class Menu extends SDecorator {
                         new SimulationSliderUI(updateLoop),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        // edge shape
-                        new STextArea("Edge Shape", BUTTON_PROPS),
-                        new SDropDown(
-                                frameManager, BUTTON_PROPS,
-                                EDGE_SHAPE_LIST.indexOf(main.getEdgeShape()), EDGE_SHAPE_LIST
-                        ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
                         // Display manipulation
                         new SPanel(SContainer.column(
                                 new STextArea("Display method", BUTTON_PROPS),
@@ -163,12 +191,7 @@ public class Menu extends SDecorator {
                                         frameManager, BUTTON_PROPS,
                                         DISPLAY_METHOD_LIST.indexOf(main.getDisplayMethod()), DISPLAY_METHOD_LIST,
                                         displayMethod -> displayMethod.name().replace("_", " ")
-                                ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i))),
-
-                                new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
-                                        .addStateChangeListener(main::set3DView),
-                                new SToggleButton("Only compute layout of primary graph", BUTTON_PROPS, false)
-                                        .addStateChangeListener(main::doSourceLayout)
+                                ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)))
                         )),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
@@ -191,6 +214,7 @@ public class Menu extends SDecorator {
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
                         // auxiliary buttons
+                        new SButton("Display Options...", () -> main.gui().focus(displayOptionsFrame), BUTTON_PROPS),
                         SContainer.row(
                                 new PathVisualisationTool(main).button("Find shortest path", BUTTON_PROPS),
                                 new SCloseButton(BUTTON_PROPS.minHeight,
@@ -198,8 +222,6 @@ public class Menu extends SDecorator {
                                 )
                         ),
                         new CameraCenterTool(main).button("Center camera on...", BUTTON_PROPS),
-                        new SButton("Get Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
-                        new SButton("Get Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS),
                         new SFiller()
                 )).setGrowthPolicy(false, true)
         ));
@@ -207,14 +229,15 @@ public class Menu extends SDecorator {
 
     private void openFileDialog(Consumer<File> action, String extension) {
         FileDialog fd = new FileDialog((Frame) null, "Choose a file", FileDialog.LOAD);
-        fd.setDirectory(BASE_FILE_CHOOSER_DIRECTORY.getAbsolutePath());
+        fd.setDirectory(currentGraphFile.getAbsolutePath());
         fd.setFile(extension);
         fd.setVisible(true);
 
         String filename = fd.getFile();
         if (filename != null) {
             String directory = fd.getDirectory();
-            action.accept(Paths.get(directory, filename).toFile());
+            File file = Paths.get(directory, filename).toFile();
+            action.accept(file);
         }
 
         fd.dispose();
@@ -230,6 +253,7 @@ public class Menu extends SDecorator {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Camera camera = main.camera();
                 camera.set(node.position);
+                Logger.DEBUG.print("Center camera on " + node);
             }
             disableThis();
         }
@@ -239,6 +263,7 @@ public class Menu extends SDecorator {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                 Camera camera = main.camera();
                 camera.set(edge.handlePos);
+                Logger.DEBUG.print("Center camera on " + edge);
             }
             disableThis();
         }
@@ -284,12 +309,12 @@ public class Menu extends SDecorator {
         private void colorPath(State startNode, State endNode, Graph graph) {
             GraphPathFinder dijkstra = new GraphPathFinder(startNode, endNode, graph);
 
-            Logger.DEBUG.print("Searching path from " + startNode + " to " + endNode);
+            Logger.DEBUG.print("Searching path from " + startNode.label + " to " + endNode.label);
 
             List<Transition> edges = dijkstra.call();
 
             if (edges == null) {
-                Logger.WARN.print("No path found from " + startNode + " to " + endNode);
+                Logger.WARN.print("No path found from " + startNode.label + " to " + endNode.label);
 
                 startNode.addColor(Color4f.RED, GraphElement.Priority.PATH);
                 endNode.addColor(Color4f.RED, GraphElement.Priority.PATH);
@@ -297,7 +322,7 @@ public class Menu extends SDecorator {
                 return;
             }
 
-            Logger.DEBUG.print("Path from " + startNode + " to " + endNode + " found of length " + edges.size());
+            Logger.DEBUG.print("Path from " + startNode.label + " to " + endNode.label + " found of length " + edges.size());
 
             for (Transition edge : edges) {
                 edge.addColor(PATH_COLOR, GraphElement.Priority.PATH);
@@ -310,7 +335,6 @@ public class Menu extends SDecorator {
     }
 
     private static class SimulationSliderUI extends SPanel {
-        public static final float SPEED_MAXIMUM = 1f / (1 << 8);
 
         public SimulationSliderUI(SpringLayout updateLoop) {
             super(SContainer.grid(new SComponent[][]{{

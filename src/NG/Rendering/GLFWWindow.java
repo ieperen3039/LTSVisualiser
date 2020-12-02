@@ -50,9 +50,9 @@ public class GLFWWindow {
     private List<ResizeListener> sizeChangeListeners = new ArrayList<>();
     private Thread glContext;
 
-    public GLFWWindow(String title, Settings settings, boolean resizable) {
+    public GLFWWindow(String title, Settings settings) {
         this.title = title;
-        this.resizable = resizable;
+        this.resizable = settings.resizable;
         this.settings = settings;
 
         this.mousePosX = BufferUtils.createDoubleBuffer(1);
@@ -101,7 +101,7 @@ public class GLFWWindow {
         glContext = Thread.currentThread();
 
         // debug message callbacks
-        if (settings.debugMode && settings.glDebugMessages) {
+        if (settings.glDebugMessages) {
             glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
             GLUtil.setupDebugMessageCallback();
         }
@@ -382,7 +382,6 @@ public class GLFWWindow {
     }
 
     public static class Settings {
-        final boolean debugMode;
         final boolean glDebugMessages;
         final int antialiasLevel;
         final int windowWidth;
@@ -391,25 +390,25 @@ public class GLFWWindow {
         final int targetFPS;
         final boolean fullscreen;
         final boolean cullFace;
+        public boolean resizable;
 
         public Settings() {
-            this(false, false, 1, false, 800, 600, false, 60, false);
+            this(false, 1, false, 800, 600, false, 60, false, true);
         }
 
         public Settings(NG.Settings.Settings s) {
             this(
-                    s.DEBUG, false,
+                    false,
                     s.ANTIALIAS_LEVEL, false,
                     s.WINDOW_WIDTH, s.WINDOW_HEIGHT,
-                    s.V_SYNC, s.TARGET_FPS, true
+                    s.V_SYNC, s.TARGET_FPS, true, true
             );
         }
 
         public Settings(
-                boolean debugMode, boolean glDebugMessages, int antialiasLevel, boolean fullscreen, int windowWidth,
-                int windowHeight, boolean vSync, int targetFPS, boolean cullFace
+                boolean glDebugMessages, int antialiasLevel, boolean fullscreen, int windowWidth,
+                int windowHeight, boolean vSync, int targetFPS, boolean cullFace, boolean resizable
         ) {
-            this.debugMode = debugMode;
             this.glDebugMessages = glDebugMessages;
             this.antialiasLevel = antialiasLevel;
             this.fullscreen = fullscreen;
@@ -418,6 +417,7 @@ public class GLFWWindow {
             this.vSync = vSync;
             this.targetFPS = targetFPS;
             this.cullFace = cullFace;
+            this.resizable = resizable;
         }
     }
 }

@@ -2,6 +2,7 @@ package NG.Tools;
 
 import org.joml.*;
 
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.List;
@@ -29,20 +30,35 @@ public enum Logger {
     /** for errors that probably cause the game to crash at some point */
     ERROR;
 
+    private static final long timeStart = System.currentTimeMillis();
+    private final String codeName = String.format("[%-5s]", this);
     public static boolean doPrintCallsites = true;
+    public static boolean doPrintTimeStamps = false;
 
-    /** prevents spamming the chat */
-    protected static Set<String> callerBlacklist = new HashSet<>();
     private static List<Supplier<String>> onlinePrints = new CopyOnWriteArrayList<>();
     private static Consumer<String> out = null;
     private static Consumer<String> err = null;
-
-    static {
-        setOutputReceiver(null, null);
-    }
+    /** prevents spamming the log */
+    protected static Set<String> callerBlacklist = new HashSet<>();
 
     private boolean enabled = true;
-    private String codeName = String.format("[%-5s]", this);
+
+    static {
+        try {
+            PrintStream out = new PrintStream("latest.log");
+            setOutputReceiver(s -> {
+                System.out.println(s);
+                out.println(s);
+            }, s -> {
+                System.err.println(s);
+                out.println(s);
+                out.flush();
+            });
+        } catch (FileNotFoundException e) {
+            setOutputReceiver(null, null);
+            ERROR.print(e);
+        }
+    }
 
     /**
      * prints the result of {@link Object#toString()} of the given objects to the output, preceded with calling method.
@@ -67,6 +83,7 @@ public enum Logger {
         if (!enabled) return;
 
         String prefix = codeName;
+        if (doPrintTimeStamps) prefix = String.format("%-10d %s", System.currentTimeMillis() - timeStart, prefix);
         if (doPrintCallsites) prefix = getCallingMethod(depth) + prefix;
 
         switch (this) {

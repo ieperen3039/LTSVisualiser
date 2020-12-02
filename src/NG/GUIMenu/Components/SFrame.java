@@ -48,11 +48,11 @@ public class SFrame extends SDecorator {
             );
             titleComponent = text;
 
-            upperBar = new SListeners.DragListener(
-                    new SPanel(SContainer.row(
-                            text, new SCloseButton(this)
-                    ))
-            ).setDragListener((dx, dy, x, y) -> addToPosition(dx, dy));
+            upperBar = SContainer.row(
+                    new SListeners.DragListener(new SPanel(text))
+                            .setDragListener((dx, dy, x, y) -> addToPosition(dx, dy)),
+                    new SCloseButton(this)
+            );
 
         } else {
             titleComponent = new STextArea(title, FRAME_TITLE_BAR_SIZE, 0, true, NGFonts.TextType.TITLE, SFrameLookAndFeel.Alignment.CENTER_TOP);

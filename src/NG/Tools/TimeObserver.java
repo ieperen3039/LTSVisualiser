@@ -15,12 +15,12 @@ public class TimeObserver {
     private static final String NONE = "Other";
     private static final int QUEUE_SIZE = 5;
     private final int queueSize;
+    private final boolean includeOther;
 
-    private AveragingQueue loopTimes;
-    private Map<String, AveragingQueue> allMeasures;
-    private Map<String, Integer> thisLoopMeasures;
+    private final AveragingQueue loopTimes;
+    private final Map<String, AveragingQueue> allMeasures;
+    private final Map<String, Integer> thisLoopMeasures;
     private long thisLoopStart;
-    private boolean includeOther;
 
     private String currentMeasure;
     private long currentStart;
@@ -113,5 +113,12 @@ public class TimeObserver {
             builder.append(String.format("| %-30s | %4.01f%% |", result.left, result.right * 100));
         }
         return builder.toString();
+    }
+
+    public void reset() {
+        startNewLoop();
+        allMeasures.clear();
+        thisLoopMeasures.clear();
+        loopTimes.clear();
     }
 }

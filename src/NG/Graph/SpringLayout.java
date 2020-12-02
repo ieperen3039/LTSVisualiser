@@ -302,6 +302,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     public void setAllow3D(boolean allow3D) {
+        Logger.DEBUG.print("Set 3D to " + allow3D);
         this.allow3D = allow3D;
     }
 

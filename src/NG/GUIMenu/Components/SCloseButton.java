@@ -18,7 +18,7 @@ public class SCloseButton extends SComponent implements MouseReleaseListener, Mo
     private boolean state = false;
 
     public SCloseButton(SFrame frame) {
-        this(SFrame.FRAME_TITLE_BAR_SIZE, frame::dispose);
+        this(SFrame.FRAME_TITLE_BAR_SIZE, () -> frame.setVisible(false));
     }
 
     public SCloseButton(int size, Runnable closeAction) {

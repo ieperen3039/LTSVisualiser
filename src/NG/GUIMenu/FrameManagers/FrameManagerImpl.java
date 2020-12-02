@@ -229,8 +229,6 @@ public class FrameManagerImpl implements UIFrameManager {
     }
 
     private void processClick(int button, SComponent component, int xSc, int ySc) {
-//        Logger.DEBUG.print(component);
-
         // click listener
         SComponent target = component;
         do {

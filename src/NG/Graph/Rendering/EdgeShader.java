@@ -107,7 +107,7 @@ public class EdgeShader implements ShaderProgram {
         writeMatrix(view, viewMatrixUID);
 
         int nrOfNodes = root.getVisibleGraph().getNodeMesh().nodeList().size();
-        glUniform1f(radiusUID, NODE_RADIUS);
+        glUniform1f(radiusUID, NODE_RADIUS * 0.9f);
         glUniform1f(edgeSizeUID, EDGE_WIDTH);
         glUniform1f(headSizeUID, HEAD_WIDTH);
         glUniform1i(tailSectionUID, currentShape.tailSections);

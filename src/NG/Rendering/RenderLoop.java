@@ -54,7 +54,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
         overlay.init(settings.ANTIALIAS_LEVEL);
         overlay.addHudItem((hud) -> {
-            if (root.settings().DEBUG) {
+            if (root.settings().PRINT_ROLL) {
                 Logger.putOnlinePrint(hud::printRoll);
             }
         });

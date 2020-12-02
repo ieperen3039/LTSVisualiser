@@ -82,8 +82,11 @@ public class SourceGraph extends Graph {
         initialState.border = INITAL_STATE_COLOR;
 
         // collect confluent classes
+        long startMillis = System.currentTimeMillis();
         Collection<List<State>> confluentStates = new ConfluenceDetector(this).call();
-        Logger.DEBUG.print(confluentStates.size() + " confluent groups");
+        long endMillis = System.currentTimeMillis();
+
+        Logger.DEBUG.printf("%d confluent groups (%d ms)", confluentStates.size(), endMillis - startMillis);
 
         for (List<State> list : confluentStates) {
             int classIndex = list.get(0).classIndex;
@@ -179,6 +182,8 @@ public class SourceGraph extends Graph {
         int initialStateIndex = Integer.parseInt(matcher.group(1));
         int nrOfTransitions = Integer.parseInt(matcher.group(2));
         int nrOfStates = Integer.parseInt(matcher.group(3));
+
+        Logger.DEBUG.printf("Loading graph with %d states and %d transitions...", nrOfStates, nrOfTransitions);
 
         float natLength = root == null ? 1 : root.getSpringLayout().getNatLength();
         SourceGraph graph = new SourceGraph(root, nrOfStates, nrOfTransitions, natLength);

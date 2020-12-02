@@ -23,7 +23,9 @@ public class Settings {
     public float MAX_CAMERA_DIST = Z_FAR * 0.75f;
     public float MIN_CAMERA_DIST = Z_NEAR * 2f;
 
-    public static final boolean ADVANCED_MANIPULATION = false;
     // other
-    public boolean DEBUG = false;
+    public boolean PRINT_ROLL = false;
+    public boolean ADVANCED_MANIPULATION = false;
+    public int MAX_ITERATIONS_PER_SECOND = 200;
+    public int NUM_WORKER_THREADS = 3;
 }

@@ -22,7 +22,6 @@ import NG.Rendering.GLFWWindow;
 import NG.Rendering.RenderLoop;
 import NG.Resources.LazyInit;
 import NG.Settings.Settings;
-import NG.Tools.Directory;
 import NG.Tools.Logger;
 import NG.Tools.Toolbox;
 import NG.Tools.Vectors;
@@ -56,11 +55,8 @@ public class Main {
     public static final Color4f MU_FORMULA_UNREACHABLE = Color4f.rgb(200, 0, 0, 0.8f); // red
     public static final Color4f MU_FORMULA_UNAVOIDABLE = Color4f.rgb(0, 100, 0, 0.8f); // green
 
-    private static final Version VERSION = new Version(0, 2);
+    private static final Version VERSION = new Version(0, 3);
     private static final Pattern PATTERN_COMMA = Pattern.compile(",");
-
-    private static final int MAX_ITERATIONS_PER_SECOND = 50;
-    private static final int NUM_WORKER_THREADS = 3;
 
     private final Thread mainThread;
     public final RenderLoop renderer;
@@ -98,13 +94,13 @@ public class Main {
                 "\n\tSystem OS:          " + System.getProperty("os.name") +
                 "\n\tJava VM:            " + System.getProperty("java.runtime.version") +
                 "\n\tTool version:       " + getVersionNumber() +
-                "\n\tWorking directory:  " + Directory.workDirectory()
+                "\n\tNumber of workers:  " + settings.NUM_WORKER_THREADS
         );
 
         this.settings = settings;
         GLFWWindow.Settings videoSettings = new GLFWWindow.Settings(settings);
 
-        window = new GLFWWindow(Settings.GAME_NAME, videoSettings, true);
+        window = new GLFWWindow(Settings.GAME_NAME, videoSettings);
         renderer = new RenderLoop(settings.TARGET_FPS);
         inputHandler = new MouseToolCallbacks();
         keyControl = inputHandler.getKeyControl();
@@ -114,7 +110,7 @@ public class Main {
 
         graph = SourceGraph.empty(this);
         secondGraph = SourceGraph.empty(this);
-        springLayout = new SpringLayout(MAX_ITERATIONS_PER_SECOND, NUM_WORKER_THREADS);
+        springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(() -> new NodeClustering(graph), Graph::cleanup);
         confluenceGraph = new LazyInit<>(
@@ -167,16 +163,15 @@ public class Main {
         frameManager.setMainGUI(menu);
 
         springLayout.addUpdateListeners(this::onNodePositionChange);
-
-        Logger.INFO.print("Finished initialisation\n");
     }
 
     public void root() throws Exception {
         init();
-        Logger.INFO.print("Starting tool...\n");
 
         window.open();
         springLayout.start();
+
+        Logger.INFO.print("Finished startup\n");
 
         renderer.run();
 
@@ -184,6 +179,8 @@ public class Main {
         springLayout.stopLoop();
 
         cleanup();
+
+        Logger.INFO.print("Tool has been closed successfully");
     }
 
     public void onNodePositionChange() {

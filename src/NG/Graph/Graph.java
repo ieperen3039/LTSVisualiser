@@ -11,7 +11,6 @@ import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseTools.MouseTool;
 import NG.Rendering.GLFWWindow;
-import NG.Settings.Settings;
 import NG.Tools.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -115,7 +114,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     }
 
     protected void setNodePosition(State node, Vector3f newPosition) {
-        if (Settings.ADVANCED_MANIPULATION) {
+        if (root.settings().ADVANCED_MANIPULATION) {
             Vector3f movement = new Vector3f(newPosition).sub(node.position);
             Vector3f hMove = new Vector3f(movement).mul(0.5f);
             Vector3f qMove = new Vector3f(movement).mul(0.75f);

@@ -258,6 +258,18 @@ public class PairList<L, R> extends AbstractList<Pair<L, R>> {
         return (PairList<L, R>) EMPTY_LIST;
     }
 
+    public R right(L arg) {
+        int index = indexOfLeft(arg);
+        if (index == -1) return null;
+        return right(index);
+    }
+
+    public L left(R arg) {
+        int index = indexOfRight(arg);
+        if (index == -1) return null;
+        return left(index);
+    }
+
     /**
      * allows iteration over this pairList
      */
