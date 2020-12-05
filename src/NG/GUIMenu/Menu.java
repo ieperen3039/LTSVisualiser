@@ -94,7 +94,7 @@ public class Menu extends SDecorator {
 
                 new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
                         .addStateChangeListener(main::set3DView),
-                new SToggleButton("Only compute layout of primary graph", BUTTON_PROPS, false)
+                new SToggleButton("Always use layout of primary graph", BUTTON_PROPS, false)
                         .addStateChangeListener(main::doSourceLayout),
 
                 new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),

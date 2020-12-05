@@ -32,7 +32,7 @@ public enum Logger {
 
     private static final long timeStart = System.currentTimeMillis();
     private final String codeName = String.format("[%-5s]", this);
-    public static boolean doPrintCallsites = true;
+    public static boolean doPrintCallsites = false;
     public static boolean doPrintTimeStamps = false;
 
     private static List<Supplier<String>> onlinePrints = new CopyOnWriteArrayList<>();

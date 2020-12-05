@@ -23,13 +23,13 @@ public class Boot {
         Logger.setLoggingLevel(Logger.DEBUG);
 
         new FlagManager()
-                .addFlag("debug", () -> Logger.setLoggingLevel(Logger.DEBUG))
-                .addFlag("quiet", () -> Logger.setLoggingLevel(Logger.ERROR))
-                .addExclusivity("debug", "quiet")
+                .addFlag("debug", () -> Logger.doPrintCallsites = true)
+                .addFlag("quiet", () -> Logger.setLoggingLevel(Logger.INFO))
+                .addFlag("silent", () -> Logger.setLoggingLevel(Logger.ERROR))
+                .addExclusivity("debug", "quiet", "silent")
 
                 .addFlag("lwjgl-debug", () -> Configuration.DEBUG.set(true))
 
-                .addFlag("fast", () -> Logger.doPrintCallsites = false)
                 .addFlag("timed", () -> Logger.doPrintTimeStamps = true)
 
                 .addFlag("loopTimingOverlay", () -> settings.PRINT_ROLL = true)
@@ -104,7 +104,8 @@ public class Boot {
         }
 
         /**
-         * makes the given flags and parameters mutually exclusive. Flags and parameters can be mixed.
+         * makes the given flags and parameters mutually exclusive. Flags and parameters can be mixed. Correctness of
+         * the flags is not checked.
          */
         public FlagManager addExclusivity(String... mutuallyExclusiveFlags) {
             exclusives.add(Arrays.asList(mutuallyExclusiveFlags));
