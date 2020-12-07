@@ -1,6 +1,6 @@
 package NG.Rendering.Shaders;
 
-import NG.Rendering.MeshLoading.Mesh;
+import NG.Rendering.Mesh;
 
 /**
  * This resembles the {@link org.lwjgl.opengl.GL} object.

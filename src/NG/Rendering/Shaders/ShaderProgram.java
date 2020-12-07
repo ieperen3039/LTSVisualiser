@@ -1,7 +1,7 @@
 package NG.Rendering.Shaders;
 
 import NG.Core.Main;
-import NG.Rendering.MeshLoading.Mesh;
+import NG.Rendering.Mesh;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

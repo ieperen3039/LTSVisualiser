@@ -1,7 +1,7 @@
 package NG.Graph.Rendering;
 
 import NG.Graph.State;
-import NG.Rendering.MeshLoading.Mesh;
+import NG.Rendering.Mesh;
 import NG.Rendering.Shaders.SGL;
 import NG.Tools.Toolbox;
 import org.lwjgl.system.MemoryUtil;

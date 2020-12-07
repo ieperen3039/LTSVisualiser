@@ -1,4 +1,4 @@
-package NG.Rendering.MeshLoading;
+package NG.Rendering;
 
 import NG.Rendering.Shaders.SGL;
 import NG.Resources.LazyInit;

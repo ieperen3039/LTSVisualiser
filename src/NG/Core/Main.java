@@ -117,7 +117,7 @@ public class Main {
                 () -> new NodeClustering(graph, new ConfluenceDetector(graph).getLeaderMap(), false, "tau"),
                 Graph::cleanup
         );
-        graphComparator = new LazyInit<>(() -> new GraphComparator(graph, secondGraph), Graph::cleanup);
+        graphComparator = new LazyInit<>(() -> new LargestEquivalenceSubgraphComparator(graph, secondGraph), Graph::cleanup);
         ignoringGraph = new LazyInit<>(() -> new IgnoringGraph(graph, getMarkedLabels()), Graph::cleanup);
     }
 

@@ -1,6 +1,5 @@
 package NG.Rendering;
 
-import NG.DataStructures.Generic.Color4f;
 import NG.Tools.Directory;
 import NG.Tools.Logger;
 import NG.Tools.Toolbox;
@@ -23,7 +22,8 @@ import java.util.List;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.glReadBuffer;
+import static org.lwjgl.opengl.GL11.glReadPixels;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 enum CursorMode {VISIBLE, HIDDEN_FREE, HIDDEN_CAPTURED}
@@ -81,7 +81,27 @@ public class GLFWWindow {
             glfwWindowHint(GLFW_SAMPLES, settings.antialiasLevel);
         }
 
-        window = getWindow(settings.windowWidth, settings.windowHeight);
+        // Create window
+        long window = glfwCreateWindow(settings.windowWidth, settings.windowHeight, this.title, NULL, NULL);
+        if (window == NULL) {
+            throw new RuntimeException("Failed to create the GLFW window");
+        }
+        this.width = settings.windowWidth;
+        this.height = settings.windowHeight;
+
+//        glfwSetWindowIcon(newWindow, null); // icon
+
+        if (this.resizable) {
+            // Setup resize callback
+            glfwSetFramebufferSizeCallback(window, (w, newWidth, newHeight) -> {
+                this.width = newWidth;
+                this.height = newHeight;
+                sizeChangeListeners.forEach(l -> l.onChange(newWidth, newHeight));
+            });
+        }
+
+        // Make GL context current
+        glfwMakeContextCurrent(window);
         primaryMonitor = glfwGetPrimaryMonitor();
 
         if (settings.fullscreen) {
@@ -107,36 +127,6 @@ public class GLFWWindow {
         }
 
         Toolbox.checkGLError("window");
-    }
-
-    /**
-     * creates a window of the given width and height
-     * @param width  in pixels
-     * @param height in pixels
-     */
-    private long getWindow(int width, int height) {
-        // Create window
-        long newWindow = glfwCreateWindow(width, height, title, NULL, NULL);
-        if (newWindow == NULL) {
-            throw new RuntimeException("Failed to create the GLFW window");
-        }
-        this.width = width;
-        this.height = height;
-
-//        glfwSetWindowIcon(newWindow, null); // TODO icon
-
-        if (this.resizable) {
-            // Setup resize callback
-            glfwSetFramebufferSizeCallback(newWindow, (window, newWidth, newHeight) -> {
-                this.width = newWidth;
-                this.height = newHeight;
-                sizeChangeListeners.forEach(l -> l.onChange(newWidth, newHeight));
-            });
-        }
-
-        // Make GL context current
-        glfwMakeContextCurrent(newWindow);
-        return newWindow;
     }
 
     /**
@@ -221,17 +211,6 @@ public class GLFWWindow {
         glfwSetErrorCallback(null).free();
     }
 
-
-    /**
-     * Set the color which is used for clearing the window.
-     * @param red   The red value (0.0 - 1.0)
-     * @param green The green value (0.0 - 1.0)
-     * @param blue  The blue value (0.0 - 1.0)
-     * @param alpha The alpha value (0.0 - 1.0)
-     */
-    public void setClearColor(float red, float green, float blue, float alpha) {
-        glClearColor(red, green, blue, alpha);
-    }
 
     /**
      * Check whether a certain key is pressed.
@@ -338,10 +317,6 @@ public class GLFWWindow {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 break;
         }
-    }
-
-    public void setClearColor(Color4f color4f) {
-        setClearColor(color4f.red, color4f.green, color4f.blue, color4f.alpha);
     }
 
     /**
