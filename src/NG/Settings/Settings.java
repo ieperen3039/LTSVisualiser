@@ -5,7 +5,7 @@ package NG.Settings;
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
 public class Settings {
-    public static final String GAME_NAME = "LTS Graph Explorer";
+    public static final String TITLE = "LTS Graph Explorer";
 
     // video settings
     public int TARGET_FPS = 60;

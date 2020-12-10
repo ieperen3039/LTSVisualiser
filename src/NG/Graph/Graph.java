@@ -85,7 +85,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
             } else if (oldHoveredEdge != null) {
                 if (oldHoveredEdge != hoveredEdge) {
-                    forAttribute(oldHoveredEdge.label, e -> e.resetColor(GraphElement.Priority.HOVER));
+                    forActionLabel(oldHoveredEdge.label, e -> e.resetColor(GraphElement.Priority.HOVER));
                     getEdgeMesh().scheduleColorReload();
                 }
             }
@@ -95,7 +95,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
                 getNodeMesh().scheduleColorReload();
 
             } else if (hoveredEdge != null) {
-                forAttribute(hoveredEdge.label, edge -> edge.addColor(Main.HOVER_COLOR, GraphElement.Priority.HOVER));
+                forActionLabel(hoveredEdge.label, edge -> edge.addColor(Main.HOVER_COLOR, GraphElement.Priority.HOVER));
                 getEdgeMesh().scheduleColorReload();
             }
 
@@ -165,9 +165,9 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         return getEdgeMesh().edgeList().size();
     }
 
-    public abstract Collection<String> getEdgeAttributes();
+    public abstract Collection<String> getEdgeLabels();
 
-    public void forAttribute(String label, Consumer<Transition> action) {
+    public void forActionLabel(String label, Consumer<Transition> action) {
         EdgeMesh edges = getEdgeMesh();
 
         for (Transition edge : edges.edgeList()) {
@@ -239,7 +239,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         @Override
         public void onEdgeClick(int button, Graph graph, Transition edge) {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                root.toggleClusterAttribute(edge.label);
+                root.toggleClusterActionLabel(edge.label);
             }
         }
 

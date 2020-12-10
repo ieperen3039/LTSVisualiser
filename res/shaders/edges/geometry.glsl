@@ -66,7 +66,7 @@ void main() {
             return;
 
         } else {
-            color = numberToColor(geoID);
+            color = numberToColor(geoID[0]);
         }
         shouldGradient = false;
 

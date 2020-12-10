@@ -22,8 +22,7 @@ import java.util.List;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.glReadBuffer;
-import static org.lwjgl.opengl.GL11.glReadPixels;
+import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 enum CursorMode {VISIBLE, HIDDEN_FREE, HIDDEN_CAPTURED}
@@ -82,20 +81,19 @@ public class GLFWWindow {
         }
 
         // Create window
-        long window = glfwCreateWindow(settings.windowWidth, settings.windowHeight, this.title, NULL, NULL);
+        width = settings.windowWidth;
+        height = settings.windowHeight;
+        window = glfwCreateWindow(width, height, title, NULL, NULL);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
-        this.width = settings.windowWidth;
-        this.height = settings.windowHeight;
 
 //        glfwSetWindowIcon(newWindow, null); // icon
-
-        if (this.resizable) {
+        if (resizable) {
             // Setup resize callback
             glfwSetFramebufferSizeCallback(window, (w, newWidth, newHeight) -> {
-                this.width = newWidth;
-                this.height = newHeight;
+                width = newWidth;
+                height = newHeight;
                 sizeChangeListeners.forEach(l -> l.onChange(newWidth, newHeight));
             });
         }
@@ -119,6 +117,7 @@ public class GLFWWindow {
 
         GL.createCapabilities();
         glContext = Thread.currentThread();
+        Logger.DEBUG.print("OpenGL version: " + glGetString(GL_VERSION));
 
         // debug message callbacks
         if (settings.glDebugMessages) {

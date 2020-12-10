@@ -86,21 +86,21 @@ public class Main {
         HIGHLIGHT_ACTIONS, SHOW_SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
     }
 
-    public Main(Settings settings) throws IOException {
+    public Main(Settings settings) throws Exception {
         Logger.INFO.print("Starting up...");
 
-        Logger.DEBUG.print("General debug information: " +
+        Logger.DEBUG.print("General debug information: "
                 // manual aligning will do the trick
-                "\n\tSystem OS:          " + System.getProperty("os.name") +
-                "\n\tJava VM:            " + System.getProperty("java.runtime.version") +
-                "\n\tTool version:       " + getVersionNumber() +
-                "\n\tNumber of workers:  " + settings.NUM_WORKER_THREADS
+                + "\n\tSystem OS:          " + System.getProperty("os.name")
+                + "\n\tJava VM:            " + System.getProperty("java.runtime.version")
+                + "\n\tTool version:       " + getVersionNumber()
+                + "\n\tNumber of workers:  " + settings.NUM_WORKER_THREADS
         );
 
         this.settings = settings;
         GLFWWindow.Settings videoSettings = new GLFWWindow.Settings(settings);
 
-        window = new GLFWWindow(Settings.GAME_NAME, videoSettings);
+        window = new GLFWWindow(Settings.TITLE, videoSettings);
         renderer = new RenderLoop(settings.TARGET_FPS);
         inputHandler = new MouseToolCallbacks();
         keyControl = inputHandler.getKeyControl();
@@ -117,7 +117,7 @@ public class Main {
                 () -> new NodeClustering(graph, new ConfluenceDetector(graph).getLeaderMap(), false, "tau"),
                 Graph::cleanup
         );
-        graphComparator = new LazyInit<>(() -> new LargestEquivalenceSubgraphComparator(graph, secondGraph), Graph::cleanup);
+        graphComparator = new LazyInit<>(() -> new GraphComparator(graph, secondGraph), Graph::cleanup);
         ignoringGraph = new LazyInit<>(() -> new IgnoringGraph(graph, getMarkedLabels()), Graph::cleanup);
     }
 
@@ -334,19 +334,19 @@ public class Main {
             nodeClustering.setShowSelfLoop(method != DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS);
 
             String[] actionLabels = menu.actionLabels;
-            SToggleButton[] attributeButtons = menu.attributeButtons;
+            SToggleButton[] actionLabelButtons = menu.actionButtons;
             for (int i = 0; i < actionLabels.length; i++) {
-                nodeClustering.setEdgeAttribute(actionLabels[i], attributeButtons[i].isActive());
+                nodeClustering.setEdgeActionLabel(actionLabels[i], actionLabelButtons[i].isActive());
             }
 
         } else if (method == DisplayMethod.CONFLUENCE) {
             NodeClustering cGraph = confluenceGraph.get();
 
             String[] actionLabels = menu.actionLabels;
-            SToggleButton[] attributeButtons = menu.attributeButtons;
+            SToggleButton[] actionLabelButtons = menu.actionButtons;
             for (int i = 0; i < actionLabels.length; i++) {
-                if (attributeButtons[i].isActive()) {
-                    cGraph.forAttribute(actionLabels[i], edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
+                if (actionLabelButtons[i].isActive()) {
+                    cGraph.forActionLabel(actionLabels[i], edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
                 }
             }
         }
@@ -389,9 +389,9 @@ public class Main {
     public Collection<String> getMarkedLabels() {
         Collection<String> markedActionLabels = new HashSet<>();
         String[] actionLabels = menu.actionLabels;
-        SToggleButton[] attributeButtons = menu.attributeButtons;
+        SToggleButton[] actionLabelButtons = menu.actionButtons;
         for (int i = 0; i < actionLabels.length; i++) {
-            if (attributeButtons[i].isActive()) {
+            if (actionLabelButtons[i].isActive()) {
                 markedActionLabels.add(actionLabels[i]);
             }
         }
@@ -479,11 +479,11 @@ public class Main {
         onNodePositionChange();
     }
 
-    public void toggleClusterAttribute(String label) {
+    public void toggleClusterActionLabel(String label) {
         String[] actionLabels = menu.actionLabels;
         for (int i = 0; i < actionLabels.length; i++) {
             if (label.equals(actionLabels[i])) {
-                menu.attributeButtons[i].toggle();
+                menu.actionButtons[i].toggle();
             }
         }
     }
@@ -523,21 +523,21 @@ public class Main {
         }
     }
 
-    public void selectAttribute(String label, boolean on) {
+    public void selectActionLabel(String label, boolean on) {
         Consumer<Transition> action = on ?
                 (edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE)) :
                 (edge -> edge.resetColor(GraphElement.Priority.ATTRIBUTE));
 
-        graph.forAttribute(label, action);
+        graph.forActionLabel(label, action);
         graph.getEdgeMesh().scheduleColorReload();
 
-        secondGraph.forAttribute(label, action);
+        secondGraph.forActionLabel(label, action);
         secondGraph.getEdgeMesh().scheduleColorReload();
 
-        confluenceGraph.ifPresent(g -> g.forAttribute(label, action));
+        confluenceGraph.ifPresent(g -> g.forActionLabel(label, action));
         confluenceGraph.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
 
-        nodeCluster.ifPresent(g -> g.setEdgeAttribute(label, on));
+        nodeCluster.ifPresent(g -> g.setEdgeActionLabel(label, on));
         ignoringGraph.ifPresent(g -> g.update(getMarkedLabels()));
     }
 

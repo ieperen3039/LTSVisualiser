@@ -53,7 +53,7 @@ public class Menu extends SDecorator {
     private final Main main;
 
     public String[] actionLabels = new String[0];
-    public SToggleButton[] attributeButtons = new SToggleButton[0];
+    public SToggleButton[] actionButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
     private SDropDown displayMethodDropDown;
 
@@ -71,15 +71,15 @@ public class Menu extends SDecorator {
         UIFrameManager frameManager = main.gui();
         GraphColorTool colorTool = new GraphColorTool(main, PAINT_COLORS.right(0));
 
-        actionLabels = graph.getEdgeAttributes().stream().distinct().sorted().toArray(String[]::new);
+        actionLabels = graph.getEdgeLabels().stream().distinct().sorted().toArray(String[]::new);
 
-        attributeButtons = new SToggleButton[actionLabels.length];
+        actionButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
             String label = actionLabels[i];
-            attributeButtons[i] = new SToggleButton(label, BUTTON_PROPS);
-            attributeButtons[i].addStateChangeListener(on -> main.selectAttribute(label, on));
-            attributeButtons[i].setActive(false);
-            attributeButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
+            actionButtons[i] = new SToggleButton(label, BUTTON_PROPS);
+            actionButtons[i].addStateChangeListener(on -> main.selectActionLabel(label, on));
+            actionButtons[i].setActive(false);
+            actionButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
         }
 
         if (displayOptionsFrame != null) displayOptionsFrame.dispose();
@@ -206,10 +206,10 @@ public class Menu extends SDecorator {
                                 .addStateChangeListener(i -> colorTool.setColor(PAINT_COLORS.right(i))),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        // attribute coloring
+                        // action coloring
                         SContainer.column(
-                                new STextArea("Attribute markings", BUTTON_PROPS),
-                                new SScrollableList(9, attributeButtons)
+                                new STextArea("Action labels", BUTTON_PROPS),
+                                new SScrollableList(9, actionButtons)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 

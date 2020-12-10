@@ -25,7 +25,7 @@ public class GraphComparator extends Graph {
     private final Map<State, PairList<Transition, State>> incomingTransitions;
     private final Map<State, PairList<Transition, State>> outgoingTransitions;
 
-    private final Collection<String> attributes;
+    private final Collection<String> actions;
     private final NodeMesh nodeMesh = new NodeMesh();
     private final EdgeMesh edgeMesh = new EdgeMesh();
     private final State initialState;
@@ -35,7 +35,7 @@ public class GraphComparator extends Graph {
         super(a.root);
         this.incomingTransitions = new HashMap<>();
         this.outgoingTransitions = new HashMap<>();
-        this.attributes = new ArrayList<>(a.getEdgeAttributes());
+        this.actions = new ArrayList<>(a.getEdgeLabels());
 
         // edge case: trivial graphs
         if (a.getNrOfEdges() < 1 || b.getNrOfEdges() < 1) {
@@ -43,8 +43,8 @@ public class GraphComparator extends Graph {
             return;
         }
 
-        for (String attribute : b.getEdgeAttributes()) {
-            if (!attributes.contains(attribute)) attributes.add(attribute);
+        for (String label : b.getEdgeLabels()) {
+            if (!actions.contains(label)) actions.add(label);
         }
 
         this.initialState = new State(a.getInitialState().position, "initial", index, index++);
@@ -338,8 +338,8 @@ public class GraphComparator extends Graph {
     }
 
     @Override
-    public Collection<String> getEdgeAttributes() {
-        return attributes;
+    public Collection<String> getEdgeLabels() {
+        return actions;
     }
 
     @Override

@@ -24,6 +24,9 @@ public class Transition extends GraphElement {
         this.handlePos = new Vector3f(fromPosition).lerp(toPosition, 0.5f);
         this.label = label;
         colors.add(Priority.BASE, EdgeMesh.BASE_COLOR);
+
+        from.add(this);
+        to.add(this);
     }
 
     @Override

@@ -2,7 +2,6 @@ package NG.Tools;
 
 import org.joml.*;
 
-import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +32,7 @@ public enum Logger {
     private static final long timeStart = System.currentTimeMillis();
     private final String codeName = String.format("[%-5s]", this);
     public static boolean doPrintCallsites = false;
-    public static boolean doPrintTimeStamps = false;
+    public static boolean doPrintTimeStamps = true;
 
     private static List<Supplier<String>> onlinePrints = new CopyOnWriteArrayList<>();
     private static Consumer<String> out = null;
@@ -44,20 +43,7 @@ public enum Logger {
     private boolean enabled = true;
 
     static {
-        try {
-            PrintStream out = new PrintStream("latest.log");
-            setOutputReceiver(s -> {
-                System.out.println(s);
-                out.println(s);
-            }, s -> {
-                System.err.println(s);
-                out.println(s);
-                out.flush();
-            });
-        } catch (FileNotFoundException e) {
-            setOutputReceiver(null, null);
-            ERROR.print(e);
-        }
+        setOutputReceiver(null, null);
     }
 
     /**

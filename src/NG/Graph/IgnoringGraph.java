@@ -15,7 +15,7 @@ import java.util.*;
 public class IgnoringGraph extends Graph {
     public static final Color4f IGNORED_COLOR = new Color4f(0, 0, 0, 0.02f);
     private final Graph source;
-    private final Collection<String> edgeAttributes;
+    private final Collection<String> edgeActionLabels;
     private final EdgeMesh edgeMesh;
     private final Map<State, PairList<Transition, State>> incomingTransitions;
     private final Map<State, PairList<Transition, State>> outgoingTransitions;
@@ -24,8 +24,8 @@ public class IgnoringGraph extends Graph {
         super(source.root);
         this.source = source;
         this.edgeMesh = new EdgeMesh();
-        this.edgeAttributes = new HashSet<>(source.getEdgeAttributes());
-        this.edgeAttributes.removeAll(ignoredLabels);
+        this.edgeActionLabels = new HashSet<>(source.getEdgeLabels());
+        this.edgeActionLabels.removeAll(ignoredLabels);
         this.incomingTransitions = new HashMap<>();
         this.outgoingTransitions = new HashMap<>();
 
@@ -45,9 +45,9 @@ public class IgnoringGraph extends Graph {
     }
 
     public void update(Collection<String> ignoredLabels) {
-        edgeAttributes.clear();
-        edgeAttributes.addAll(source.getEdgeAttributes());
-        edgeAttributes.removeAll(ignoredLabels);
+        edgeActionLabels.clear();
+        edgeActionLabels.addAll(source.getEdgeLabels());
+        edgeActionLabels.removeAll(ignoredLabels);
 
         List<Transition> edges = getEdgeMesh().edgeList();
         List<Transition> sourceEdges = source.getEdgeMesh().edgeList();
@@ -86,8 +86,8 @@ public class IgnoringGraph extends Graph {
     }
 
     @Override
-    public Collection<String> getEdgeAttributes() {
-        return edgeAttributes;
+    public Collection<String> getEdgeLabels() {
+        return edgeActionLabels;
     }
 
     @Override

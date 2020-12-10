@@ -6,6 +6,8 @@ import NG.Settings.Settings;
 import NG.Tools.Logger;
 import org.lwjgl.system.Configuration;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +23,7 @@ public class Boot {
         Settings settings = new Settings();
 //        Logger.setLoggingLevel(Logger.INFO);
         Logger.setLoggingLevel(Logger.DEBUG);
+        boolean[] logSet = {false};
 
         new FlagManager()
                 .addFlag("debug", () -> Logger.doPrintCallsites = true)
@@ -29,25 +32,9 @@ public class Boot {
                 .addExclusivity("debug", "quiet", "silent")
 
                 .addFlag("lwjgl-debug", () -> Configuration.DEBUG.set(true))
-
-                .addFlag("timed", () -> Logger.doPrintTimeStamps = true)
-
+                .addFlag("untimed", () -> Logger.doPrintTimeStamps = false)
                 .addFlag("loopTimingOverlay", () -> settings.PRINT_ROLL = true)
                 .addFlag("advancedDragging", () -> settings.ADVANCED_MANIPULATION = true)
-
-                .addParameterFlag("log", file -> {
-                    PrintStream out = new PrintStream(file);
-                    Logger.setOutputReceiver(s -> {
-                        System.out.println(s);
-                        out.println(s);
-                    }, s -> {
-                        System.err.println(s);
-                        out.println(s);
-                        out.flush();
-                    });
-                })
-                .addFlag("noLogFile", () -> Logger.setOutputReceiver(null, null))
-                .addExclusivity("log", "noLogFile")
 
                 .addParameterFlag("maxIterationsPerSecond",
                         s -> settings.MAX_ITERATIONS_PER_SECOND = Integer.parseInt(s)
@@ -56,7 +43,35 @@ public class Boot {
                         s -> settings.NUM_WORKER_THREADS = Integer.parseInt(s)
                 )
 
+                .addParameterFlag("log", file -> {
+                    PrintStream out = new PrintStream(new FileOutputStream(file), true);
+                    Logger.setOutputReceiver(s -> {
+                        System.out.println(s);
+                        out.println(s);
+                    }, s -> {
+                        System.err.println(s);
+                        out.println(s);
+                    });
+                    logSet[0] = true;
+                })
+
                 .parse(args);
+
+        if (!logSet[0]) {
+            File logFile = new File("output1.log");
+            for (int i = 2; logFile.exists(); i++) {
+                logFile = new File("output" + i++ + ".log");
+            }
+
+            PrintStream out = new PrintStream(new FileOutputStream(logFile), true);
+            Logger.setOutputReceiver(s -> {
+                System.out.println(s);
+                out.println(s);
+            }, s -> {
+                System.err.println(s);
+                out.println(s);
+            });
+        }
 
         new Main(settings).root();
     }

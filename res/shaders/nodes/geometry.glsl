@@ -6,7 +6,7 @@ layout (triangle_strip, max_vertices = 35) out;
 
 in vec4[1] geoMiddle;// viewProjection position of middle
 in vec4[1] geoColor;
-in vec4[] geoBorder;
+in vec4[1] geoBorder;
 in int[1] geoID;
 
 smooth out float distanceFromMiddle;
@@ -18,7 +18,7 @@ uniform float nodeRadius;
 uniform bool doUniqueColor;
 
 const int nrOfOffsets = 16;
-const vec2[] offsets = {
+const vec2[] offsets = vec2[](
 vec2(0.000, 1.000),
 vec2(0.383, 0.924),
 vec2(0.707, 0.707),
@@ -35,7 +35,7 @@ vec2(-1.000, -0.000),
 vec2(-0.924, 0.383),
 vec2(-0.707, 0.707),
 vec2(-0.383, 0.924)
-};
+);
 
 vec4 color;
 vec4 border;
@@ -67,7 +67,7 @@ void emitOffset(vec2 offset){
 
 void main() {
     if (doUniqueColor){
-        color = numberToColor(geoID);
+        color = numberToColor(geoID[0]);
         border = color;
 
     } else {

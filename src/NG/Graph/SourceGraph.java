@@ -130,7 +130,7 @@ public class SourceGraph extends Graph {
     }
 
     @Override
-    public Collection<String> getEdgeAttributes() {
+    public Collection<String> getEdgeLabels() {
         return Arrays.asList(actionLabels);
     }
 
