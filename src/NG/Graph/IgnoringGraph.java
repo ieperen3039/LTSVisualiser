@@ -15,7 +15,7 @@ import java.util.*;
 public class IgnoringGraph extends Graph {
     public static final Color4f IGNORED_COLOR = new Color4f(0, 0, 0, 0.02f);
     private final Graph source;
-    private final Collection<String> edgeActionLabels;
+    private final Set<String> edgeActionLabels;
     private final EdgeMesh edgeMesh;
     private final Map<State, PairList<Transition, State>> incomingTransitions;
     private final Map<State, PairList<Transition, State>> outgoingTransitions;
@@ -44,20 +44,14 @@ public class IgnoringGraph extends Graph {
         }
     }
 
-    public void update(Collection<String> ignoredLabels) {
-        edgeActionLabels.clear();
-        edgeActionLabels.addAll(source.getEdgeLabels());
-        edgeActionLabels.removeAll(ignoredLabels);
-
-        List<Transition> edges = getEdgeMesh().edgeList();
-        List<Transition> sourceEdges = source.getEdgeMesh().edgeList();
-        for (int i = 0, edgesSize = edges.size(); i < edgesSize; i++) {
-            Transition p = edges.get(i);
-            Color4f color = ignoredLabels.contains(p.label) ? IGNORED_COLOR : sourceEdges.get(i).getColor();
-            p.addColor(color, GraphElement.Priority.IGNORE);
+    public void setIgnore(String label, boolean doIgnore) {
+        if (doIgnore) {
+            edgeActionLabels.remove(label);
+            forActionLabel(label, e -> e.addColor(IGNORED_COLOR, GraphElement.Priority.IGNORE));
+        } else {
+            edgeActionLabels.add(label);
+            forActionLabel(label, e -> e.resetColor(GraphElement.Priority.IGNORE));
         }
-
-        root.executeOnRenderThread(edgeMesh::scheduleColorReload);
     }
 
     @Override

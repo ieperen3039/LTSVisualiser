@@ -61,6 +61,22 @@ public class LazyInit<T> implements Serializable {
         return element;
     }
 
+
+    /**
+     * returns the cached element if present, otherwise generate a new element and execute the given action on that
+     * element.
+     * @return the element itself
+     * @throws ResourceException if the reloading operation fails
+     */
+    public T getOrElse(Consumer<T> action) throws ResourceException {
+        if (element == null) {
+            element = reload();
+            action.accept(element);
+        }
+
+        return element;
+    }
+
     /**
      * execute the given action on this element, only if it exists
      * @param action an action that receives the element iff it exists.

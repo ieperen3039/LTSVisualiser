@@ -20,24 +20,29 @@ public class NodeClustering extends Graph {
     // maps a new cluster node to the set of elements representing that cluster
     private final Map<State, Collection<State>> clusterMapping = new HashMap<>();
     private final Set<String> edgeActionLabelCluster = new HashSet<>();
-    private final Graph sourceGraph;
+    private final Graph graph;
     private NodeMesh clusterNodes = new NodeMesh();
     private EdgeMesh clusterEdges = new EdgeMesh();
     private State clusterInitialState;
-    private boolean showSelfLoop = true;
+    private boolean showSelfLoop;
     private boolean isDirty = false;
 
-    public NodeClustering(Graph sourceGraph) {
-        super(sourceGraph.root);
-        this.sourceGraph = sourceGraph;
-        createCluster(Collections.emptyMap(), true);
+    public NodeClustering(SourceGraph graph, Collection<String> markedLabels) {
+        super(graph.root);
+        this.graph = graph;
+        this.showSelfLoop = true;
+
+        edgeActionLabelCluster.addAll(markedLabels);
+        createCluster(actionLabelCluster(graph, edgeActionLabelCluster), showSelfLoop);
     }
 
     public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop, String... labels) {
-        this(graph);
+        super(graph.root);
+        this.graph = graph;
+        this.showSelfLoop = showSelfLoop;
+
         Collections.addAll(edgeActionLabelCluster, labels);
         createCluster(leaderMap, showSelfLoop);
-        this.showSelfLoop = showSelfLoop;
     }
 
     @Override
@@ -56,8 +61,8 @@ public class NodeClustering extends Graph {
         incomingTransitions.clear();
         outgoingTransitions.clear();
 
-        NodeMesh nodes = sourceGraph.getNodeMesh();
-        EdgeMesh edges = sourceGraph.getEdgeMesh();
+        NodeMesh nodes = graph.getNodeMesh();
+        EdgeMesh edges = graph.getEdgeMesh();
 
         // schedule disposal
         NodeMesh oldNodes = this.clusterNodes;
@@ -81,7 +86,7 @@ public class NodeClustering extends Graph {
             // map the leader to the clusterNode, or create when absent
             State clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new State(old.position, old.label, old.index, old.classIndex));
 
-            if (node == sourceGraph.getInitialState()) {
+            if (node == graph.getInitialState()) {
                 clusterInitialState = clusterNode;
                 clusterNode.border = INITAL_STATE_COLOR;
             }
@@ -139,13 +144,6 @@ public class NodeClustering extends Graph {
         }
     }
 
-    private State getClusterLeader(Map<State, State> leaderMap, State node) {
-        while (leaderMap.containsKey(node)) {
-            node = leaderMap.get(node);
-        }
-        return node;
-    }
-
     /** Sets the average of the source nodes of each cluster to the clustered node */
     public synchronized void pushClusterPositions() {
         checkDirty();
@@ -163,8 +161,15 @@ public class NodeClustering extends Graph {
             }
         });
 
-        for (Transition edge : sourceGraph.getEdgeMesh().edgeList()) {
+        for (Transition edge : graph.getEdgeMesh().edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
+        }
+    }
+
+    private synchronized void checkDirty() {
+        if (isDirty) {
+            createCluster(actionLabelCluster(graph, edgeActionLabelCluster), showSelfLoop);
+            isDirty = false;
         }
     }
 
@@ -178,7 +183,45 @@ public class NodeClustering extends Graph {
         return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
-    private Map<State, State> actionLabelCluster(Set<String> actionLabels) {
+    @Override
+    public Collection<String> getEdgeLabels() {
+        Collection<String> edgeActionLabels = new ArrayList<>(graph.getEdgeLabels());
+        edgeActionLabels.removeAll(edgeActionLabelCluster);
+        return edgeActionLabels;
+    }
+
+    public synchronized NodeMesh getNodeMesh() {
+        checkDirty();
+        return clusterNodes;
+    }
+
+    public synchronized EdgeMesh getEdgeMesh() {
+        checkDirty();
+        return clusterEdges;
+    }
+
+    public synchronized void setLabelCluster(String label, boolean doCluster) {
+        if (doCluster) {
+            edgeActionLabelCluster.add(label);
+        } else {
+            edgeActionLabelCluster.remove(label);
+        }
+
+        isDirty = true;
+    }
+
+    private static State getClusterLeader(Map<State, State> leaderMap, State node) {
+        while (leaderMap.containsKey(node)) {
+            node = leaderMap.get(node);
+        }
+        return node;
+    }
+
+    public Set<String> getClusterActionLabels() {
+        return edgeActionLabelCluster;
+    }
+
+    private static Map<State, State> actionLabelCluster(Graph sourceGraph, Set<String> actionLabels) {
         Map<State, State> leaderMap = new HashMap<>();
 
         for (Transition edge : sourceGraph.getEdgeMesh().edgeList()) {
@@ -193,44 +236,6 @@ public class NodeClustering extends Graph {
         }
 
         return leaderMap;
-    }
-
-    public synchronized NodeMesh getNodeMesh() {
-        checkDirty();
-        return clusterNodes;
-    }
-
-    public synchronized EdgeMesh getEdgeMesh() {
-        checkDirty();
-        return clusterEdges;
-    }
-
-    private synchronized void checkDirty() {
-        if (isDirty) {
-            createCluster(actionLabelCluster(edgeActionLabelCluster), showSelfLoop);
-            isDirty = false;
-        }
-    }
-
-    @Override
-    public Collection<String> getEdgeLabels() {
-        Collection<String> edgeActionLabels = new ArrayList<>(sourceGraph.getEdgeLabels());
-        edgeActionLabels.removeAll(edgeActionLabelCluster);
-        return edgeActionLabels;
-    }
-
-    public Set<String> getClusterActionLabels() {
-        return edgeActionLabelCluster;
-    }
-
-    public synchronized void setEdgeActionLabel(String label, boolean on) {
-        if (on) {
-            edgeActionLabelCluster.add(label);
-        } else {
-            edgeActionLabelCluster.remove(label);
-        }
-
-        isDirty = true;
     }
 
     @Override

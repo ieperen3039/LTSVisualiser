@@ -50,13 +50,12 @@ public class Menu extends SDecorator {
             .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
             .get();
 
-    private final Main main;
-
     public String[] actionLabels = new String[0];
-    public SToggleButton[] actionButtons = new SToggleButton[0];
+    private final Main main;
+    public SToggleButton[] markButtons = new SToggleButton[0];
+    public SToggleButton[] clusterButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
     private SDropDown displayMethodDropDown;
-
     private SFrame displayOptionsFrame = null;
 
     public Menu(Main main) {
@@ -73,13 +72,28 @@ public class Menu extends SDecorator {
 
         actionLabels = graph.getEdgeLabels().stream().distinct().sorted().toArray(String[]::new);
 
-        actionButtons = new SToggleButton[actionLabels.length];
+        markButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
             String label = actionLabels[i];
-            actionButtons[i] = new SToggleButton(label, BUTTON_PROPS);
-            actionButtons[i].addStateChangeListener(on -> main.selectActionLabel(label, on));
-            actionButtons[i].setActive(false);
-            actionButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
+            markButtons[i] = new SToggleButton(label, BUTTON_PROPS);
+            markButtons[i].addStateChangeListener(on -> main.labelMark(label, on));
+            markButtons[i].setActive(false);
+            markButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
+            markButtons[i].setGrowthPolicy(true, false);
+        }
+
+        clusterButtons = new SToggleButton[actionLabels.length];
+        for (int i = 0; i < actionLabels.length; i++) {
+            String text = actionLabels[i];
+            //noinspection SuspiciousNameCombination
+            clusterButtons[i] = new SToggleButton("C", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
+            clusterButtons[i].addStateChangeListener(on -> main.labelCluster(text, on));
+            clusterButtons[i].setGrowthPolicy(false, false);
+        }
+
+        SComponent[] actionComponents = new SComponent[actionLabels.length];
+        for (int i = 0; i < markButtons.length; i++) {
+            actionComponents[i] = SContainer.row(markButtons[i], clusterButtons[i]);
         }
 
         if (displayOptionsFrame != null) displayOptionsFrame.dispose();
@@ -209,7 +223,7 @@ public class Menu extends SDecorator {
                         // action coloring
                         SContainer.column(
                                 new STextArea("Action labels", BUTTON_PROPS),
-                                new SScrollableList(9, actionButtons)
+                                new SScrollableList(9, actionComponents)
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
