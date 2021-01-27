@@ -5,11 +5,37 @@ import java.util.*;
 /**
  * @author Geert van Ieperen created on 20-7-2020.
  */
-public class HDEPositioning {
+public final class HDEPositioning {
     public static final int PCA_OFFSET = 0; // sometimes ignoring the first axis gives better results
     private static final int NUM_INITIAL_DIMENSIONS = 30; // m
     private static final int NUM_TARGET_DIMENSIONS = 3; // k
     private static final double THRESHOLD = 1 / 128f;
+
+    public static void applyTo(SourceGraph graph, float edgeLength) {
+        State[] states = graph.states;
+        Transition[] edges = graph.edges;
+
+        // create position mapping
+        double[][] positions = position(edges, states);
+
+        // set state position
+        for (int i = 0; i < states.length; i++) {
+            int numDimensions = positions[i].length;
+            states[i].position.set(
+                    numDimensions > 0 ? (float) positions[i][0] : 0,
+                    numDimensions > 1 ? (float) positions[i][1] : 0,
+                    numDimensions > 2 ? (float) positions[i][2] : 0
+            ).mul(edgeLength);
+        }
+
+        // reset edge handle to the middle of the pair
+        for (Transition edge : edges) {
+            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
+        }
+
+        graph.getNodeMesh().schedulePositionReload();
+        graph.getEdgeMesh().schedulePositionReload();
+    }
 
     public static double[][] position(Transition[] edges, State[] nodes) {
         int initialDimensions = Math.min(NUM_INITIAL_DIMENSIONS, nodes.length);

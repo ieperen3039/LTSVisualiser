@@ -42,6 +42,8 @@ public class Boot {
                         "Activates an experimental dragging mode. " +
                                 "This mode pulls the neighbours of targeted nodes along"
                 )
+                .addFlag("randomLayout", () -> settings.RANDOM_LAYOUT = true,
+                        "Layout will be initialized at random, rather than using HDE")
 
                 .addParameterFlag("maxIterationsPerSecond",
                         s -> settings.MAX_ITERATIONS_PER_SECOND = Integer.parseInt(s),

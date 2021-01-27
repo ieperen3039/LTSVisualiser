@@ -28,4 +28,5 @@ public class Settings {
     public boolean ADVANCED_MANIPULATION = false;
     public int MAX_ITERATIONS_PER_SECOND = 200;
     public int NUM_WORKER_THREADS = 8;
+    public boolean RANDOM_LAYOUT = false;
 }

@@ -301,6 +301,13 @@ public class Main {
             synchronized (graphLock) {
                 graph.cleanup();
                 graph = newGraph;
+
+                if (settings.RANDOM_LAYOUT) {
+                    SourceGraph.randomLayout(graph, springLayout.getNatLength());
+                } else {
+                    HDEPositioning.applyTo(graph, springLayout.getNatLength());
+                }
+
                 graph.init();
 
                 nodeCluster.drop();
@@ -332,6 +339,7 @@ public class Main {
             synchronized (graphLock) {
                 secondGraph.cleanup();
                 secondGraph = newGraph;
+                HDEPositioning.applyTo(secondGraph, springLayout.getNatLength());
                 secondGraph.init();
 
                 graphComparator.drop();

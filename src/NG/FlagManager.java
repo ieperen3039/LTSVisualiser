@@ -89,16 +89,16 @@ class FlagManager {
                 exclusivesFound.add(set);
             }
 
-            RunnableThr action = flags.get(arg).action;
-            if (action != null) {
-                action.run();
+            Flag flag = flags.get(arg);
+            if (flag != null) {
+                flag.action.run();
                 continue;
             }
 
-            StringConsumerThr pAction = parameters.get(arg).action;
-            if (pAction != null) {
+            Parameter parameter = parameters.get(arg);
+            if (parameter != null) {
                 i++; // increment loop counter, skipping parameter
-                pAction.accept(args[i]);
+                parameter.action.accept(args[i]);
                 // prevent default values from activating
                 defaultParameters.remove(arg);
                 continue;

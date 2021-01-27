@@ -35,11 +35,9 @@ public class SourceGraph extends Graph {
     private final NodeMesh nodeMesh;
     private final EdgeMesh edgeMesh;
     private int initialState = 0;
-    private final float natLength;
 
-    private SourceGraph(Main root, int numStates, int numTransitions, float natLength) {
+    private SourceGraph(Main root, int numStates, int numTransitions) {
         super(root);
-        this.natLength = natLength;
         this.incomingTransitions = new HashMap<>();
         this.outgoingTransitions = new HashMap<>();
         this.nodeMesh = new NodeMesh();
@@ -53,16 +51,6 @@ public class SourceGraph extends Graph {
     public void init() {
         if (edges.length < 1) return;
 
-        // create position mapping
-        double[][] positions = HDEPositioning.position(edges, states);
-        for (int i = 0; i < states.length; i++) {
-            states[i].position.set(
-                    positions[i].length > 0 ? (float) positions[i][0] : 0,
-                    positions[i].length > 1 ? (float) positions[i][1] : 0,
-                    positions[i].length > 2 ? (float) positions[i][2] : 0
-            ).mul(natLength);
-        }
-
         // set positions to graph
         for (State node : states) {
             getNodeMesh().addNode(node);
@@ -71,8 +59,8 @@ public class SourceGraph extends Graph {
                 node.border = Color4f.RED;
             }
         }
+
         for (Transition edge : edges) {
-            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
             getEdgeMesh().addParticle(edge);
         }
 
@@ -186,7 +174,7 @@ public class SourceGraph extends Graph {
         Logger.DEBUG.printf("Loading graph with %d states and %d transitions...", nrOfStates, nrOfTransitions);
 
         float natLength = root == null ? 1 : root.getSpringLayout().getNatLength();
-        SourceGraph graph = new SourceGraph(root, nrOfStates, nrOfTransitions, natLength);
+        SourceGraph graph = new SourceGraph(root, nrOfStates, nrOfTransitions);
         graph.initialState = initialStateIndex;
 
         // prepare states
@@ -223,7 +211,7 @@ public class SourceGraph extends Graph {
     }
 
     public static SourceGraph empty(Main root) {
-        return new SourceGraph(root, 0, 0, 1);
+        return new SourceGraph(root, 0, 0);
     }
 
     public static SourceGraph parse(String asString) {
@@ -233,5 +221,23 @@ public class SourceGraph extends Graph {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void randomLayout(SourceGraph graph, float edgeLength) {
+        Random rng = new Random();
+        float lengthFactor = (float) (edgeLength * Math.cbrt(graph.states.length));
+
+        for (State state : graph.states) {
+            state.position.set(
+                    rng.nextFloat(), rng.nextFloat(), rng.nextFloat()
+            ).sub(0.5f, 0.5f, 0.5f).mul(lengthFactor);
+        }
+
+        for (Transition edge : graph.edges) {
+            edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
+        }
+
+        graph.getNodeMesh().schedulePositionReload();
+        graph.getEdgeMesh().schedulePositionReload();
     }
 }
