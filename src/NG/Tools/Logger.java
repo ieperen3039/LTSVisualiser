@@ -2,6 +2,7 @@ package NG.Tools;
 
 import org.joml.*;
 
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.List;
@@ -259,5 +260,16 @@ public enum Logger {
         for (int i = 0; i < levels.length; i++) {
             levels[i].enabled = (i >= minimum.ordinal());
         }
+    }
+
+    public static void setOutputStream(OutputStream os) {
+        PrintStream out = new PrintStream(os, true);
+        setOutputReceiver(s -> {
+            System.out.println(s);
+            out.println(s);
+        }, s -> {
+            System.err.println(s);
+            out.println(s);
+        });
     }
 }

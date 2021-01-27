@@ -10,7 +10,6 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
 import NG.Graph.*;
 import NG.Graph.Rendering.EdgeShader;
-import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
@@ -38,6 +37,7 @@ import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import static NG.Graph.Rendering.GraphElement.Priority.ACTION_MARKING;
 import static NG.Graph.Rendering.GraphElement.Priority.MU_FORMULA;
 import static org.lwjgl.opengl.GL11.glDepthMask;
 
@@ -113,11 +113,20 @@ public class Main {
         springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(
-                () -> new NodeClustering(graph, getMarkedLabels(menu.clusterButtons)),
+                () -> {
+                    NodeClustering g = new NodeClustering(graph, getMarkedLabels(menu.clusterButtons));
+                    applyMarking(g);
+                    return g;
+                },
                 Graph::cleanup
         );
         confluenceGraph = new LazyInit<>(
-                () -> new NodeClustering(graph, new ConfluenceDetector(graph).getLeaderMap(), false, "tau"),
+                () -> {
+                    Map<State, State> leaderMap = new ConfluenceDetector(graph).getLeaderMap();
+                    NodeClustering g = new NodeClustering(graph, leaderMap, false, "tau");
+                    applyMarking(g);
+                    return g;
+                },
                 Graph::cleanup
         );
         graphComparator = new LazyInit<>(
@@ -125,7 +134,11 @@ public class Main {
                 Graph::cleanup
         );
         ignoringGraph = new LazyInit<>(
-                () -> new IgnoringGraph(graph, getMarkedLabels(menu.clusterButtons)),
+                () -> {
+                    IgnoringGraph g = new IgnoringGraph(graph, getMarkedLabels(menu.clusterButtons));
+                    applyMarking(g);
+                    return g;
+                },
                 Graph::cleanup
         );
     }
@@ -338,20 +351,21 @@ public class Main {
         this.displayMethod = method;
         Logger.DEBUG.print("Set display method", displayMethod);
 
-        if (method == DisplayMethod.CONFLUENCE) {
-            confluenceGraph.getOrElse(cGraph -> {
-                String[] actionLabels = menu.actionLabels;
-                SToggleButton[] actionLabelButtons = menu.markButtons;
-                for (int i = 0; i < actionLabels.length; i++) {
-                    if (actionLabelButtons[i].isActive()) {
-                        cGraph.forActionLabel(actionLabels[i], edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
-                    }
-                }
-            });
-        }
-
         springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
         onNodePositionChange();
+    }
+
+    public void applyMarking(Graph graph) {
+        String[] actionLabels = menu.actionLabels;
+        SToggleButton[] actionLabelButtons = menu.markButtons;
+
+        for (int i = 0; i < actionLabels.length; i++) {
+            if (actionLabelButtons[i].isActive()) {
+                graph.forActionLabel(actionLabels[i], edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING));
+            }
+        }
+
+        graph.getEdgeMesh().scheduleColorReload();
     }
 
     public DisplayMethod getDisplayMethod() {
@@ -523,8 +537,8 @@ public class Main {
 
     public void labelMark(String label, boolean on) {
         Consumer<Transition> colorAction = on ?
-                (edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE)) :
-                (edge -> edge.resetColor(GraphElement.Priority.ATTRIBUTE));
+                (edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING)) :
+                (edge -> edge.resetColor(ACTION_MARKING));
 
         graph.forActionLabel(label, colorAction);
         graph.getEdgeMesh().scheduleColorReload();
@@ -549,7 +563,7 @@ public class Main {
         clusterGraph.setLabelCluster(label, on);
 
         for (String marked : getMarkedLabels(menu.markButtons)) {
-            clusterGraph.forActionLabel(marked, edge -> edge.addColor(EDGE_MARK_COLOR, GraphElement.Priority.ATTRIBUTE));
+            clusterGraph.forActionLabel(marked, edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING));
         }
         clusterGraph.getEdgeMesh().scheduleColorReload();
     }

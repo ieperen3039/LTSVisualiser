@@ -21,7 +21,7 @@ public class AveragingQueue implements Serializable {
     }
 
     /**
-     * add an item to this collection, deleting the last added entry. Runs in constant time
+     * Add an item to this collection, deleting the last added entry. Runs in constant time
      * @param entry a new float
      */
     public void add(float entry) {
@@ -29,6 +29,15 @@ public class AveragingQueue implements Serializable {
         entries[head] = entry;
         sum += entry;
         head = (head + 1) % capacity;
+    }
+
+    /**
+     * Fills the queue with the given entry
+     * @param entry
+     */
+    public void fill(float entry) {
+        Arrays.fill(entries, entry);
+        sum = capacity * entry;
     }
 
     /**

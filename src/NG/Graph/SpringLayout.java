@@ -3,6 +3,7 @@ package NG.Graph;
 import NG.Core.AbstractGameLoop;
 import NG.Core.Main;
 import NG.Core.ToolElement;
+import NG.DataStructures.Generic.AveragingQueue;
 import NG.DataStructures.Generic.PairList;
 import NG.Tools.Logger;
 import NG.Tools.TimeObserver;
@@ -40,6 +41,10 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private boolean allow3D = true;
     private float barnesHutTheta = 0.5f;
 
+    private final AveragingQueue nodeNetForce = new AveragingQueue(16);
+    private final AveragingQueue nodeTension = new AveragingQueue(16);
+    private boolean isFirstIteration = true;
+
     public SpringLayout(int iterationsPerSecond, int numThreads) {
         super("layout", iterationsPerSecond);
         this.numThreads = numThreads;
@@ -49,11 +54,15 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     @Override
     public void init(Main root) throws Exception {
         graph = root.graph();
+        Logger.printOnline(() -> String.format("Node net force: %.0f", getNodeNetForce()));
+        Logger.printOnline(() -> String.format("Node tension: %.0f", getNodeTension()));
     }
 
     public synchronized void setGraph(Graph graph) {
         Logger.DEBUG.print("set graph to " + graph.getClass());
         this.graph = graph;
+
+        isFirstIteration = true;
     }
 
     @Override
@@ -102,9 +111,22 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         timer.endTiming("node repulsion scheduling");
         timer.startTiming("node attraction computation");
+
+        float totalNodeTension = 0;
+
         // node edge attraction
         for (Transition edge : edges) {
-            computeNodeAttractionForces(nodeForces, edge);
+            if (edge.from == edge.to) continue;
+
+            Vector3f force = getEdgeEffect(edge.fromPosition, edge.toPosition, attraction, natLength);
+            assert !Vectors.isNaN(force);
+            totalNodeTension += force.length();
+
+            Vector3f aForce = nodeForces.computeIfAbsent(edge.from, node -> new Vector3f());
+            Vector3f bForce = nodeForces.computeIfAbsent(edge.to, node -> new Vector3f());
+
+            aForce.add(force);
+            bForce.add(force.negate());
         }
 
         timer.endTiming("node attraction computation");
@@ -120,7 +142,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
                 force = getEdgeEffect(edge.handlePos, edge.fromPosition, repulsion, natLength);
 
             } else {
-                float dist = edge.fromPosition.distance(edge.toPosition) / 8;
+                float dist = edge.fromPosition.distance(edge.toPosition) / 16;
                 force = getAttractionQuadratic(edge.handlePos, edge.fromPosition, 1f, dist);
                 force.add(getAttractionQuadratic(edge.handlePos, edge.toPosition, 1f, dist));
             }
@@ -166,10 +188,13 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             Vector3f[] batch = future.get();
 
             for (int j = 0; j < batch.length; j++) {
-                assert !Vectors.isNaN(batch[j]) : Arrays.toString(batch);
+                Vector3f force = batch[j];
+                assert !Vectors.isNaN(force) : Arrays.toString(batch);
+                totalNodeTension += force.length();
+
                 NG.Graph.State node = nodes.get(i + j);
                 Vector3f nodeForce = nodeForces.computeIfAbsent(node, k -> new Vector3f());
-                nodeForce.add(batch[j]);
+                nodeForce.add(force);
             }
 
             i += batch.length;
@@ -177,7 +202,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         timer.endTiming("node repulsion collection");
         timer.startTiming("position update");
 
-        // apply forces
+        // apply forces on edge handles
         for (Transition edge : edges) {
             Vector3f force = edgeHandleForces.get(edge);
 
@@ -202,10 +227,15 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             assert !Vectors.isNaN(edge.handlePos) : movement;
         }
 
+        float totalNodeNetForce = 0;
+
+        // apply forces on nodes
         for (NG.Graph.State node : nodes) {
             if (node.isFixed) continue;
 
             Vector3f force = nodeForces.get(node);
+            totalNodeNetForce += force.length();
+
             Vector3f movement = force.mul(speed); // modifies nodeForces
 
             if (movement.length() > MAX_NODE_MOVEMENT) {
@@ -219,11 +249,23 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             assert !Vectors.isNaN(node.position) : movement;
         }
 
+        // logging of tension
+        if (isFirstIteration) {
+            nodeTension.fill(totalNodeTension);
+            nodeNetForce.fill(totalNodeNetForce);
+
+            Logger.DEBUG.print("Initial net force: " + totalNodeNetForce);
+            Logger.DEBUG.print("Initial tension: " + totalNodeTension);
+
+        } else {
+            nodeTension.add(totalNodeTension);
+            nodeNetForce.add(totalNodeNetForce);
+        }
+
         timer.endTiming("position update");
 
         updateListeners.forEach(Runnable::run);
-
-//        if (tension < 1f) stopLoop();
+        isFirstIteration = false;
     }
 
     private Vector3f[] computeRepulsions(
@@ -254,19 +296,6 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         }
 
         return forces;
-    }
-
-    private void computeNodeAttractionForces(Map<NG.Graph.State, Vector3f> nodeForces, Transition edge) {
-        if (edge.from == edge.to) return;
-
-        Vector3f aForce = nodeForces.computeIfAbsent(edge.from, node -> new Vector3f());
-        Vector3f bForce = nodeForces.computeIfAbsent(edge.to, node -> new Vector3f());
-
-        Vector3f force = getEdgeEffect(edge.fromPosition, edge.toPosition, attraction, natLength);
-        assert !Vectors.isNaN(force);
-
-        aForce.add(force);
-        bForce.add(force.negate());
     }
 
     public float getEdgeRepulsionFactor() {
@@ -328,6 +357,14 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
     public void setBarnesHutTheta(float barnesHutTheta) {
         this.barnesHutTheta = barnesHutTheta;
+    }
+
+    public float getNodeNetForce() {
+        return nodeNetForce.average();
+    }
+
+    public float getNodeTension() {
+        return nodeTension.average();
     }
 
     @Override

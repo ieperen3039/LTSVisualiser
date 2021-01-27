@@ -1,18 +1,12 @@
 package NG;
 
 import NG.Core.Main;
-import NG.DataStructures.Generic.PairList;
 import NG.Settings.Settings;
 import NG.Tools.Logger;
 import org.lwjgl.system.Configuration;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.StringJoiner;
 
 /**
  * Tags the Flags, Boots the Roots
@@ -23,157 +17,51 @@ public class Boot {
         Settings settings = new Settings();
 //        Logger.setLoggingLevel(Logger.INFO);
         Logger.setLoggingLevel(Logger.DEBUG);
-        boolean[] logSet = {false};
+
+        File defaultLog = new File("output1.log");
+        for (int i = 2; defaultLog.exists(); i++) {
+            defaultLog = new File("output" + i + ".log");
+        }
 
         new FlagManager()
-                .addFlag("debug", () -> Logger.doPrintCallsites = true)
-                .addFlag("quiet", () -> Logger.setLoggingLevel(Logger.INFO))
-                .addFlag("silent", () -> Logger.setLoggingLevel(Logger.ERROR))
+                .addFlag("debug", () -> Logger.doPrintCallsites = true,
+                        "Sets logging to DEBUG level")
+                .addFlag("quiet", () -> Logger.setLoggingLevel(Logger.INFO),
+                        "Sets logging to INFO level")
+                .addFlag("silent", () -> Logger.setLoggingLevel(Logger.ERROR),
+                        "Sets logging to ERROR level")
                 .addExclusivity("debug", "quiet", "silent")
 
-                .addFlag("lwjgl-debug", () -> Configuration.DEBUG.set(true))
-                .addFlag("untimed", () -> Logger.doPrintTimeStamps = false)
-                .addFlag("loopTimingOverlay", () -> settings.PRINT_ROLL = true)
-                .addFlag("advancedDragging", () -> settings.ADVANCED_MANIPULATION = true)
+                .addFlag("lwjgl-debug", () -> Configuration.DEBUG.set(true),
+                        "Activates logging of underlying libraries")
+                .addFlag("untimed", () -> Logger.doPrintTimeStamps = false,
+                        "Removes timestamps from logging")
+                .addFlag("loopTimingOverlay", () -> settings.PRINT_ROLL = true,
+                        "Display real-time timing results in the graph area")
+                .addFlag("advancedDragging", () -> settings.ADVANCED_MANIPULATION = true,
+                        "Activates an experimental dragging mode. " +
+                                "This mode pulls the neighbours of targeted nodes along"
+                )
 
                 .addParameterFlag("maxIterationsPerSecond",
-                        s -> settings.MAX_ITERATIONS_PER_SECOND = Integer.parseInt(s)
+                        s -> settings.MAX_ITERATIONS_PER_SECOND = Integer.parseInt(s),
+                        "Maximum iterations executed each second by the layout algorithm. " +
+                                "default = " + settings.MAX_ITERATIONS_PER_SECOND
                 )
                 .addParameterFlag("numWorkerThreads",
-                        s -> settings.NUM_WORKER_THREADS = Integer.parseInt(s)
+                        s -> settings.NUM_WORKER_THREADS = Integer.parseInt(s),
+                        "Number of worker threads used to parallelize the layout algorithm. " +
+                                "default = " + settings.NUM_WORKER_THREADS
                 )
 
-                .addParameterFlag("log", file -> {
-                    PrintStream out = new PrintStream(new FileOutputStream(file), true);
-                    Logger.setOutputReceiver(s -> {
-                        System.out.println(s);
-                        out.println(s);
-                    }, s -> {
-                        System.err.println(s);
-                        out.println(s);
-                    });
-                    logSet[0] = true;
-                })
+                .addParameterFlag("log", defaultLog.getName(),
+                        file -> Logger.setOutputStream(new FileOutputStream(file)),
+                        "Sets logging to write to the file with the given name. If the file exists, it is overwritten" +
+                                "By default, it writes to a generated new file"
+                )
 
                 .parse(args);
 
-        if (!logSet[0]) {
-            File logFile = new File("output1.log");
-            for (int i = 2; logFile.exists(); i++) {
-                logFile = new File("output" + i++ + ".log");
-            }
-
-            PrintStream out = new PrintStream(new FileOutputStream(logFile), true);
-            Logger.setOutputReceiver(s -> {
-                System.out.println(s);
-                out.println(s);
-            }, s -> {
-                System.err.println(s);
-                out.println(s);
-            });
-        }
-
         new Main(settings).root();
-    }
-
-    private interface RunnableThr {
-        void run() throws Exception;
-    }
-
-    private interface StringConsumerThr {
-        void accept(String s) throws Exception;
-    }
-
-    private static class FlagManager {
-        private final PairList<String, RunnableThr> flags = new PairList<>();
-        private final PairList<String, StringConsumerThr> parameters = new PairList<>();
-        private final Collection<Collection<String>> exclusives = new ArrayList<>();
-
-        /** create a new flag manager with an automatic 'help' flag */
-        public FlagManager() {
-            flags.add("help", () -> {
-                System.out.println("The following flags are accepted:");
-                flags.forEach(x -> System.out.println("\t-" + x.left));
-                System.out.println("The following parameters are accepted:");
-                parameters.forEach(x -> System.out.println("\t-" + x.left + " [PARAMETER]"));
-
-                System.exit(1);
-            });
-        }
-
-        /**
-         * if the given flag is found in the arguments, the {@code ifPresent} action will be executed
-         */
-        public FlagManager addFlag(String flag, RunnableThr ifPresent) {
-            flags.add(flag, ifPresent);
-            return this;
-        }
-
-        /**
-         * if the given flag is found in the arguments, the {@code ifPresent} action receives the next element in the
-         * argument list.
-         */
-        public FlagManager addParameterFlag(String flag, StringConsumerThr ifPresent) {
-            parameters.add(flag, ifPresent);
-            return this;
-        }
-
-        /**
-         * makes the given flags and parameters mutually exclusive. Flags and parameters can be mixed. Correctness of
-         * the flags is not checked.
-         */
-        public FlagManager addExclusivity(String... mutuallyExclusiveFlags) {
-            exclusives.add(Arrays.asList(mutuallyExclusiveFlags));
-            return this;
-        }
-
-        public void parse(String[] args) throws Exception {
-            ArrayList<Collection<String>> exclusivesFound = new ArrayList<>();
-
-            for (int i = 0; i < args.length; i++) {
-                String arg = args[i].substring(1); // remove the initial dash
-                // check whether this arg is mutually exclusive with an earlier arg
-                for (Collection<String> set : exclusives) {
-                    if (!set.contains(arg)) continue;
-
-                    if (exclusivesFound.contains(set)) {
-                        throwExclusionException(args[i], set);
-                    }
-
-                    exclusivesFound.add(set);
-                }
-
-                RunnableThr action = flags.right(arg);
-                if (action != null) {
-                    action.run();
-                    continue;
-                }
-
-                StringConsumerThr pAction = parameters.right(arg);
-                if (pAction != null) {
-                    i++; // increment loop counter, skipping parameter
-                    pAction.accept(args[i]);
-                    continue;
-                }
-
-                throw new IllegalArgumentException("Unknown flag " + args[i]);
-            }
-
-            flags.clear();
-            parameters.clear();
-            exclusives.clear();
-        }
-
-        public void throwExclusionException(String arg, Collection<String> set) {
-            StringJoiner acc = new StringJoiner(", ");
-
-            for (String s : set) {
-                if (!s.equals(arg)) {
-                    acc.add(s);
-                }
-            }
-
-            throw new IllegalArgumentException("Flag " + arg + " is mutually exclusive with " + acc.toString());
-        }
     }
 }

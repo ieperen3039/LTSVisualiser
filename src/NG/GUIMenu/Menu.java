@@ -41,6 +41,8 @@ public class Menu extends SDecorator {
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
     public static final List<EdgeShader.EdgeShape> EDGE_SHAPE_LIST = Arrays.asList(EdgeShader.EdgeShape.values());
     public static final float SPEED_MAXIMUM = 1f / (1 << 8);
+    public static final Color4f A_COLOR = Color4f.rgb(200, 83, 0, 0.8f);
+    public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.8f);
 
     private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
             .add("Red", Color4f.rgb(200, 25, 25))
@@ -110,8 +112,8 @@ public class Menu extends SDecorator {
                         .addStateChangeListener(main::set3DView),
                 new SToggleButton("Always use layout of primary graph", BUTTON_PROPS, false)
                         .addStateChangeListener(main::doSourceLayout),
-
                 new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
                 new SButton("Log Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
                 new SButton("Log Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS)
         ));
@@ -235,6 +237,7 @@ public class Menu extends SDecorator {
                                         () -> main.getVisibleGraph().resetColors(GraphElement.Priority.PATH)
                                 )
                         ),
+//                        new ComparatorMouseTool(main).button("Compare Nodes", BUTTON_PROPS),
                         new CameraCenterTool(main).button("Center camera on...", BUTTON_PROPS),
                         new SFiller()
                 )).setGrowthPolicy(false, true)
@@ -255,6 +258,33 @@ public class Menu extends SDecorator {
         }
 
         fd.dispose();
+    }
+
+    private static class SimulationSliderUI extends SPanel {
+
+        public SimulationSliderUI(SpringLayout updateLoop) {
+            super(SContainer.grid(new SComponent[][]{{
+                            new STextArea("Simulation Step Size", BUTTON_PROPS),
+                            new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
+                    }, {
+                            new STextArea("Attraction", BUTTON_PROPS),
+                            new SSlider(0, 5f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
+                    }, {
+                            new STextArea("Repulsion", BUTTON_PROPS),
+                            new SSlider(0, 25f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
+                    }, {
+                            new STextArea("Natural Length", BUTTON_PROPS),
+                            new SSlider(0, 5f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
+                    }, {
+                            new STextArea("Handle Repulsion", BUTTON_PROPS),
+                            new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
+                    }, {
+                            new SActiveTextArea(() -> String.format("Heuristic Effect: %4.02f", updateLoop.getBarnesHutTheta()), BUTTON_PROPS),
+                            new SSlider(0, 2f, updateLoop.getBarnesHutTheta(), BUTTON_PROPS, updateLoop::setBarnesHutTheta)
+                    }}
+            ));
+            setGrowthPolicy(true, false);
+        }
     }
 
     private class CameraCenterTool extends MouseTool {
@@ -348,30 +378,42 @@ public class Menu extends SDecorator {
         }
     }
 
-    private static class SimulationSliderUI extends SPanel {
+    public static class ComparatorMouseTool extends MouseTool {
+        private State startNode = null;
 
-        public SimulationSliderUI(SpringLayout updateLoop) {
-            super(SContainer.grid(new SComponent[][]{{
-                            new STextArea("Simulation Step Size", BUTTON_PROPS),
-                            new SSlider(0, SPEED_MAXIMUM, updateLoop.getSpeed(), BUTTON_PROPS, updateLoop::setSpeed)
-                    }, {
-                            new STextArea("Attraction", BUTTON_PROPS),
-                    new SSlider(0, 5f, updateLoop.getAttractionFactor(), BUTTON_PROPS, updateLoop::setAttractionFactor)
-                    }, {
-                            new STextArea("Repulsion", BUTTON_PROPS),
-                    new SSlider(0, 25f, updateLoop.getRepulsionFactor(), BUTTON_PROPS, updateLoop::setRepulsionFactor)
-                    }, {
-                            new STextArea("Natural Length", BUTTON_PROPS),
-                    new SSlider(0, 5f, updateLoop.getNatLength(), BUTTON_PROPS, updateLoop::setNatLength)
-                    }, {
-                            new STextArea("Handle Repulsion", BUTTON_PROPS),
-                            new SSlider(0, 1f, updateLoop.getEdgeRepulsionFactor(), BUTTON_PROPS, updateLoop::setEdgeRepulsionFactor)
-                    }, {
-                            new SActiveTextArea(() -> String.format("Heuristic Effect: %4.02f", updateLoop.getBarnesHutTheta()), BUTTON_PROPS),
-                            new SSlider(0, 2f, updateLoop.getBarnesHutTheta(), BUTTON_PROPS, updateLoop::setBarnesHutTheta)
-                    }}
-            ));
-            setGrowthPolicy(true, false);
+        public ComparatorMouseTool(Main root) {
+            super(root);
+        }
+
+        @Override
+        public void onNodeClick(int button, Graph graph, State node) {
+            if (startNode == null) {
+                graph.resetColors(GraphElement.Priority.COMPARE);
+                startNode = node;
+                node.addColor(Color4f.YELLOW, GraphElement.Priority.COMPARE);
+
+            } else {
+                colorCompare(startNode, node, graph);
+                disableThis();
+                startNode = null;
+            }
+        }
+
+        private void colorCompare(State startNode, State endNode, Graph graph) {
+            NodeComparator comparator = new NodeComparator(graph, graph, startNode, endNode);
+
+            for (Transition t : comparator.getAMatching()) {
+                t.addColor(A_COLOR, GraphElement.Priority.COMPARE);
+            }
+
+            for (Transition t : comparator.getBMatching()) {
+                t.addColor(B_COLOR, GraphElement.Priority.COMPARE);
+            }
+        }
+
+        @Override
+        public void onEdgeClick(int button, Graph graph, Transition edge) {
+            onNodeClick(button, graph, edge.to);
         }
     }
 }

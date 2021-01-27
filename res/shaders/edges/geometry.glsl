@@ -87,16 +87,6 @@ void main() {
     vec3 bPos = b[0];
     vec3 cPos = c[0] - bToC * nodeRadius;
 
-    vec4 aViewPos = viewMatrix * vec4(aPos, 1.0);
-    vec4 bViewPos = viewMatrix * vec4(bPos, 1.0);
-    vec4 cViewPos = viewMatrix * vec4(cPos, 1.0);
-
-    vec2 aToBView = vec2(bViewPos.xy - aViewPos.xy);
-    vec2 abPerpendicular = normalize(vec2(aToBView.y, -aToBView.x));
-
-    vec2 bToCView = vec2(cViewPos.xy - bViewPos.xy);
-    vec2 bcPerpendicular = normalize(vec2(bToCView.y, -bToCView.x));
-
     int numEdgeSections = numHeadSections + numTailSections;
     float tailFraction = (numEdgeSections) / numTailSections;
     float sectionScalar = 1.0 / numEdgeSections;
@@ -116,6 +106,7 @@ void main() {
         drawArrowSection(aPos, bPos, cPos, width, fraction);
     }
 
+    vec4 cViewPos = viewMatrix * vec4(cPos, 1.0);
     gl_Position = projectionMatrix * cViewPos;
     fragColor = color;
     EmitVertex();
