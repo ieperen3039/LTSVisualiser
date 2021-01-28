@@ -1,5 +1,7 @@
 package NG.Settings;
 
+import java.nio.file.Path;
+
 /**
  * A class that collects a number of settings. It is the only class whose fields are always initialized upon creation.
  * @author Geert van Ieperen. Created on 13-9-2018.
@@ -29,4 +31,5 @@ public class Settings {
     public int MAX_ITERATIONS_PER_SECOND = 200;
     public int NUM_WORKER_THREADS = 8;
     public boolean RANDOM_LAYOUT = false;
+    public Path DATA_COLLECTION_PATH = null;
 }

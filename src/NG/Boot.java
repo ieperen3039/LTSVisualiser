@@ -7,6 +7,7 @@ import org.lwjgl.system.Configuration;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Paths;
 
 /**
  * Tags the Flags, Boots the Roots
@@ -32,6 +33,12 @@ public class Boot {
                         "Sets logging to ERROR level")
                 .addExclusivity("debug", "quiet", "silent")
 
+                .addParameterFlag("log", defaultLog.getName(),
+                        file -> Logger.setOutputStream(new FileOutputStream(file)),
+                        "Sets logging to write to the file with the given name. If the file exists, it is overwritten" +
+                                "By default, it writes to a generated new file"
+                )
+
                 .addFlag("lwjgl-debug", () -> Configuration.DEBUG.set(true),
                         "Activates logging of underlying libraries")
                 .addFlag("untimed", () -> Logger.doPrintTimeStamps = false,
@@ -55,12 +62,9 @@ public class Boot {
                         "Number of worker threads used to parallelize the layout algorithm. " +
                                 "default = " + settings.NUM_WORKER_THREADS
                 )
-
-                .addParameterFlag("log", defaultLog.getName(),
-                        file -> Logger.setOutputStream(new FileOutputStream(file)),
-                        "Sets logging to write to the file with the given name. If the file exists, it is overwritten" +
-                                "By default, it writes to a generated new file"
-                )
+                .addParameterFlag("startAutoTester",
+                        s -> settings.DATA_COLLECTION_PATH = Paths.get(s),
+                        "Run an automatic layout speed data generation on the graphs of the given path, then quit")
 
                 .parse(args);
 

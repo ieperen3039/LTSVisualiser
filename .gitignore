@@ -2,5 +2,8 @@
 /examples
 /build
 /out
+/target
 latest.log
 *.lnk
+/test
+*.csv

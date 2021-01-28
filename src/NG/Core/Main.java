@@ -185,6 +185,12 @@ public class Main {
         frameManager.setMainGUI(menu);
 
         springLayout.addUpdateListeners(this::onNodePositionChange);
+
+        if (settings.DATA_COLLECTION_PATH != null) {
+            Auto auto = new Auto(this, settings.DATA_COLLECTION_PATH);
+            auto.setDaemon(true);
+            auto.start();
+        }
     }
 
     public void root() throws Exception {
@@ -297,32 +303,33 @@ public class Main {
     }
 
     public void setGraph(SourceGraph newGraph) {
-        springLayout.defer(() -> {
-            synchronized (graphLock) {
-                graph.cleanup();
-                graph = newGraph;
+//        springLayout.defer(() -> {
+        synchronized (graphLock) {
+            graph.cleanup();
+            graph = newGraph;
 
-                if (settings.RANDOM_LAYOUT) {
-                    SourceGraph.randomLayout(graph, springLayout.getNatLength());
-                } else {
-                    HDEPositioning.applyTo(graph, springLayout.getNatLength());
-                }
-
-                graph.init();
-
-                nodeCluster.drop();
-                confluenceGraph.drop();
-                graphComparator.drop();
-                ignoringGraph.drop();
-
-                springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
-
-                onNodePositionChange();
-                Logger.INFO.print("Loaded graph with " + graph.states.length + " nodes and " + graph.edges.length + " edges");
+            if (settings.RANDOM_LAYOUT) {
+                SourceGraph.randomLayout(graph, springLayout.getNatLength());
+            } else {
+                HDEPositioning.applyTo(graph, springLayout.getNatLength());
             }
 
-            menu.reloadUI();
-        });
+            graph.init();
+
+            nodeCluster.drop();
+            confluenceGraph.drop();
+            graphComparator.drop();
+            ignoringGraph.drop();
+
+            springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
+            springLayout.setSpeed(0);
+
+            onNodePositionChange();
+            Logger.INFO.print("Loaded graph with " + graph.states.length + " nodes and " + graph.edges.length + " edges");
+        }
+
+        menu.reloadUI();
+//        });
     }
 
     public void setSecondaryGraph(File newGraphFile) {

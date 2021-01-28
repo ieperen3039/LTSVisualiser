@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 
 import static java.lang.Math.log;
 
@@ -44,6 +45,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     private final AveragingQueue nodeNetForce = new AveragingQueue(16);
     private final AveragingQueue nodeTension = new AveragingQueue(16);
     private boolean isFirstIteration = true;
+
+    private BiConsumer<Float, Float> tensionReader = null;
 
     public SpringLayout(int iterationsPerSecond, int numThreads) {
         super("layout", iterationsPerSecond);
@@ -249,6 +252,8 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             assert !Vectors.isNaN(node.position) : movement;
         }
 
+        timer.endTiming("position update");
+
         // logging of tension
         if (isFirstIteration) {
             nodeTension.fill(totalNodeTension);
@@ -262,7 +267,9 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             nodeNetForce.add(totalNodeNetForce);
         }
 
-        timer.endTiming("position update");
+        if (tensionReader != null) {
+            tensionReader.accept(totalNodeNetForce, totalNodeTension);
+        }
 
         updateListeners.forEach(Runnable::run);
         isFirstIteration = false;
@@ -367,10 +374,15 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
         return nodeTension.average();
     }
 
+    public synchronized void setTensionReader(BiConsumer<Float, Float> tensionReader) {
+        this.tensionReader = tensionReader;
+    }
+
     @Override
     public synchronized void cleanup() {
         executor.shutdownNow();
         updateListeners.clear();
+        tensionReader = null;
     }
 
     /** returns attraction on on a, affected by b */

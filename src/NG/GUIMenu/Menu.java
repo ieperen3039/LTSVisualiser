@@ -120,9 +120,6 @@ public class Menu extends SDecorator {
         displayOptionsFrame.setVisible(false);
         main.gui().addFrame(displayOptionsFrame);
 
-        // disable iterative layout
-        updateLoop.setSpeed(0);
-
         // automatic barnes-hut (de)activation
         if (graph.getNrOfNodes() < 500) {
             updateLoop.setBarnesHutTheta(0);
