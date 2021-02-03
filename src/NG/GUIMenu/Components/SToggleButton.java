@@ -1,5 +1,6 @@
 package NG.GUIMenu.Components;
 
+import NG.DataStructures.Generic.Color4f;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.GUIMenu.SComponentProperties;
@@ -21,6 +22,7 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
     private final List<Consumer<Boolean>> stateChangeListeners = new ArrayList<>();
     private boolean state;
     private boolean isPressed;
+    private Color4f color = null;
 
     /**
      * Create a button with the given properties, starting disabled
@@ -63,7 +65,7 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
     @Override
     public void draw(SFrameLookAndFeel design, Vector2ic screenPosition) {
         if (getWidth() == 0 || getHeight() == 0) return;
-        design.draw(isPressed ? BUTTON_PRESSED : (isHovered ? BUTTON_HOVERED : BUTTON_ACTIVE), screenPosition, getSize());
+        design.draw(isPressed ? BUTTON_PRESSED : (isHovered ? BUTTON_HOVERED : BUTTON_ACTIVE), screenPosition, getSize(), color);
         super.draw(design, screenPosition);
     }
 
@@ -83,6 +85,10 @@ public class SToggleButton extends STextComponent implements MouseClickListener,
     public SToggleButton addStateChangeListener(Consumer<Boolean> action) {
         stateChangeListeners.add(action);
         return this;
+    }
+
+    public void setColor(Color4f color) {
+        this.color = color;
     }
 
     public boolean isActive() {

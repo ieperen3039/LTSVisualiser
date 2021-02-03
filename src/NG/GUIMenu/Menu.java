@@ -31,20 +31,21 @@ import static NG.Core.Main.PATH_COLOR;
  * @author Geert van Ieperen created on 7-8-2020.
  */
 public class Menu extends SDecorator {
-    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(150, 25, true, false);
+    public static final SComponentProperties BUTTON_PROPS = new SComponentProperties(180, 25, true, false);
     public static final SComponentProperties WAILA_TEXT_PROPERTIES = new SComponentProperties(
             150, 50, true, false, NGFonts.TextType.REGULAR, SFrameLookAndFeel.Alignment.CENTER_TOP
     );
     public static final int SPACE_BETWEEN_UI_SECTIONS = 10;
     public static final int MAX_CHARACTERS_ACTION_LABELS = 35;
+    public static final float SPEED_MAXIMUM = 1f / (1 << 8);
     public static final File BASE_FILE_CHOOSER_DIRECTORY = Directory.graphs.getDirectory();
     public static final List<Main.DisplayMethod> DISPLAY_METHOD_LIST = Arrays.asList(Main.DisplayMethod.values());
     public static final List<EdgeShader.EdgeShape> EDGE_SHAPE_LIST = Arrays.asList(EdgeShader.EdgeShape.values());
-    public static final float SPEED_MAXIMUM = 1f / (1 << 8);
     public static final Color4f A_COLOR = Color4f.rgb(200, 83, 0, 0.8f);
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.8f);
 
     private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
+            .add("Yellow", Color4f.rgb(220, 150, 0))
             .add("Red", Color4f.rgb(200, 25, 25))
             .add("Green", Color4f.rgb(4, 120, 13))
             .add("Orange", Color4f.rgb(220, 105, 20))
@@ -77,11 +78,14 @@ public class Menu extends SDecorator {
         markButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
             String label = actionLabels[i];
-            markButtons[i] = new SToggleButton(label, BUTTON_PROPS);
-            markButtons[i].addStateChangeListener(on -> main.labelMark(label, on));
-            markButtons[i].setActive(false);
-            markButtons[i].setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
-            markButtons[i].setGrowthPolicy(true, false);
+            SToggleButton button = new SToggleButton(label, BUTTON_PROPS);
+            button.addStateChangeListener(on -> main.labelMark(label, on, colorTool.getColor()));
+            button.addStateChangeListener(on -> button.setColor(on ? colorTool.getColor()
+                    .interpolateTo(Color4f.GREY, 0.2f) : null));
+            button.setActive(false);
+            button.setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
+            button.setGrowthPolicy(true, false);
+            markButtons[i] = button;
         }
 
         clusterButtons = new SToggleButton[actionLabels.length];
@@ -215,14 +219,23 @@ public class Menu extends SDecorator {
                                         () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
                                 )
                         ),
+                        // action coloring
+                        new STextArea("Current Color", BUTTON_PROPS),
                         new SDropDown(frameManager, BUTTON_PROPS, 0, PAINT_COLORS, p -> p.left)
                                 .addStateChangeListener(i -> colorTool.setColor(PAINT_COLORS.right(i))),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        // action coloring
                         SContainer.column(
                                 new STextArea("Action labels", BUTTON_PROPS),
                                 new SScrollableList(9, actionComponents)
+                        ),
+                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                        // color tool
+                        SContainer.row(
+                                colorTool.button("Activate Painting", BUTTON_PROPS),
+                                new SCloseButton(BUTTON_PROPS.minHeight,
+                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
+                                )
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 

@@ -65,7 +65,7 @@ public class BaseLF implements SFrameLookAndFeel {
     }
 
     @Override
-    public void draw(UIComponent type, Vector2ic pos, Vector2ic dim) {
+    public void draw(UIComponent type, Vector2ic pos, Vector2ic dim, Color4f color) {
         int x = pos.x();
         int y = pos.y();
         int width = dim.x();
@@ -79,24 +79,29 @@ public class BaseLF implements SFrameLookAndFeel {
             case BUTTON_ACTIVE:
             case BUTTON_INACTIVE:
             case SCROLL_BAR_DRAG_ELEMENT:
-                drawRoundedRectangle(x, y, width, height, BUTTON_COLOR);
+                Color4f thisColor = color == null ? BUTTON_COLOR : color;
+                drawRoundedRectangle(x, y, width, height, thisColor);
                 break;
 
             case BUTTON_HOVERED:
-                drawRoundedRectangle(x, y, width, height, BUTTON_COLOR.intensify(0.1f));
+                Color4f thisColor1 = color == null ? BUTTON_COLOR : color;
+                drawRoundedRectangle(x, y, width, height, thisColor1.intensify(0.1f));
                 break;
 
             case BUTTON_PRESSED:
-                drawRoundedRectangle(x, y, width, height, BUTTON_COLOR.darken(0.5f));
+                Color4f thisColor2 = color == null ? BUTTON_COLOR : color;
+                drawRoundedRectangle(x, y, width, height, thisColor2.darken(0.5f));
                 break;
 
             case INPUT_FIELD:
-                drawRoundedRectangle(x, y, width, height, INPUT_FIELD_COLOR);
+                Color4f thisColor3 = color == null ? INPUT_FIELD_COLOR : color;
+                drawRoundedRectangle(x, y, width, height, thisColor3);
                 break;
 
             case SELECTION:
+                Color4f thisColor4 = color == null ? SELECTION_COLOR : color;
                 hud.setStroke(STROKE_COLOR, 0);
-                drawRoundedRectangle(x, y, width, height, SELECTION_COLOR);
+                drawRoundedRectangle(x, y, width, height, thisColor4);
                 break;
 
             case DROP_DOWN_HEAD_CLOSED:
