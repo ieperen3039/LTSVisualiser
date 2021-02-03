@@ -19,29 +19,22 @@ public class NodeClustering extends Graph {
 
     // maps a new cluster node to the set of elements representing that cluster
     private final Map<State, Collection<State>> clusterMapping = new HashMap<>();
-    private final Set<String> edgeActionLabelCluster = new HashSet<>();
     private final Graph graph;
     private NodeMesh clusterNodes = new NodeMesh();
     private EdgeMesh clusterEdges = new EdgeMesh();
     private State clusterInitialState;
-    private boolean showSelfLoop;
-    private boolean isDirty = false;
 
-    public NodeClustering(SourceGraph graph, Collection<String> markedLabels) {
+    public NodeClustering(SourceGraph graph, Set<String> markedLabels) {
         super(graph.root);
         this.graph = graph;
-        this.showSelfLoop = true;
 
-        edgeActionLabelCluster.addAll(markedLabels);
-        createCluster(actionLabelCluster(graph, edgeActionLabelCluster), showSelfLoop);
+        createCluster(actionLabelCluster(graph, markedLabels), false);
     }
 
-    public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop, String... labels) {
+    public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop) {
         super(graph.root);
         this.graph = graph;
-        this.showSelfLoop = showSelfLoop;
 
-        Collections.addAll(edgeActionLabelCluster, labels);
         createCluster(leaderMap, showSelfLoop);
     }
 
@@ -54,7 +47,7 @@ public class NodeClustering extends Graph {
     /**
      * sets this graph to a cluster based on the given cluster map
      * @param clusterLeaderMap maps each node to a 'leader' node where all nodes in one cluster refer to
-     * @param showSelfLoop
+     * @param showSelfLoop     if false, non-clustered edges resulting in self-loops are removed.
      */
     public synchronized void createCluster(Map<State, State> clusterLeaderMap, boolean showSelfLoop) {
         clusterMapping.clear();
@@ -109,7 +102,7 @@ public class NodeClustering extends Graph {
             State bTarget = newNodes.get(getClusterLeader(clusterLeaderMap, bNode));
 
             // self loop
-            if (aTarget == bTarget && (!showSelfLoop || edgeActionLabelCluster.contains(edge.label))) continue;
+            if (aTarget == bTarget && !showSelfLoop) continue;
 
             // already exists an equal edge
             // even for non-deterministic graphs, this does not change the meaning of the graph
@@ -122,14 +115,10 @@ public class NodeClustering extends Graph {
             outgoingTransitions.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bTarget);
             incomingTransitions.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aTarget);
         }
-
-        isDirty = false;
     }
 
     /** Sets the position of the clustered nodes to the average of its source */
     public synchronized void pullClusterPositions() {
-        checkDirty();
-
         clusterMapping.forEach((node, cluster) -> {
             Vector3f total = new Vector3f();
             for (State element : cluster) {
@@ -146,8 +135,6 @@ public class NodeClustering extends Graph {
 
     /** Sets the average of the source nodes of each cluster to the clustered node */
     public synchronized void pushClusterPositions() {
-        checkDirty();
-
         clusterMapping.forEach((node, cluster) -> {
             Vector3f total = new Vector3f();
             for (State element : cluster) {
@@ -166,13 +153,6 @@ public class NodeClustering extends Graph {
         }
     }
 
-    private synchronized void checkDirty() {
-        if (isDirty) {
-            createCluster(actionLabelCluster(graph, edgeActionLabelCluster), showSelfLoop);
-            isDirty = false;
-        }
-    }
-
     @Override
     public PairList<Transition, State> incomingOf(State node) {
         return incomingTransitions.getOrDefault(node, PairList.empty());
@@ -185,29 +165,15 @@ public class NodeClustering extends Graph {
 
     @Override
     public Collection<String> getEdgeLabels() {
-        Collection<String> edgeActionLabels = new ArrayList<>(graph.getEdgeLabels());
-        edgeActionLabels.removeAll(edgeActionLabelCluster);
-        return edgeActionLabels;
+        return graph.getEdgeLabels();
     }
 
     public synchronized NodeMesh getNodeMesh() {
-        checkDirty();
         return clusterNodes;
     }
 
     public synchronized EdgeMesh getEdgeMesh() {
-        checkDirty();
         return clusterEdges;
-    }
-
-    public synchronized void setLabelCluster(String label, boolean doCluster) {
-        if (doCluster) {
-            edgeActionLabelCluster.add(label);
-        } else {
-            edgeActionLabelCluster.remove(label);
-        }
-
-        isDirty = true;
     }
 
     private static State getClusterLeader(Map<State, State> leaderMap, State node) {
@@ -217,30 +183,31 @@ public class NodeClustering extends Graph {
         return node;
     }
 
-    public Set<String> getClusterActionLabels() {
-        return edgeActionLabelCluster;
+    /** returns an actionlabel based clustering */
+    public static Map<State, State> actionLabelCluster(Graph graph, Set<String> actionLabels) {
+        return actionLabelCluster(graph, actionLabels, new HashMap<>());
     }
 
-    private static Map<State, State> actionLabelCluster(Graph sourceGraph, Set<String> actionLabels) {
-        Map<State, State> leaderMap = new HashMap<>();
-
-        for (Transition edge : sourceGraph.getEdgeMesh().edgeList()) {
+    /** adds an actionlabel based clustering to the given leader map */
+    public static Map<State, State> actionLabelCluster(
+            Graph graph, Set<String> actionLabels, Map<State, State> initialMap
+    ) {
+        for (Transition edge : graph.getEdgeMesh().edgeList()) {
             if (!actionLabels.contains(edge.label)) continue;
 
-            State aLeader = getClusterLeader(leaderMap, edge.from);
-            State bLeader = getClusterLeader(leaderMap, edge.to);
+            State aLeader = getClusterLeader(initialMap, edge.from);
+            State bLeader = getClusterLeader(initialMap, edge.to);
 
-            if (edge.from != aLeader) leaderMap.put(edge.from, aLeader);
-            if (edge.to != aLeader) leaderMap.put(edge.to, aLeader);
-            if (bLeader != aLeader) leaderMap.put(bLeader, aLeader);
+            if (edge.from != aLeader) initialMap.put(edge.from, aLeader);
+            if (edge.to != aLeader) initialMap.put(edge.to, aLeader);
+            if (bLeader != aLeader) initialMap.put(bLeader, aLeader);
         }
 
-        return leaderMap;
+        return initialMap;
     }
 
     @Override
     public synchronized void cleanup() {
-        isDirty = false;
         NodeMesh oldNodes = this.clusterNodes;
         EdgeMesh oldEdges = this.clusterEdges;
         root.executeOnRenderThread(() -> {
@@ -253,12 +220,7 @@ public class NodeClustering extends Graph {
 
     @Override
     protected State getInitialState() {
-        checkDirty();
         return clusterInitialState;
-    }
-
-    public void setShowSelfLoop(boolean showSelfLoop) {
-        this.showSelfLoop = showSelfLoop;
     }
 
     /**

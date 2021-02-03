@@ -57,7 +57,6 @@ public class Menu extends SDecorator {
     public SToggleButton[] markButtons = new SToggleButton[0];
     public SToggleButton[] clusterButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
-    private SDropDown displayMethodDropDown;
     private SFrame displayOptionsFrame = null;
 
     public Menu(Main main) {
@@ -85,11 +84,10 @@ public class Menu extends SDecorator {
         }
 
         clusterButtons = new SToggleButton[actionLabels.length];
-        for (int i = 0; i < actionLabels.length; i++) {
-            String text = actionLabels[i];
+        for (int i = 0; i < clusterButtons.length; i++) {
             //noinspection SuspiciousNameCombination
             clusterButtons[i] = new SToggleButton("C", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
-            clusterButtons[i].addStateChangeListener(on -> main.labelCluster(text, on));
+            clusterButtons[i].addStateChangeListener(on -> main.resetCluster());
             clusterButtons[i].setGrowthPolicy(false, false);
         }
 
@@ -159,12 +157,7 @@ public class Menu extends SDecorator {
                         ),
                         new SButton("Load second Graph",
                                 () -> openFileDialog(
-                                        file -> {
-                                            main.setSecondaryGraph(file);
-                                            displayMethodDropDown.setCurrent( // displayMethodDropDown is assigned later
-                                                    DISPLAY_METHOD_LIST.indexOf(Main.DisplayMethod.COMPARE_GRAPHS)
-                                            );
-                                        }, "*.aut"
+                                        main::setSecondaryGraph, "*.aut"
                                 ), BUTTON_PROPS
                         ),
                         SContainer.row(
@@ -173,7 +166,7 @@ public class Menu extends SDecorator {
                                         BUTTON_PROPS
                                 ),
                                 new SCloseButton(BUTTON_PROPS.minHeight,
-                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.MU_FORMULA)
+                                        () -> main.getDisplayGraph().resetColors(GraphElement.Priority.MU_FORMULA)
                                 )
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
@@ -186,7 +179,7 @@ public class Menu extends SDecorator {
                                 ), BUTTON_PROPS),
                                 // the WAILA element
                                 new SActiveTextArea(() -> {
-                                    GraphElement element = main.getVisibleGraph().getHovered();
+                                    GraphElement element = main.getDisplayGraph().getHovered();
                                     return element == null ? "-" : element.identifier();
                                 }, WAILA_TEXT_PROPERTIES)
                                         .setMaximumCharacters(150)
@@ -197,22 +190,11 @@ public class Menu extends SDecorator {
                         new SimulationSliderUI(updateLoop),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        // Display manipulation
-                        new SPanel(SContainer.column(
-                                new STextArea("Display method", BUTTON_PROPS),
-                                displayMethodDropDown = new SDropDown(
-                                        frameManager, BUTTON_PROPS,
-                                        DISPLAY_METHOD_LIST.indexOf(main.getDisplayMethod()), DISPLAY_METHOD_LIST,
-                                        displayMethod -> displayMethod.name().replace("_", " ")
-                                ).addStateChangeListener(i -> main.setDisplayMethod(DISPLAY_METHOD_LIST.get(i)))
-                        )),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
                         // color tool
                         SContainer.row(
                                 colorTool.button("Activate Painting", BUTTON_PROPS),
                                 new SCloseButton(BUTTON_PROPS.minHeight,
-                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
+                                        () -> main.getDisplayGraph().resetColors(GraphElement.Priority.USER_COLOR)
                                 )
                         ),
                         new SDropDown(frameManager, BUTTON_PROPS, 0, PAINT_COLORS, p -> p.left)
@@ -231,7 +213,7 @@ public class Menu extends SDecorator {
                         SContainer.row(
                                 new PathVisualisationTool(main).button("Find shortest path", BUTTON_PROPS),
                                 new SCloseButton(BUTTON_PROPS.minHeight,
-                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.PATH)
+                                        () -> main.getDisplayGraph().resetColors(GraphElement.Priority.PATH)
                                 )
                         ),
 //                        new ComparatorMouseTool(main).button("Compare Nodes", BUTTON_PROPS),

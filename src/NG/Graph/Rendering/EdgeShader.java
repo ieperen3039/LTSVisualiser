@@ -2,6 +2,7 @@ package NG.Graph.Rendering;
 
 import NG.Camera.Camera;
 import NG.Core.Main;
+import NG.Graph.Graph;
 import NG.Rendering.GLFWWindow;
 import NG.Rendering.Shaders.ShaderException;
 import NG.Rendering.Shaders.ShaderProgram;
@@ -106,7 +107,7 @@ public class EdgeShader implements ShaderProgram {
         Matrix4f view = camera.getViewMatrix(new Matrix4f());
         writeMatrix(view, viewMatrixUID);
 
-        int nrOfNodes = root.getVisibleGraph().getNodeMesh().nodeList().size();
+        int nrOfNodes = ((Graph) root.getDisplayGraph()).getNodeMesh().nodeList().size();
         glUniform1f(radiusUID, NODE_RADIUS * 0.9f);
         glUniform1f(edgeSizeUID, EDGE_WIDTH);
         glUniform1f(headSizeUID, HEAD_WIDTH);

@@ -19,7 +19,6 @@ import NG.MuChecker.Operands.*;
 import NG.MuChecker.StateSet;
 import NG.Rendering.GLFWWindow;
 import NG.Rendering.RenderLoop;
-import NG.Resources.LazyInit;
 import NG.Settings.Settings;
 import NG.Tools.Logger;
 import NG.Tools.Toolbox;
@@ -69,21 +68,17 @@ public class Main {
     private final KeyControl keyControl;
     private Camera camera;
     private Menu menu;
+    private EdgeShader edgeShader;
 
     private boolean doComputeSourceLayout = false;
-    private final LazyInit<GraphComparator> graphComparator;
 
     private final Object graphLock = new Object();
     private SourceGraph graph;
     private SourceGraph secondGraph;
-    private final LazyInit<NodeClustering> nodeCluster;
-    private final LazyInit<IgnoringGraph> ignoringGraph;
-    private final LazyInit<NodeClustering> confluenceGraph;
-    private DisplayMethod displayMethod = DisplayMethod.PRIMARY_GRAPH;
-    private EdgeShader edgeShader;
+    private NodeClustering displayGraph;
 
     public enum DisplayMethod {
-        PRIMARY_GRAPH, SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
+        PRIMARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
     }
 
     public Main(Settings settings) throws Exception {
@@ -110,37 +105,17 @@ public class Main {
 
         graph = SourceGraph.empty(this);
         secondGraph = SourceGraph.empty(this);
+        displayGraph = new NodeClustering(graph, Collections.emptySet());
         springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS);
+    }
 
-        nodeCluster = new LazyInit<>(
-                () -> {
-                    NodeClustering g = new NodeClustering(graph, getMarkedLabels(menu.clusterButtons));
-                    applyMarking(g);
-                    return g;
-                },
-                Graph::cleanup
-        );
-        confluenceGraph = new LazyInit<>(
-                () -> {
-                    Map<State, State> leaderMap = new ConfluenceDetector(graph).getLeaderMap();
-                    NodeClustering g = new NodeClustering(graph, leaderMap, false, "tau");
-                    applyMarking(g);
-                    return g;
-                },
-                Graph::cleanup
-        );
-        graphComparator = new LazyInit<>(
-                () -> new GraphComparator(graph, secondGraph),
-                Graph::cleanup
-        );
-        ignoringGraph = new LazyInit<>(
-                () -> {
-                    IgnoringGraph g = new IgnoringGraph(graph, getMarkedLabels(menu.clusterButtons));
-                    applyMarking(g);
-                    return g;
-                },
-                Graph::cleanup
-        );
+    public void resetCluster() {
+        Set<String> markedLabels = getMarkedLabels(menu.clusterButtons);
+        Map<State, State> confluenceClustering = new ConfluenceDetector(graph).getLeaderMap();
+        Map<State, State> leaderMap = NodeClustering.actionLabelCluster(graph, markedLabels, confluenceClustering);
+        displayGraph.createCluster(leaderMap, false);
+
+        applyMarking(displayGraph);
     }
 
     /**
@@ -163,8 +138,7 @@ public class Main {
         renderer.renderSequence(new NodeShader())
                 .add((gl, root) -> {
                     synchronized (graphLock) {
-                        Graph target = getVisibleGraph();
-                        gl.render(target.getNodeMesh());
+                        gl.render(displayGraph.getNodeMesh());
                     }
                 });
 
@@ -173,8 +147,7 @@ public class Main {
                 .add((gl, root) -> {
                     glDepthMask(false); // read but not write
                     synchronized (graphLock) {
-                        Graph target = getVisibleGraph();
-                        gl.render(target.getEdgeMesh());
+                        gl.render(displayGraph.getEdgeMesh());
                     }
                     glDepthMask(true);
                 });
@@ -184,6 +157,7 @@ public class Main {
         menu = new Menu(this);
         frameManager.setMainGUI(menu);
 
+        springLayout.setGraph(doComputeSourceLayout ? graph : displayGraph);
         springLayout.addUpdateListeners(this::onNodePositionChange);
 
         if (settings.DATA_COLLECTION_PATH != null) {
@@ -217,36 +191,15 @@ public class Main {
     }
 
     public void onNodePositionChange() {
-        if (displayMethod == DisplayMethod.CLUSTER_ON_SELECTED
-                || displayMethod == DisplayMethod.CLUSTER_ON_SELECTED_IGNORE_LOOPS
-        ) {
-            if (doComputeSourceLayout) {
-                nodeCluster.get().pullClusterPositions();
+        if (doComputeSourceLayout) {
+            displayGraph.pullClusterPositions();
 
-            } else {
-                nodeCluster.get().pushClusterPositions();
-            }
-
-        } else if (displayMethod == DisplayMethod.CONFLUENCE) {
-            if (doComputeSourceLayout) {
-                confluenceGraph.get().pullClusterPositions();
-
-            } else {
-                confluenceGraph.get().pushClusterPositions();
-            }
+        } else {
+            displayGraph.pushClusterPositions();
         }
 
-        if (displayMethod == DisplayMethod.COMPARE_GRAPHS && doComputeSourceLayout) {
-            graphComparator.get().updateEdges();
-        }
-
-        if (displayMethod == DisplayMethod.HIDE_ACTIONS && doComputeSourceLayout) {
-            ignoringGraph.get().updateEdges();
-        }
-
-        Graph graph = getVisibleGraph();
-        graph.getNodeMesh().schedulePositionReload();
-        graph.getEdgeMesh().schedulePositionReload();
+        displayGraph.getNodeMesh().schedulePositionReload();
+        displayGraph.getEdgeMesh().schedulePositionReload();
     }
 
     public Camera camera() {
@@ -316,12 +269,10 @@ public class Main {
 
             graph.init();
 
-            nodeCluster.drop();
-            confluenceGraph.drop();
-            graphComparator.drop();
-            ignoringGraph.drop();
+            Map<State, State> confluenceClustering = new ConfluenceDetector(graph).getLeaderMap();
+            displayGraph = new NodeClustering(graph, confluenceClustering, false);
 
-            springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
+            springLayout.setGraph(doComputeSourceLayout ? graph : displayGraph);
             springLayout.setSpeed(0);
 
             onNodePositionChange();
@@ -348,26 +299,14 @@ public class Main {
                 secondGraph = newGraph;
                 HDEPositioning.applyTo(secondGraph, springLayout.getNatLength());
                 secondGraph.init();
-
-                graphComparator.drop();
             }
-            setDisplayMethod(DisplayMethod.COMPARE_GRAPHS);
             onNodePositionChange();
         });
     }
 
     public void doSourceLayout(boolean doSource) {
         doComputeSourceLayout = doSource;
-
-        springLayout.setGraph(doSource ? graph : getVisibleGraph());
-    }
-
-    public void setDisplayMethod(DisplayMethod method) {
-        this.displayMethod = method;
-        Logger.DEBUG.print("Set display method", displayMethod);
-
-        springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
-        onNodePositionChange();
+        springLayout.setGraph(doSource ? graph : displayGraph);
     }
 
     public void applyMarking(Graph graph) {
@@ -381,10 +320,6 @@ public class Main {
         }
 
         graph.getEdgeMesh().scheduleColorReload();
-    }
-
-    public DisplayMethod getDisplayMethod() {
-        return displayMethod;
     }
 
     public void applyFileMarkings(File file) {
@@ -414,8 +349,8 @@ public class Main {
         }
     }
 
-    public Collection<String> getMarkedLabels(SToggleButton[] buttons) {
-        Collection<String> markedActionLabels = new HashSet<>();
+    public Set<String> getMarkedLabels(SToggleButton[] buttons) {
+        Set<String> markedActionLabels = new HashSet<>();
         String[] actionLabels = menu.actionLabels;
         for (int i = 0; i < actionLabels.length; i++) {
             if (buttons[i].isActive()) {
@@ -426,7 +361,7 @@ public class Main {
     }
 
     public List<Transition> getMarkedEdges() {
-        Collection<String> markedActionLabels = getMarkedLabels(menu.markButtons);
+        Set<String> markedActionLabels = getMarkedLabels(menu.markButtons);
 
         List<Transition> markedEdges = new ArrayList<>();
         for (Transition edge : graph.getEdgeMesh().edgeList()) {
@@ -442,36 +377,9 @@ public class Main {
         return renderer.getClickShaderResult();
     }
 
-    public Graph getVisibleGraph() {
-        switch (displayMethod) {
-            case PRIMARY_GRAPH:
-                return graph;
-
-            case SECONDARY_GRAPH:
-                return secondGraph;
-
-            case HIDE_ACTIONS:
-                return ignoringGraph.get();
-
-            case CLUSTER_ON_SELECTED:
-            case CLUSTER_ON_SELECTED_IGNORE_LOOPS:
-                return nodeCluster.get();
-
-            case CONFLUENCE:
-                return confluenceGraph.get();
-
-            case COMPARE_GRAPHS:
-                return graphComparator.get();
-
-            default:
-                assert false : displayMethod;
-                return graph;
-        }
-    }
-
     public void set3DView(boolean on) {
         if (!on) {
-            Graph graph = doComputeSourceLayout ? this.graph : getVisibleGraph();
+            Graph graph = doComputeSourceLayout ? this.graph : displayGraph;
 
             // flatten graph in view direction
             Matrix4f viewMatrix = new Matrix4f().lookAt(
@@ -555,36 +463,13 @@ public class Main {
                 (edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING)) :
                 (edge -> edge.resetColor(ACTION_MARKING));
 
-        graph.forActionLabel(label, colorAction);
-        graph.getEdgeMesh().scheduleColorReload();
-
-        secondGraph.forActionLabel(label, colorAction);
-        secondGraph.getEdgeMesh().scheduleColorReload();
-
-        confluenceGraph.ifPresent(g -> g.forActionLabel(label, colorAction));
-        confluenceGraph.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
-
-        nodeCluster.ifPresent(g -> g.forActionLabel(label, colorAction));
-        nodeCluster.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
-
-        ignoringGraph.ifPresent(g -> g.forActionLabel(label, colorAction));
-        ignoringGraph.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
-    }
-
-    public void labelCluster(String label, boolean on) {
-        ignoringGraph.ifPresent(g -> g.setIgnore(label, on));
-
-        NodeClustering clusterGraph = nodeCluster.get();
-        clusterGraph.setLabelCluster(label, on);
-
-        for (String marked : getMarkedLabels(menu.markButtons)) {
-            clusterGraph.forActionLabel(marked, edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING));
-        }
-        clusterGraph.getEdgeMesh().scheduleColorReload();
+        displayGraph.forActionLabel(label, colorAction);
+        displayGraph.getEdgeMesh().scheduleColorReload();
     }
 
     public void applyMuFormulaMarking(File file) {
         try {
+            SourceGraph graph = this.graph;
             for (State state : graph.states) {
                 state.resetColor(MU_FORMULA);
             }
@@ -666,5 +551,9 @@ public class Main {
 
     public EdgeShader.EdgeShape getEdgeShape() {
         return edgeShader.currentShape;
+    }
+
+    public NodeClustering getDisplayGraph() {
+        return displayGraph;
     }
 }

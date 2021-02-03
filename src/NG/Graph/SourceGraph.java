@@ -53,7 +53,7 @@ public class SourceGraph extends Graph {
 
         // set positions to graph
         for (State node : states) {
-            getNodeMesh().addNode(node);
+            nodeMesh.addNode(node);
 
             if (isDeadlocked(node)) {
                 node.border = Color4f.RED;
@@ -61,7 +61,7 @@ public class SourceGraph extends Graph {
         }
 
         for (Transition edge : edges) {
-            getEdgeMesh().addParticle(edge);
+            edgeMesh.addParticle(edge);
         }
 
         // initial state
