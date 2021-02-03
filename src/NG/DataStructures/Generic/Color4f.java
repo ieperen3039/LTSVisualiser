@@ -73,14 +73,14 @@ public class Color4f implements Serializable {
     /**
      * create a new color based on another color with new intensity. if (intensity == source.alpha), then
      * (this.equals(source))
-     * @param source    a source color, of which the red green and blue values are taken
-     * @param intensity the new alpha value
+     * @param source a source color, of which the red green and blue values are taken
+     * @param alpha  the new alpha value
      */
-    public Color4f(Color4f source, float intensity) {
+    public Color4f(Color4f source, float alpha) {
         red = source.red;
         green = source.green;
         blue = source.blue;
-        alpha = cap(intensity);
+        this.alpha = cap(alpha);
     }
 
     /**

@@ -538,7 +538,7 @@ public class Main {
         }
 
         Consumer<Transition> colorAction = on ?
-                (edge -> edge.addColor(color, ACTION_MARKING)) :
+                (edge -> edge.addColor(new Color4f(color, 0.9f), ACTION_MARKING)) :
                 (edge -> edge.resetColor(ACTION_MARKING));
 
         graph.forActionLabel(label, colorAction);
