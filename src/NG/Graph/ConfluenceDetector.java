@@ -15,12 +15,18 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
     private final Graph graph;
     private final Set<String> internalActions;
 
+    /**
+     * creates a confluence detector that considers all "tau" labels as internal
+     */
     public ConfluenceDetector(Graph graph) {
         this.graph = graph;
         this.internalActions = new HashSet<>();
         internalActions.add("tau");
     }
 
+    /**
+     * creates a confluence detector that considers the given actions as internal
+     */
     public ConfluenceDetector(Graph graph, Set<String> internalActions) {
         this.graph = graph;
         this.internalActions = new HashSet<>(internalActions);

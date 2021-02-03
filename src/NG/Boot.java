@@ -35,7 +35,7 @@ public class Boot {
 
                 .addParameterFlag("log", defaultLog.getName(),
                         file -> Logger.setOutputStream(new FileOutputStream(file)),
-                        "Sets logging to write to the file with the given name. If the file exists, it is overwritten" +
+                        "Sets logging to write to the file with the given name. If the file exists, it is overwritten. " +
                                 "By default, it writes to a generated new file"
                 )
 

@@ -75,11 +75,7 @@ public class Main {
     private SourceGraph secondGraph;
     private NodeClustering displayGraph;
 
-    private Map<String, Color4f> markings = new HashMap<>();
-
-    public enum DisplayMethod {
-        PRIMARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
-    }
+    private final Map<String, Color4f> markings = new HashMap<>();
 
     public Main(Settings settings) throws Exception {
         Logger.INFO.print("Starting up...");
@@ -102,6 +98,14 @@ public class Main {
         frameManager = new FrameManagerImpl();
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
+
+        springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS) {
+            @Override
+            protected void exceptionHandler(Exception ex) {
+                Logger.ERROR.print(ex);
+                Toolbox.display(ex);
+            }
+        };
 
         graph = SourceGraph.empty(this);
         secondGraph = SourceGraph.empty(this);
