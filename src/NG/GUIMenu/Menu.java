@@ -45,12 +45,12 @@ public class Menu extends SDecorator {
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.8f);
 
     private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
-            .add("Yellow", Color4f.rgb(220, 150, 0))
-            .add("Red", Color4f.rgb(200, 25, 25))
-            .add("Green", Color4f.rgb(4, 120, 13))
-            .add("Orange", Color4f.rgb(220, 105, 20))
-            .add("Purple", Color4f.rgb(200, 20, 160))
-            .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
+            .add("Yellow", Color4f.rgb(220, 150, 0, 0.8f))
+            .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
+            .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
+            .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
+            .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
+            .add("Faint Grey", new Color4f(0f, 0f, 0f, 0.1f))
             .get();
 
     public String[] actionLabels = new String[0];
@@ -80,8 +80,10 @@ public class Menu extends SDecorator {
             String label = actionLabels[i];
             SToggleButton button = new SToggleButton(label, BUTTON_PROPS);
             button.addStateChangeListener(on -> main.labelMark(label, on, colorTool.getColor()));
-            button.addStateChangeListener(on -> button.setColor(on ? colorTool.getColor()
-                    .interpolateTo(Color4f.GREY, 0.2f) : null));
+            button.addStateChangeListener(on -> button.setColor(on
+                    ? colorTool.getColor().opaque()
+                    : null
+            ));
             button.setActive(false);
             button.setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
             button.setGrowthPolicy(true, false);
@@ -112,6 +114,13 @@ public class Menu extends SDecorator {
                 ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
                 new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
+                // color tool
+                SContainer.row(
+                        colorTool.button("Activate Painting", BUTTON_PROPS),
+                        new SCloseButton(BUTTON_PROPS.minHeight,
+                                () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
+                        )
+                ),
                 new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
                         .addStateChangeListener(main::set3DView),
                 new SToggleButton("Always use layout of primary graph", BUTTON_PROPS, false)
@@ -227,15 +236,6 @@ public class Menu extends SDecorator {
                         SContainer.column(
                                 new STextArea("Action labels", BUTTON_PROPS),
                                 new SScrollableList(9, actionComponents)
-                        ),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
-                        // color tool
-                        SContainer.row(
-                                colorTool.button("Activate Painting", BUTTON_PROPS),
-                                new SCloseButton(BUTTON_PROPS.minHeight,
-                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
-                                )
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 

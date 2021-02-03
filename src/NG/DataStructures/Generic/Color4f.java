@@ -169,9 +169,9 @@ public class Color4f implements Serializable {
      */
     public Color4f opaque() {
         return new Color4f(
-                inverseMul(red, alpha),
-                inverseMul(green, alpha),
-                inverseMul(blue, alpha),
+                1f - ((1f - red) * alpha),
+                1f - ((1f - green) * alpha),
+                1f - ((1f - blue) * alpha),
                 1
         );
     }

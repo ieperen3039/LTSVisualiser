@@ -80,7 +80,7 @@ public class Main {
     private DisplayMethod displayMethod = DisplayMethod.PRIMARY_GRAPH;
     private EdgeShader edgeShader;
 
-    private Map<String, Color4f> markings = new HashMap<>();
+    private final Map<String, Color4f> markings = new HashMap<>();
 
     public enum DisplayMethod {
         PRIMARY_GRAPH, SECONDARY_GRAPH, COMPARE_GRAPHS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
@@ -108,9 +108,16 @@ public class Main {
         mainThread = Thread.currentThread();
         camera = new PointCenteredCamera(Vectors.O);
 
+        springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS) {
+            @Override
+            protected void exceptionHandler(Exception ex) {
+                Logger.ERROR.print(ex);
+                Toolbox.display(ex);
+            }
+        };
+
         graph = SourceGraph.empty(this);
         secondGraph = SourceGraph.empty(this);
-        springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS);
 
         nodeCluster = new LazyInit<>(
                 () -> {
@@ -538,7 +545,7 @@ public class Main {
         }
 
         Consumer<Transition> colorAction = on ?
-                (edge -> edge.addColor(new Color4f(color, 0.9f), ACTION_MARKING)) :
+                (edge -> edge.addColor(color, ACTION_MARKING)) :
                 (edge -> edge.resetColor(ACTION_MARKING));
 
         graph.forActionLabel(label, colorAction);
@@ -560,15 +567,16 @@ public class Main {
         applyMarking(clusterGraph);
 
         // confluence
-        confluenceGraph.ifPresent(
-                graph -> {
-                    graph.setLabelCluster(label, on);
-                    Set<String> internalActions = getMarkedLabels(menu.clusterButtons);
-                    Map<State, State> leaderMap = new ConfluenceDetector(graph, internalActions).getLeaderMap();
-                    graph.createCluster(leaderMap, true);
-                    applyMarking(graph);
-                }
-        );
+//        confluenceGraph.ifPresent(
+//                graph -> {
+//                    graph.setLabelCluster(label, on);
+//                    Set<String> internalActions = getMarkedLabels(menu.clusterButtons);
+//                    Map<State, State> leaderMap = new ConfluenceDetector(graph, internalActions).getLeaderMap();
+//                    graph.createCluster(leaderMap, true);
+//                    applyMarking(graph);
+//                }
+//        );
+        confluenceGraph.drop();
     }
 
     public void applyMuFormulaMarking(File file) {
