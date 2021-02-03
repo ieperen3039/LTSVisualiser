@@ -11,15 +11,25 @@ class FlagManager {
     private final Map<String, String> defaultParameters = new HashMap<>();
     private final Collection<Collection<String>> exclusives = new ArrayList<>();
 
-    /** create a new flag manager with an automatic 'help' flag */
+    /**
+     * create a new flag manager with an automatic 'help' flag which shows the available parameters, and force quits the
+     * application
+     */
     public FlagManager() {
         String help = "help";
-        flags.put(help, new Flag(help, "shows this text",
+        flags.put(help, new Flag(help, "shows this text, then quits",
                 () -> {
                     System.out.println("The following flags are accepted:");
-                    flags.forEach((n, f) -> System.out.println("\t-" + n));
+                    for (Flag f : flags.values()) {
+                        System.out.println("\t-" + f.name);
+                        System.out.println("\t\t" + f.description);
+                    }
+
                     System.out.println("The following parameters are accepted:");
-                    parameters.forEach((n, f) -> System.out.println("\t-" + n + " [PARAMETER]"));
+                    for (Parameter p : parameters.values()) {
+                        System.out.println("\t-" + p.name + " [PARAMETER]");
+                        System.out.println("\t\t" + p.description);
+                    }
 
                     System.exit(1);
                 }
