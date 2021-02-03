@@ -36,12 +36,14 @@ public class NodeClustering extends Graph {
         createCluster(actionLabelCluster(graph, edgeActionLabelCluster), showSelfLoop);
     }
 
-    public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop, String... labels) {
+    public NodeClustering(
+            SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop, Collection<String> labels
+    ) {
         super(graph.root);
         this.graph = graph;
         this.showSelfLoop = showSelfLoop;
 
-        Collections.addAll(edgeActionLabelCluster, labels);
+        edgeActionLabelCluster.addAll(labels);
         createCluster(leaderMap, showSelfLoop);
     }
 

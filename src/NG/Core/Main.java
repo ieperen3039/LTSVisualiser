@@ -77,13 +77,12 @@ public class Main {
     private SourceGraph graph;
     private SourceGraph secondGraph;
     private final LazyInit<NodeClustering> nodeCluster;
-    private final LazyInit<IgnoringGraph> ignoringGraph;
     private final LazyInit<NodeClustering> confluenceGraph;
     private DisplayMethod displayMethod = DisplayMethod.PRIMARY_GRAPH;
     private EdgeShader edgeShader;
 
     public enum DisplayMethod {
-        PRIMARY_GRAPH, SECONDARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
+        PRIMARY_GRAPH, SECONDARY_GRAPH, COMPARE_GRAPHS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
     }
 
     public Main(Settings settings) throws Exception {
@@ -122,8 +121,9 @@ public class Main {
         );
         confluenceGraph = new LazyInit<>(
                 () -> {
-                    Map<State, State> leaderMap = new ConfluenceDetector(graph).getLeaderMap();
-                    NodeClustering g = new NodeClustering(graph, leaderMap, false, "tau");
+                    Set<String> internalActions = getMarkedLabels(menu.clusterButtons);
+                    Map<State, State> leaderMap = new ConfluenceDetector(graph, internalActions).getLeaderMap();
+                    NodeClustering g = new NodeClustering(graph, leaderMap, true, internalActions);
                     applyMarking(g);
                     return g;
                 },
@@ -131,14 +131,6 @@ public class Main {
         );
         graphComparator = new LazyInit<>(
                 () -> new GraphComparator(graph, secondGraph),
-                Graph::cleanup
-        );
-        ignoringGraph = new LazyInit<>(
-                () -> {
-                    IgnoringGraph g = new IgnoringGraph(graph, getMarkedLabels(menu.clusterButtons));
-                    applyMarking(g);
-                    return g;
-                },
                 Graph::cleanup
         );
     }
@@ -240,10 +232,6 @@ public class Main {
             graphComparator.get().updateEdges();
         }
 
-        if (displayMethod == DisplayMethod.HIDE_ACTIONS && doComputeSourceLayout) {
-            ignoringGraph.get().updateEdges();
-        }
-
         Graph graph = getVisibleGraph();
         graph.getNodeMesh().schedulePositionReload();
         graph.getEdgeMesh().schedulePositionReload();
@@ -319,7 +307,6 @@ public class Main {
             nodeCluster.drop();
             confluenceGraph.drop();
             graphComparator.drop();
-            ignoringGraph.drop();
 
             springLayout.setGraph(doComputeSourceLayout ? graph : getVisibleGraph());
             springLayout.setSpeed(0);
@@ -414,8 +401,8 @@ public class Main {
         }
     }
 
-    public Collection<String> getMarkedLabels(SToggleButton[] buttons) {
-        Collection<String> markedActionLabels = new HashSet<>();
+    public Set<String> getMarkedLabels(SToggleButton[] buttons) {
+        Set<String> markedActionLabels = new HashSet<>();
         String[] actionLabels = menu.actionLabels;
         for (int i = 0; i < actionLabels.length; i++) {
             if (buttons[i].isActive()) {
@@ -449,9 +436,6 @@ public class Main {
 
             case SECONDARY_GRAPH:
                 return secondGraph;
-
-            case HIDE_ACTIONS:
-                return ignoringGraph.get();
 
             case CLUSTER_ON_SELECTED:
             case CLUSTER_ON_SELECTED_IGNORE_LOOPS:
@@ -566,21 +550,23 @@ public class Main {
 
         nodeCluster.ifPresent(g -> g.forActionLabel(label, colorAction));
         nodeCluster.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
-
-        ignoringGraph.ifPresent(g -> g.forActionLabel(label, colorAction));
-        ignoringGraph.ifPresent(g -> g.getEdgeMesh().scheduleColorReload());
     }
 
     public void labelCluster(String label, boolean on) {
-        ignoringGraph.ifPresent(g -> g.setIgnore(label, on));
-
         NodeClustering clusterGraph = nodeCluster.get();
         clusterGraph.setLabelCluster(label, on);
+        applyMarking(clusterGraph);
 
-        for (String marked : getMarkedLabels(menu.markButtons)) {
-            clusterGraph.forActionLabel(marked, edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING));
-        }
-        clusterGraph.getEdgeMesh().scheduleColorReload();
+        // confluence
+        confluenceGraph.ifPresent(
+                graph -> {
+                    graph.setLabelCluster(label, on);
+                    Set<String> internalActions = getMarkedLabels(menu.clusterButtons);
+                    Map<State, State> leaderMap = new ConfluenceDetector(graph, internalActions).getLeaderMap();
+                    graph.createCluster(leaderMap, true);
+                    applyMarking(graph);
+                }
+        );
     }
 
     public void applyMuFormulaMarking(File file) {
