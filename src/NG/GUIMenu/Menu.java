@@ -79,7 +79,7 @@ public class Menu extends SDecorator {
             String label = actionLabels[i];
             SToggleButton button = new SToggleButton(label, BUTTON_PROPS);
             button.addStateChangeListener(on -> main.labelMark(label, on, colorTool.getColor()));
-            button.addStateChangeListener(on -> button.setColor(on ? colorTool.getColor()
+            button.addStateChangeListener(on -> button.setColor(on ? colorTool.getColor().opaque()
                     .interpolateTo(Color4f.GREY, 0.2f) : null));
             button.setActive(false);
             button.setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);

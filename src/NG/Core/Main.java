@@ -110,7 +110,6 @@ public class Main {
         graph = SourceGraph.empty(this);
         secondGraph = SourceGraph.empty(this);
         displayGraph = new NodeClustering(graph, Collections.emptySet());
-        springLayout = new SpringLayout(settings.MAX_ITERATIONS_PER_SECOND, settings.NUM_WORKER_THREADS);
     }
 
     public void resetCluster() {
