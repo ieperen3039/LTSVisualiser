@@ -13,9 +13,17 @@ import java.util.concurrent.Callable;
  */
 public class ConfluenceDetector implements Callable<Collection<List<State>>> {
     private final Graph graph;
+    private final Set<String> internalActions;
 
     public ConfluenceDetector(Graph graph) {
         this.graph = graph;
+        this.internalActions = new HashSet<>();
+        internalActions.add("tau");
+    }
+
+    public ConfluenceDetector(Graph graph, Set<String> internalActions) {
+        this.graph = graph;
+        this.internalActions = new HashSet<>(internalActions);
     }
 
     /**
@@ -48,7 +56,7 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
 
         Set<Transition> candidates = new HashSet<>();
         for (Transition edge : edges) {
-            if (edge.label.equals("tau")) {
+            if (isInternal(edge)) {
                 candidates.add(edge);
             }
         }
@@ -96,6 +104,11 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
         return candidates;
     }
 
+    public boolean isInternal(Transition edge) {
+//        return edge.label.equals("tau");
+        return internalActions.contains(edge.label);
+    }
+
     /**
      * @param target        s -a> s'
      * @param other         s -tau> s'' and candidate
@@ -107,7 +120,7 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
     ) {
         // a == tau && s' == s''
         // other ~= target : any edge is confluent with itself
-        if (target.label.equals("tau") && target.to == other.to) return true;
+        if (isInternal(target) && target.to == other.to) return true;
 
         // all transitions of s''
         PairList<Transition, State> otherTransitions = graph.outgoingOf(other.to);
@@ -126,7 +139,7 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
         }
 
         // a == tau and (s' -tau> s'') is candidate
-        if (target.label.equals("tau")) {
+        if (isInternal(target)) {
             // search for candidate s' -tau> s''' where s''' == s''
             for (Transition nextTauTarget : targetNextTau) {
                 if (!candidates.contains(nextTauTarget)) continue;
