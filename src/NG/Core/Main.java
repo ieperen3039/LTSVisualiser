@@ -33,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static NG.Graph.Rendering.GraphElement.Priority.ACTION_MARKING;
@@ -45,7 +44,6 @@ import static org.lwjgl.opengl.GL11.glDepthMask;
  * @author Geert van Ieperen. Created on 13-9-2018.
  */
 public class Main {
-    public static final Color4f EDGE_MARK_COLOR = Color4f.rgb(220, 150, 0); // yellow
     public static final Color4f HOVER_COLOR = Color4f.rgb(44, 58, 190); // blue
     public static final Color4f PATH_COLOR = Color4f.rgb(200, 83, 0); // orange
     public static final Color4f INITAL_STATE_COLOR = Color4f.rgb(4, 150, 13); // green
@@ -76,6 +74,8 @@ public class Main {
     private SourceGraph graph;
     private SourceGraph secondGraph;
     private NodeClustering displayGraph;
+
+    private Map<String, Color4f> markings = new HashMap<>();
 
     public enum DisplayMethod {
         PRIMARY_GRAPH, COMPARE_GRAPHS, HIDE_ACTIONS, CLUSTER_ON_SELECTED, CLUSTER_ON_SELECTED_IGNORE_LOOPS, CONFLUENCE
@@ -272,6 +272,8 @@ public class Main {
             Map<State, State> confluenceClustering = new ConfluenceDetector(graph).getLeaderMap();
             displayGraph = new NodeClustering(graph, confluenceClustering, false);
 
+            markings.clear();
+
             springLayout.setGraph(doComputeSourceLayout ? graph : displayGraph);
             springLayout.setSpeed(0);
 
@@ -310,15 +312,9 @@ public class Main {
     }
 
     public void applyMarking(Graph graph) {
-        String[] actionLabels = menu.actionLabels;
-        SToggleButton[] actionLabelButtons = menu.markButtons;
-
-        for (int i = 0; i < actionLabels.length; i++) {
-            if (actionLabelButtons[i].isActive()) {
-                graph.forActionLabel(actionLabels[i], edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING));
-            }
-        }
-
+        markings.forEach((label, color) ->
+                graph.forActionLabel(label, edge -> edge.addColor(color, ACTION_MARKING))
+        );
         graph.getEdgeMesh().scheduleColorReload();
     }
 
@@ -458,12 +454,17 @@ public class Main {
         }
     }
 
-    public void labelMark(String label, boolean on) {
-        Consumer<Transition> colorAction = on ?
-                (edge -> edge.addColor(EDGE_MARK_COLOR, ACTION_MARKING)) :
-                (edge -> edge.resetColor(ACTION_MARKING));
+    public void labelMark(String label, boolean on, Color4f color) {
+        if (on) {
+            markings.put(label, color);
+        } else {
+            markings.remove(label);
+        }
 
-        displayGraph.forActionLabel(label, colorAction);
+        displayGraph.forActionLabel(label, on ?
+                (edge -> edge.addColor(color, ACTION_MARKING)) :
+                (edge -> edge.resetColor(ACTION_MARKING))
+        );
         displayGraph.getEdgeMesh().scheduleColorReload();
     }
 
@@ -553,7 +554,7 @@ public class Main {
         return edgeShader.currentShape;
     }
 
-    public NodeClustering getDisplayGraph() {
+    public Graph getVisibleGraph() {
         return displayGraph;
     }
 }

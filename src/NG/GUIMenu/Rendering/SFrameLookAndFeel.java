@@ -2,6 +2,7 @@ package NG.GUIMenu.Rendering;
 
 import NG.Core.Main;
 import NG.Core.Version;
+import NG.DataStructures.Generic.Color4f;
 import org.joml.Vector2ic;
 
 /**
@@ -41,7 +42,18 @@ public interface SFrameLookAndFeel {
      * @param pos  the position of the upper left corner of this element in pixels
      * @param dim  the (width, height) of the button in pixels
      */
-    void draw(UIComponent type, Vector2ic pos, Vector2ic dim);
+    default void draw(UIComponent type, Vector2ic pos, Vector2ic dim) {
+        draw(type, pos, dim, null);
+    }
+
+    /**
+     * Draw the given element on the given position
+     * @param type  the type of element
+     * @param pos   the position of the upper left corner of this element in pixels
+     * @param dim   the (width, height) of the button in pixels
+     * @param color
+     */
+    void draw(UIComponent type, Vector2ic pos, Vector2ic dim, Color4f color);
 
     void drawText(
             Vector2ic pos, Vector2ic dim, String text, NGFonts.TextType type, Alignment align

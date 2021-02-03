@@ -41,14 +41,14 @@ public abstract class MouseTool implements MouseListener {
             return;
         }
 
-        Graph graph = root.getDisplayGraph();
+        Graph graph = root.getVisibleGraph();
         boolean didClickGraph = graph.doOnMouseSelection(
                 node -> onNodeClick(button, graph, node),
                 edge -> onEdgeClick(button, graph, edge)
         );
 
         if (didClickGraph) {
-            releaseListener = root.getDisplayGraph();
+            releaseListener = root.getVisibleGraph();
 
         } else {
             onAirClick(button, x, y);
@@ -113,7 +113,7 @@ public abstract class MouseTool implements MouseListener {
         if (root.gui().covers((int) xPos, (int) yPos)) return;
 
         root.camera().onMouseMove(xDelta, yDelta, xPos, yPos);
-        root.getDisplayGraph().onMouseMove(xDelta, yDelta, xPos, yPos);
+        root.getVisibleGraph().onMouseMove(xDelta, yDelta, xPos, yPos);
     }
 
     /**

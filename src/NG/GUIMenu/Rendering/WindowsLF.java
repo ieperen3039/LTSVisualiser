@@ -65,7 +65,7 @@ public class WindowsLF implements SFrameLookAndFeel {
     }
 
     @Override
-    public void draw(UIComponent type, Vector2ic pos, Vector2ic dim) {
+    public void draw(UIComponent type, Vector2ic pos, Vector2ic dim, Color4f color) {
         int x = pos.x();
         int y = pos.y();
         int width = dim.x();
@@ -79,24 +79,29 @@ public class WindowsLF implements SFrameLookAndFeel {
             case BUTTON_ACTIVE:
             case BUTTON_INACTIVE:
             case SCROLL_BAR_DRAG_ELEMENT:
-                drawRoundedRectangle(x, y, width, height, BUTTON_COLOR);
+                Color4f thisColor = color == null ? BUTTON_COLOR : color;
+                drawButtonRectangle(x, y, width, height, thisColor);
                 break;
 
             case BUTTON_HOVERED:
-                drawRoundedRectangle(x, y, width, height, SELECTION_COLOR);
+                Color4f thisColor1 = color == null ? SELECTION_COLOR.intensify(0.1f) : color;
+                drawButtonRectangle(x, y, width, height, thisColor1);
                 break;
 
             case BUTTON_PRESSED:
-                drawRoundedRectangle(x, y, width, height, BUTTON_COLOR.darken(0.5f));
+                Color4f thisColor2 = color == null ? BUTTON_COLOR.darken(0.5f) : color;
+                drawButtonRectangle(x, y, width, height, thisColor2);
                 break;
 
             case INPUT_FIELD:
-                drawRoundedRectangle(x, y, width, height, INPUT_FIELD_COLOR);
+                Color4f thisColor3 = color == null ? INPUT_FIELD_COLOR : color;
+                drawButtonRectangle(x, y, width, height, thisColor3);
                 break;
 
             case SELECTION:
                 hud.setStroke(STROKE_COLOR, 0);
-                drawRoundedRectangle(x, y, width, height, SELECTION_COLOR);
+                Color4f thisColor4 = color == null ? SELECTION_COLOR : color;
+                drawButtonRectangle(x, y, width, height, thisColor4);
                 break;
 
             case DROP_DOWN_HEAD_CLOSED:
@@ -105,11 +110,11 @@ public class WindowsLF implements SFrameLookAndFeel {
             case PANEL:
             case FRAME_HEADER:
             default:
-                drawRoundedRectangle(x, y, width, height);
+                drawRoundedRectangle(x, y, width, height, color == null ? Color4f.WHITE : color);
         }
     }
 
-    private void drawRoundedRectangle(int x, int y, int width, int height, Color4f color) {
+    private void drawButtonRectangle(int x, int y, int width, int height, Color4f color) {
         int xMax2 = x + width;
         int yMax2 = y + height;
 
@@ -125,11 +130,11 @@ public class WindowsLF implements SFrameLookAndFeel {
         );
     }
 
-    private void drawRoundedRectangle(int x, int y, int width, int height) {
+    private void drawRoundedRectangle(int x, int y, int width, int height, Color4f color) {
         int xMax = x + width;
         int yMax = y + height;
 
-        hud.polygon(
+        hud.polygon(color, STROKE_COLOR, STROKE_WIDTH,
                 new Vector2i(x + INDENT, y),
                 new Vector2i(xMax - INDENT, y),
                 new Vector2i(xMax, y + INDENT),

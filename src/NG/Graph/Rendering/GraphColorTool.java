@@ -44,4 +44,8 @@ public class GraphColorTool extends MouseTool {
     public void setColor(Color4f color) {
         this.color = color;
     }
+
+    public Color4f getColor() {
+        return color;
+    }
 }
