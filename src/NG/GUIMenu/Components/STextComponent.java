@@ -67,8 +67,8 @@ public abstract class STextComponent extends SComponent {
     }
 
     public void setText(String text) {
+        textWidthIsInvalid = !text.equals(this.text);
         this.text = text;
-        textWidthIsInvalid = true;
     }
 
     @Override

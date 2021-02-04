@@ -176,6 +176,11 @@ public class WindowsLF implements SFrameLookAndFeel {
                         font, EnumSet.of(ALIGN_LEFT), textColor, text, width
                 );
                 break;
+            case LEFT_TOP:
+                hud.text(x, y, actualSize,
+                        font, EnumSet.of(ALIGN_TOP, ALIGN_LEFT), textColor, text, width
+                );
+                break;
             case CENTER_MIDDLE:
                 hud.text(x, y + (height / 2), actualSize,
                         font, EnumSet.noneOf(NVGOverlay.Alignment.class), textColor, text, width
@@ -191,6 +196,13 @@ public class WindowsLF implements SFrameLookAndFeel {
                         font, EnumSet.of(ALIGN_RIGHT), textColor, text, width
                 );
                 break;
+            case RIGHT_TOP:
+                hud.text(x, y, actualSize,
+                        font, EnumSet.of(ALIGN_TOP, ALIGN_RIGHT), textColor, text, width
+                );
+                break;
+            default:
+                throw new IllegalArgumentException(align.toString());
         }
     }
 

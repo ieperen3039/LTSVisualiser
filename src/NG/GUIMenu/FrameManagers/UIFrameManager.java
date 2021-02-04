@@ -94,6 +94,8 @@ public interface UIFrameManager
      */
     void setLookAndFeel(SFrameLookAndFeel lookAndFeel);
 
+    SFrameLookAndFeel getLookAndFeel();
+
     /**
      * @return false iff no call to {@link #setLookAndFeel(SFrameLookAndFeel)} has occurred.
      */

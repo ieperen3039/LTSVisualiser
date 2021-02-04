@@ -155,6 +155,11 @@ public class FrameManagerImpl implements UIFrameManager {
     }
 
     @Override
+    public SFrameLookAndFeel getLookAndFeel() {
+        return lookAndFeel;
+    }
+
+    @Override
     public boolean hasLookAndFeel() {
         return lookAndFeel != null;
     }

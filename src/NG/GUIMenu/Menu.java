@@ -44,13 +44,14 @@ public class Menu extends SDecorator {
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.8f);
 
     private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
-            .add("Yellow", Color4f.rgb(220, 150, 0))
-            .add("Red", Color4f.rgb(200, 25, 25))
-            .add("Green", Color4f.rgb(4, 120, 13))
-            .add("Orange", Color4f.rgb(220, 105, 20))
-            .add("Purple", Color4f.rgb(200, 20, 160))
-            .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.1f))
+            .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
+            .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
+            .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
+            .add("Yellow", Color4f.rgb(220, 150, 0, 0.8f))
+            .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
+            .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.08f))
             .get();
+    public static final int INITIAL_COLOR_INDEX = PAINT_COLORS.indexOfLeft("Green");
 
     public String[] actionLabels = new String[0];
     private final Main main;
@@ -69,7 +70,7 @@ public class Menu extends SDecorator {
         RenderLoop renderLoop = main.renderer;
         SpringLayout updateLoop = main.getSpringLayout();
         UIFrameManager frameManager = main.gui();
-        GraphColorTool colorTool = new GraphColorTool(main, PAINT_COLORS.right(0));
+        GraphColorTool colorTool = new GraphColorTool(main, PAINT_COLORS.right(INITIAL_COLOR_INDEX));
 
         actionLabels = graph.getEdgeLabels().stream().distinct().sorted().toArray(String[]::new);
 
@@ -78,8 +79,7 @@ public class Menu extends SDecorator {
             String label = actionLabels[i];
             SToggleButton button = new SToggleButton(label, BUTTON_PROPS);
             button.addStateChangeListener(on -> main.labelMark(label, on, colorTool.getColor()));
-            button.addStateChangeListener(on -> button.setColor(on ? colorTool.getColor().opaque()
-                    .interpolateTo(Color4f.GREY, 0.2f) : null));
+            button.addStateChangeListener(on -> button.setColor(on ? colorTool.getColor().opaque() : null));
             button.setActive(false);
             button.setMaximumCharacters(MAX_CHARACTERS_ACTION_LABELS);
             button.setGrowthPolicy(true, false);
@@ -183,7 +183,7 @@ public class Menu extends SDecorator {
 
                         // action coloring
                         new STextArea("Current Color", BUTTON_PROPS),
-                        new SDropDown(frameManager, BUTTON_PROPS, 0, PAINT_COLORS, p -> p.left)
+                        new SDropDown(frameManager, BUTTON_PROPS, INITIAL_COLOR_INDEX, PAINT_COLORS, p -> p.left)
                                 .addStateChangeListener(i -> colorTool.setColor(PAINT_COLORS.right(i))),
 
                         SContainer.column(

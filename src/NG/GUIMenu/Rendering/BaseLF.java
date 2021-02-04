@@ -30,7 +30,7 @@ public class BaseLF implements SFrameLookAndFeel {
     private static final Color4f STROKE_COLOR = Color4f.BLUE;
     private static final Color4f BUTTON_COLOR = Color4f.GREY;
     private static final Color4f INPUT_FIELD_COLOR = Color4f.LIGHT_GREY;
-    private Color4f SELECTION_COLOR = Color4f.TRANSPARENT_GREY;
+    private static final Color4f SELECTION_COLOR = Color4f.TRANSPARENT_GREY;
 
     private NVGOverlay.Painter hud;
 
@@ -176,6 +176,11 @@ public class BaseLF implements SFrameLookAndFeel {
                         font, EnumSet.of(ALIGN_LEFT), textColor, text, width
                 );
                 break;
+            case LEFT_TOP:
+                hud.text(x, y, actualSize,
+                        font, EnumSet.of(ALIGN_TOP, ALIGN_LEFT), textColor, text, width
+                );
+                break;
             case CENTER_MIDDLE:
                 hud.text(x, y + (height / 2), actualSize,
                         font, EnumSet.noneOf(NVGOverlay.Alignment.class), textColor, text, width
@@ -191,6 +196,13 @@ public class BaseLF implements SFrameLookAndFeel {
                         font, EnumSet.of(ALIGN_RIGHT), textColor, text, width
                 );
                 break;
+            case RIGHT_TOP:
+                hud.text(x, y, actualSize,
+                        font, EnumSet.of(ALIGN_TOP, ALIGN_RIGHT), textColor, text, width
+                );
+                break;
+            default:
+                throw new IllegalArgumentException(align.toString());
         }
     }
 

@@ -4,10 +4,14 @@ import NG.Camera.Camera;
 import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
 import NG.DataStructures.Generic.Color4f;
+import NG.GUIMenu.Components.STextArea;
 import NG.GUIMenu.Components.SToggleButton;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Menu;
+import NG.GUIMenu.Rendering.NGFonts;
+import NG.GUIMenu.Rendering.NVGOverlay;
+import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.*;
 import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.NodeShader;
@@ -24,6 +28,7 @@ import NG.Tools.Logger;
 import NG.Tools.Toolbox;
 import NG.Tools.Vectors;
 import org.joml.Matrix4f;
+import org.joml.Vector2i;
 import org.joml.Vector3f;
 
 import java.io.File;
@@ -155,6 +160,9 @@ public class Main {
                     }
                     glDepthMask(true);
                 });
+
+        // hovering label
+        renderer.addHudItem(new FlyingWaila()::draw);
 
         renderer.addHudItem(frameManager::draw);
 
@@ -404,10 +412,6 @@ public class Main {
             springLayout.setAllow3D(true);
             camera = new PointCenteredCamera(camera.getFocus(), camera.getEye());
             camera.init(this);
-
-            for (State node : graph.getNodeMesh().nodeList()) {
-                node.position.z += Toolbox.randomBetween(-1, 1);
-            }
         }
 
         onNodePositionChange();
@@ -559,5 +563,36 @@ public class Main {
 
     public Graph getVisibleGraph() {
         return displayGraph;
+    }
+
+    // Where Am I Looking At
+    private class FlyingWaila {
+        private final STextArea textElement = new STextArea("", Menu.BUTTON_PROPS.minHeight, 0, true,
+                NGFonts.TextType.FLOATING, SFrameLookAndFeel.Alignment.CENTER_MIDDLE
+        );
+
+        public void draw(NVGOverlay.Painter painter) {
+            Vector2i mPos = window.getMousePosition();
+            if (frameManager.covers(mPos.x, mPos.y)) return;
+
+            StringBuilder nameBuilder = new StringBuilder();
+            boolean doHover = graph.doOnMouseSelection(
+                    node -> nameBuilder.append("Node ").append(node.label),
+                    edge -> nameBuilder.append(edge.label)
+            );
+            if (!doHover) return;
+
+            String name = nameBuilder.toString();
+            textElement.setText(name);
+            textElement.setSize(0, 0);
+            textElement.validateLayout();
+
+            final int xSize = textElement.getWidth();
+            Vector2i pos = mPos.add(-xSize / 2, 50);
+
+            SFrameLookAndFeel design = frameManager.getLookAndFeel();
+            design.draw(SFrameLookAndFeel.UIComponent.PANEL, pos, textElement.getSize());
+            textElement.draw(design, pos);
+        }
     }
 }

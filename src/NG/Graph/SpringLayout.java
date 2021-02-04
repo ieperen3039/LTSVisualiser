@@ -7,6 +7,7 @@ import NG.DataStructures.Generic.AveragingQueue;
 import NG.DataStructures.Generic.PairList;
 import NG.Tools.Logger;
 import NG.Tools.TimeObserver;
+import NG.Tools.Toolbox;
 import NG.Tools.Vectors;
 import org.joml.Math;
 import org.joml.Vector3f;
@@ -340,6 +341,10 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     public void setAllow3D(boolean allow3D) {
         Logger.DEBUG.print("Set 3D to " + allow3D);
         this.allow3D = allow3D;
+
+        for (NG.Graph.State node : graph.getNodeMesh().nodeList()) {
+            node.position.z += Toolbox.randomBetween(-1, 1);
+        }
     }
 
     public float getSpeed() {

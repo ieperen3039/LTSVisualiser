@@ -62,7 +62,7 @@ void drawArrowSection(vec3 aPos, vec3 bPos, vec3 cPos, float width, float fracti
 
 void main() {
     if (doUniqueColor){
-        if (geoColor[0].a < 0.09) {
+        if (geoColor[0].a < 0.099) {
             return;
 
         } else {
