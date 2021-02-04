@@ -1,6 +1,8 @@
 package NG.MuChecker;
 
+import NG.Graph.Graph;
 import NG.Graph.SourceGraph;
+import NG.Graph.State;
 import NG.MuChecker.Operands.FixedPoint;
 import NG.MuChecker.Operands.Formula;
 import NG.MuChecker.Operands.LargestFixedPoint;
@@ -12,7 +14,7 @@ import java.util.concurrent.Callable;
  * @author Tom Franken, Geert van Ieperen, Floris Zeven.
  */
 public class ModelChecker implements Callable<StateSet> {
-    private final SourceGraph ltsGraph;
+    private final State[] universe;
     private final Formula muFormula;
     private final List<FixedPoint> fixedPoints;
 
@@ -21,13 +23,25 @@ public class ModelChecker implements Callable<StateSet> {
     }
 
     public ModelChecker(SourceGraph graph, FormulaParser formula) {
-        this(graph, formula.get(), formula.getFixedPoints());
+        this(formula.get(), formula.getFixedPoints(), graph);
+    }
+
+    public ModelChecker(Formula formula, List<FixedPoint> fixedPoints, SourceGraph graph) {
+        this(formula, fixedPoints, graph.states);
+    }
+
+    public ModelChecker(Graph graph, FormulaParser formula) {
+        this(formula.get(), formula.getFixedPoints(), graph);
+    }
+
+    public ModelChecker(Formula formula, List<FixedPoint> fixedPoints, Graph graph) {
+        this(formula, fixedPoints, graph.getNodeMesh().nodeList().toArray(new State[0]));
     }
 
     public ModelChecker(
-            SourceGraph graph, Formula formula, List<FixedPoint> fixedPoints
+            Formula formula, List<FixedPoint> fixedPoints, State[] universe
     ) {
-        this.ltsGraph = graph;
+        this.universe = universe;
         this.muFormula = formula;
         this.fixedPoints = fixedPoints;
     }
@@ -39,13 +53,13 @@ public class ModelChecker implements Callable<StateSet> {
         for (int i = 0; i < fixedPoints.size(); i++) {
             FixedPoint current = fixedPoints.get(i);
             if (current instanceof LargestFixedPoint) {
-                environment[i] = ltsGraph.getUniverse();
+                environment[i] = StateSet.allOf(universe);
 
             } else {
-                environment[i] = ltsGraph.getEmptySet();
+                environment[i] = StateSet.noneOf(universe);
             }
         }
 
-        return muFormula.eval(ltsGraph, environment, Binder.NONE);
+        return muFormula.eval(universe, environment, Binder.NONE);
     }
 }

@@ -38,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static NG.Graph.Rendering.GraphElement.Priority.ACTION_MARKING;
@@ -477,8 +478,8 @@ public class Main {
 
     public void applyMuFormulaMarking(File file) {
         try {
-            SourceGraph graph = this.graph;
-            for (State state : graph.states) {
+            Graph graph = getVisibleGraph();
+            for (State state : graph.getNodeMesh().nodeList()) {
                 state.resetColor(MU_FORMULA);
             }
             FormulaParser formulaParser = new FormulaParser(file);
@@ -502,7 +503,7 @@ public class Main {
                 );
 
                 fixedPoints.add(0, fp1);
-                StateSet unavoidables = new ModelChecker(graph, unavoidable, fixedPoints).call();
+                StateSet unavoidables = new ModelChecker(unavoidable, fixedPoints, graph).call();
                 fixedPoints.remove(fp1);
 
                 Logger.INFO.printf("Unavoidable for %d states", unavoidables.size());
@@ -511,7 +512,7 @@ public class Main {
                         state.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
                     }
                 }
-                for (Transition edge : graph.edges) {
+                for (Transition edge : graph.getEdgeMesh().edgeList()) {
                     if (unavoidables.contains(edge.to)) {
                         edge.addColor(MU_FORMULA_UNAVOIDABLE, MU_FORMULA);
                     }
@@ -525,15 +526,15 @@ public class Main {
                 );
 
                 fixedPoints.add(0, fp2);
-                StateSet unreachables = new ModelChecker(graph, unreachable, fixedPoints).call();
+                StateSet unreachables = new ModelChecker(unreachable, fixedPoints, graph).call();
                 fixedPoints.remove(fp2);
 
                 Logger.INFO.printf("Unreachable for %d states", unreachables.size());
                 for (State state : unreachables) {
-                    assert !result.contains(state);
+                    assert !result.contains(state) : state;
                     state.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
                 }
-                for (Transition edge : graph.edges) {
+                for (Transition edge : graph.getEdgeMesh().edgeList()) {
                     if (unreachables.contains(edge.to) && !unreachables.contains(edge.from)) {
                         edge.addColor(MU_FORMULA_UNREACHABLE, MU_FORMULA);
                     }
@@ -565,6 +566,30 @@ public class Main {
         return displayGraph;
     }
 
+    public boolean doOnMouseSelection(Consumer<State> nodeAction, Consumer<Transition> edgeAction) {
+        int index = renderer.getClickShaderResult();
+        if (index == -1) return false;
+
+        Graph graph = getVisibleGraph();
+        List<State> nodes = graph.getNodeMesh().nodeList();
+        if (index < nodes.size()) {
+            nodeAction.accept(nodes.get(index));
+
+        } else {
+            index -= nodes.size();
+            List<Transition> edges = graph.getEdgeMesh().edgeList();
+
+            if (index > edges.size()) {
+                Logger.ERROR.printf("Mouse hovered element %d which does not exist", index + nodes.size());
+                return false;
+            }
+
+            edgeAction.accept(edges.get(index));
+        }
+
+        return true;
+    }
+
     // Where Am I Looking At
     private class FlyingWaila {
         private final STextArea textElement = new STextArea("", Menu.BUTTON_PROPS.minHeight, 0, true,
@@ -576,7 +601,7 @@ public class Main {
             if (frameManager.covers(mPos.x, mPos.y)) return;
 
             StringBuilder nameBuilder = new StringBuilder();
-            boolean doHover = graph.doOnMouseSelection(
+            boolean doHover = doOnMouseSelection(
                     node -> nameBuilder.append("Node ").append(node.label),
                     edge -> nameBuilder.append(edge.label)
             );

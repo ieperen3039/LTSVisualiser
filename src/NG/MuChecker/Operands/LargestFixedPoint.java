@@ -1,6 +1,6 @@
 package NG.MuChecker.Operands;
 
-import NG.Graph.SourceGraph;
+import NG.Graph.State;
 import NG.MuChecker.ModelChecker;
 import NG.MuChecker.StateSet;
 
@@ -19,7 +19,7 @@ public class LargestFixedPoint extends FixedPoint {
 
     @Override
     public StateSet eval(
-            SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder
+            State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder
     ) {
         if (surroundingBinder == ModelChecker.Binder.MU) {
             for (FixedPoint fp : getFixedPointsDesc()) { // for each largest fixedpoint contained,
@@ -27,7 +27,7 @@ public class LargestFixedPoint extends FixedPoint {
                     for (FixedPointVariable var : fp.getVarDesc()) { // for each variable contained in these fps,
                         FixedPoint parent = var.parent; // consider its fixed-point operator.
                         if (parent.isOpen()) { // if an open parent is found
-                            environment[fp.index] = graph.getUniverse(); // reset the environment of fp to everything
+                            environment[fp.index] = StateSet.allOf(universe); // reset the environment of fp to everything
                             break;
                         }
                     }
@@ -35,14 +35,14 @@ public class LargestFixedPoint extends FixedPoint {
             }
         }
 
-        StateSet Qold = graph.getEmptySet();
+        StateSet Qold = StateSet.noneOf(universe);
         StateSet arrayValue = environment[index];
 
         while (!Qold.equals(arrayValue)) {
             Qold = arrayValue;
             environment[index] = arrayValue;
             setOpen(true);
-            arrayValue = right.eval(graph, environment, ModelChecker.Binder.NU);
+            arrayValue = right.eval(universe, environment, ModelChecker.Binder.NU);
             setOpen(false);
         }
 

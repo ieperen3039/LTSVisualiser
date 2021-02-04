@@ -1,6 +1,6 @@
 package NG.MuChecker.Operands;
 
-import NG.Graph.SourceGraph;
+import NG.Graph.State;
 import NG.MuChecker.ModelChecker;
 import NG.MuChecker.StateSet;
 
@@ -15,9 +15,9 @@ public class False implements Formula {
 
     @Override
     public StateSet eval(
-            SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder
+            State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder
     ) {
-        return graph.getEmptySet();
+        return StateSet.noneOf(universe);
     }
 
     @Override

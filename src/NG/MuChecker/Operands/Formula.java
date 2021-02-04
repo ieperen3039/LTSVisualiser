@@ -1,6 +1,6 @@
 package NG.MuChecker.Operands;
 
-import NG.Graph.SourceGraph;
+import NG.Graph.State;
 import NG.MuChecker.ModelChecker;
 import NG.MuChecker.StateSet;
 
@@ -10,7 +10,7 @@ import NG.MuChecker.StateSet;
 public interface Formula {
     boolean equals(Object other);
 
-    StateSet eval(SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder);
+    StateSet eval(State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder);
 
     /**
      * @return true if either label is true, or they are equal.

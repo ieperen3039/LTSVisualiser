@@ -72,13 +72,20 @@ public class NodeClustering extends Graph {
 
         // maps a cluster leader to a new node representing the cluster
         Map<State, State> newNodes = new HashMap<>();
+        List<State> nodeList = new ArrayList<>();
         // compute the clusters and create new cluster nodes
         for (State node : nodes.nodeList()) {
             // if node is not found in clusterMap, it is a leader
             State clusterLeader = getClusterLeader(clusterLeaderMap, node);
             assert clusterLeader != null;
+
             // map the leader to the clusterNode, or create when absent
-            State clusterNode = newNodes.computeIfAbsent(clusterLeader, old -> new State(old.position, old.label, old.index, old.classIndex));
+            State clusterNode = newNodes.get(clusterLeader);
+            if (clusterNode == null) {
+                clusterNode = new State(clusterLeader.position, clusterLeader.label, nodeList.size(), clusterLeader.classIndex);
+                nodeList.add(clusterNode);
+                newNodes.put(clusterLeader, clusterNode);
+            }
 
             if (node == graph.getInitialState()) {
                 clusterInitialState = clusterNode;
@@ -90,7 +97,7 @@ public class NodeClustering extends Graph {
         }
 
         // add new nodes to the graph
-        for (State node : newNodes.values()) {
+        for (State node : nodeList) {
             clusterNodes.addNode(node);
         }
 

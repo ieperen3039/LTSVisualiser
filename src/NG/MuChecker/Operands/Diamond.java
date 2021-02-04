@@ -1,7 +1,5 @@
 package NG.MuChecker.Operands;
 
-import NG.DataStructures.Generic.PairList;
-import NG.Graph.SourceGraph;
 import NG.Graph.State;
 import NG.Graph.Transition;
 import NG.MuChecker.ModelChecker;
@@ -33,21 +31,17 @@ public class Diamond implements Formula {
 
     @Override
     public StateSet eval(
-            SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder
+            State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder
     ) {
         // {s in S such that for some t in S : (s (l)to t) implies (t in eval(g))}
         // all s which have an l transition to eval(g), hence all s incoming to eval(g)
-        StateSet rightSet = right.eval(graph, environment, surroundingBinder);
-        StateSet result = graph.getEmptySet();
+        StateSet rightSet = right.eval(universe, environment, surroundingBinder);
+        StateSet result = StateSet.noneOf(universe);
 
         for (State s : rightSet) {
-            PairList<Transition, State> connections = graph.connectionsOf(s);
-            int nrOfConnections = connections.size();
-            for (int i = 0; i < nrOfConnections; i++) {
-                Transition transition = connections.left(i);
-
-                if (transition.to.equals(s) && Formula.labelMatch(label, transition.label)) {
-                    result.add(connections.right(i));
+            for (Transition transition : s.getIncoming()) {
+                if (Formula.labelMatch(label, transition.label)) {
+                    result.add(transition.from);
                 }
             }
         }

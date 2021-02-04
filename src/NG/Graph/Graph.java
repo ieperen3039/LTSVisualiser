@@ -11,13 +11,11 @@ import NG.InputHandling.MouseMoveListener;
 import NG.InputHandling.MouseReleaseListener;
 import NG.InputHandling.MouseTools.MouseTool;
 import NG.Rendering.GLFWWindow;
-import NG.Tools.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -40,27 +38,22 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         this.root = root;
     }
 
-    public boolean doOnMouseSelection(Consumer<State> nodeAction, Consumer<Transition> edgeAction) {
-        int index = root.getClickShaderResult();
-        if (index == -1) return false;
+    protected void setNodePosition(State node, Vector3f newPosition) {
+        if (root.settings().ADVANCED_MANIPULATION) {
+            Vector3f movement = new Vector3f(newPosition).sub(node.position);
+            Vector3f hMove = new Vector3f(movement).mul(0.5f);
+            Vector3f qMove = new Vector3f(movement).mul(0.75f);
 
-        List<State> nodes = getNodeMesh().nodeList();
-        if (index < nodes.size()) {
-            nodeAction.accept(nodes.get(index));
-
-        } else {
-            index -= nodes.size();
-            List<Transition> edges = getEdgeMesh().edgeList();
-
-            if (index > edges.size()) {
-                Logger.ERROR.printf("Mouse hovered element %d which does not exist", index + nodes.size());
-                return false;
+            Set<State> uniqueValues = new HashSet<>();
+            for (Pair<Transition, State> pair : connectionsOf(node)) {
+                pair.left.handlePos.add(qMove);
+                if (uniqueValues.add(pair.right)) {
+                    pair.right.position.add(hMove);
+                }
             }
-
-            edgeAction.accept(edges.get(index));
         }
 
-        return true;
+        node.position.set(newPosition);
     }
 
     @Override
@@ -72,7 +65,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             hoveredEdge = null;
             hoveredNode = null;
             // highlight nodes
-            boolean doHover = doOnMouseSelection(
+            boolean doHover = root.doOnMouseSelection(
                     node -> hoveredNode = node,
                     edge -> hoveredEdge = edge
             );
@@ -111,24 +104,6 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
 
             root.onNodePositionChange();
         }
-    }
-
-    protected void setNodePosition(State node, Vector3f newPosition) {
-        if (root.settings().ADVANCED_MANIPULATION) {
-            Vector3f movement = new Vector3f(newPosition).sub(node.position);
-            Vector3f hMove = new Vector3f(movement).mul(0.5f);
-            Vector3f qMove = new Vector3f(movement).mul(0.75f);
-
-            Set<State> uniqueValues = new HashSet<>();
-            for (Pair<Transition, State> pair : connectionsOf(node)) {
-                pair.left.handlePos.add(qMove);
-                if (uniqueValues.add(pair.right)) {
-                    pair.right.position.add(hMove);
-                }
-            }
-        }
-
-        node.position.set(newPosition);
     }
 
     @Override

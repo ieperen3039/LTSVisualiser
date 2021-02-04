@@ -7,7 +7,6 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,8 +23,8 @@ public class State extends GraphElement {
     public boolean isFixed = false;
     public boolean stayFixed = false;
 
-    private List<Transition> outgoing = new ArrayList<>();
-    private List<Transition> incoming = new ArrayList<>();
+    private final List<Transition> outgoing = new ArrayList<>();
+    private final List<Transition> incoming = new ArrayList<>();
 
     public State(Vector3fc position, String label, int index, int classIndex) {
         this.position = new Vector3f(position);
@@ -52,11 +51,11 @@ public class State extends GraphElement {
     }
 
     public List<Transition> getOutgoing() {
-        return Collections.unmodifiableList(outgoing);
+        return outgoing;
     }
 
     public List<Transition> getIncoming() {
-        return Collections.unmodifiableList(incoming);
+        return incoming;
     }
 
     @Override

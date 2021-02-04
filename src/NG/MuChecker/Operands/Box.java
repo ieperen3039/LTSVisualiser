@@ -1,7 +1,5 @@
 package NG.MuChecker.Operands;
 
-import NG.DataStructures.Generic.PairList;
-import NG.Graph.SourceGraph;
 import NG.Graph.State;
 import NG.Graph.Transition;
 import NG.MuChecker.ModelChecker;
@@ -36,24 +34,20 @@ public class Box implements Formula {
 
     @Override
     public StateSet eval(
-            SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder
+            State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder
     ) {
         // {s in S such that for all t in S : (s (l)to t) implies (t in eval(g))}
         // for all s, if there is a l transition from s to t, then t must be in eval(g)
         // hence, all s for which all l transitions lie in eval(g)
-        StateSet rightSet = right.eval(graph, environment, surroundingBinder);
-        StateSet result = graph.getEmptySet();
+        StateSet rightSet = right.eval(universe, environment, surroundingBinder);
+        StateSet result = StateSet.noneOf(universe);
         Collection<State> out = new ArrayList<>();
 
-        for (State s : graph.states) {
+        for (State s : universe) {
             out.clear();
 
-            PairList<Transition, State> connections = graph.connectionsOf(s);
-            int nrOfConnections = connections.size();
-            for (int i = 0; i < nrOfConnections; i++) {
-                Transition edge = connections.left(i);
-
-                if (edge.from.equals(s) && Formula.labelMatch(edge.label, label)) {
+            for (Transition edge : s.getOutgoing()) {
+                if (Formula.labelMatch(edge.label, label)) {
                     out.add(edge.to);
                 }
             }

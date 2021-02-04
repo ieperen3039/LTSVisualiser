@@ -42,7 +42,7 @@ public abstract class MouseTool implements MouseListener {
         }
 
         Graph graph = root.getVisibleGraph();
-        boolean didClickGraph = graph.doOnMouseSelection(
+        boolean didClickGraph = root.doOnMouseSelection(
                 node -> onNodeClick(button, graph, node),
                 edge -> onEdgeClick(button, graph, edge)
         );

@@ -115,6 +115,7 @@ public class StateSet extends AbstractSet<State> {
 
     @Override
     public Iterator<State> iterator() {
+        assert mask.length() <= universe.length;
         return new Iterator<State>() {
             int i = mask.nextSetBit(0);
 
@@ -155,10 +156,7 @@ public class StateSet extends AbstractSet<State> {
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Arrays.hashCode(universe);
-        result = 31 * result + mask.hashCode();
-        return result;
+        return 31 * universe.length + mask.hashCode();
     }
 
     @Override

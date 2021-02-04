@@ -1,6 +1,6 @@
 package NG.MuChecker.Operands;
 
-import NG.Graph.SourceGraph;
+import NG.Graph.State;
 import NG.MuChecker.ModelChecker;
 import NG.MuChecker.StateSet;
 
@@ -30,10 +30,10 @@ public class LogicalAnd implements Formula {
 
     @Override
     public StateSet eval(
-            SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder
+            State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder
     ) {
-        StateSet leftStates = left.eval(graph, environment, surroundingBinder);
-        StateSet rightStates = right.eval(graph, environment, surroundingBinder);
+        StateSet leftStates = left.eval(universe, environment, surroundingBinder);
+        StateSet rightStates = right.eval(universe, environment, surroundingBinder);
         leftStates.intersect(rightStates);
         return leftStates;
     }

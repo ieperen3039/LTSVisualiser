@@ -1,6 +1,6 @@
 package NG.MuChecker.Operands;
 
-import NG.Graph.SourceGraph;
+import NG.Graph.State;
 import NG.MuChecker.ModelChecker;
 import NG.MuChecker.StateSet;
 
@@ -19,7 +19,7 @@ public class SmallestFixedPoint extends FixedPoint {
 
     @Override
     public StateSet eval(
-            SourceGraph graph, StateSet[] environment, ModelChecker.Binder surroundingBinder
+            State[] universe, StateSet[] environment, ModelChecker.Binder surroundingBinder
     ) {
         if (surroundingBinder == ModelChecker.Binder.NU) {
             for (FixedPoint fp : getFixedPointsDesc()) { // for each smallest fixedpoint contained,
@@ -27,7 +27,7 @@ public class SmallestFixedPoint extends FixedPoint {
                     for (FixedPointVariable var : fp.getVarDesc()) { // for each variable contained in these fps,
                         FixedPoint parent = var.parent;// consider its fixed-point operator.
                         if (parent.isOpen()) { // if an open parent is found
-                            environment[fp.index] = graph.getEmptySet();// reset the environment of fp to nothing
+                            environment[fp.index] = StateSet.noneOf(universe);// reset the environment of fp to nothing
                             break;
                         }
                     }
@@ -35,14 +35,14 @@ public class SmallestFixedPoint extends FixedPoint {
             }
         }
 
-        StateSet Qold = graph.getUniverse();
+        StateSet Qold = StateSet.allOf(universe);
         StateSet arrayValue = environment[index];
 
         while (!Qold.equals(arrayValue)) {
             Qold = arrayValue;
             environment[index] = arrayValue;
             setOpen(true);
-            arrayValue = right.eval(graph, environment, ModelChecker.Binder.MU);
+            arrayValue = right.eval(universe, environment, ModelChecker.Binder.MU);
             setOpen(false);
         }
 
