@@ -58,7 +58,6 @@ public class Menu extends SDecorator {
     public SToggleButton[] clusterButtons = new SToggleButton[0];
     public SToggleButton[] internalButtons = new SToggleButton[0];
     private File currentGraphFile = BASE_FILE_CHOOSER_DIRECTORY;
-    private SFrame displayOptionsFrame = null;
 
     public Menu(Main main) {
         this.main = main;
@@ -89,48 +88,28 @@ public class Menu extends SDecorator {
 
         clusterButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
-            String text = actionLabels[i];
+            String label = actionLabels[i];
             //noinspection SuspiciousNameCombination
-            clusterButtons[i] = new SToggleButton("C", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
-            clusterButtons[i].addStateChangeListener(on -> main.resetCluster());
-            clusterButtons[i].setGrowthPolicy(false, false);
+            SToggleButton button = new SToggleButton("C", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
+            button.addStateChangeListener(on -> main.resetCluster());
+            button.setGrowthPolicy(false, false);
+            clusterButtons[i] = button;
         }
 
         internalButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
-            String text = actionLabels[i];
+            String label = actionLabels[i];
             //noinspection SuspiciousNameCombination
-            internalButtons[i] = new SToggleButton("I", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
-            internalButtons[i].addStateChangeListener(on -> main.resetCluster());
-            internalButtons[i].setGrowthPolicy(false, false);
+            SToggleButton button = new SToggleButton("I", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
+            button.addStateChangeListener(on -> main.resetCluster());
+            button.setGrowthPolicy(false, false);
+            internalButtons[i] = button;
         }
 
         SComponent[] actionComponents = new SComponent[actionLabels.length];
         for (int i = 0; i < markButtons.length; i++) {
             actionComponents[i] = SContainer.row(markButtons[i], internalButtons[i], clusterButtons[i]);
         }
-
-        if (displayOptionsFrame != null) displayOptionsFrame.dispose();
-        displayOptionsFrame = new SFrame("Display Options", SContainer.column(
-                // edge shape
-                new STextArea("Edge Shape", BUTTON_PROPS),
-                new SDropDown(
-                        frameManager, BUTTON_PROPS,
-                        EDGE_SHAPE_LIST.indexOf(main.getEdgeShape()), EDGE_SHAPE_LIST
-                ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
-                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
-                new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
-                        .addStateChangeListener(main::set3DView),
-                new SToggleButton("Always use layout of primary graph", BUTTON_PROPS, false)
-                        .addStateChangeListener(main::doSourceLayout),
-                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
-                new SButton("Log Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
-                new SButton("Log Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS)
-        ));
-        displayOptionsFrame.setVisible(false);
-        main.gui().addFrame(displayOptionsFrame);
 
         // automatic barnes-hut (de)activation
         if (graph.getNrOfNodes() < 500) {
@@ -169,9 +148,9 @@ public class Menu extends SDecorator {
                                     updateLoop.defer(updateLoop.timer::reset);
                                 }, BUTTON_PROPS
                         ),
-                        new SButton("Load second Graph",
-                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
-                        ),
+//                        new SButton("Load second Graph",
+//                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
+//                        ),
                         SContainer.row(
                                 new SButton("Load Modal Mu-Formula",
                                         () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"),
@@ -213,17 +192,35 @@ public class Menu extends SDecorator {
                         ),
                         new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
 
-                        // color tool
-                        SContainer.row(
-                                colorTool.button("Activate Painting", BUTTON_PROPS),
-                                new SCloseButton(BUTTON_PROPS.minHeight,
-                                        () -> main.getVisibleGraph().resetColors(GraphElement.Priority.USER_COLOR)
-                                )
-                        ),
-                        new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
-
                         // auxiliary buttons
-                        new SButton("Display Options...", () -> main.gui().focus(displayOptionsFrame), BUTTON_PROPS),
+                        new SFrame.Spawner("Display Options", main.gui(), SContainer.column(
+                                // edge shape
+                                new STextArea("Edge Shape", BUTTON_PROPS),
+                                new SDropDown(
+                                        frameManager, BUTTON_PROPS,
+                                        EDGE_SHAPE_LIST.indexOf(main.getEdgeShape()), EDGE_SHAPE_LIST
+                                ).addStateChangeListener(i -> main.setEdgeShape(EDGE_SHAPE_LIST.get(i))),
+                                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                                // color tool
+                                SContainer.row(
+                                        colorTool.button("Activate Painting", BUTTON_PROPS),
+                                        new SCloseButton(BUTTON_PROPS.minHeight,
+                                                () -> main.getVisibleGraph()
+                                                        .resetColors(GraphElement.Priority.USER_COLOR)
+                                        )
+                                ),
+                                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                                new SToggleButton("3D View", BUTTON_PROPS, updateLoop.doAllow3D())
+                                        .addStateChangeListener(main::set3DView),
+                                new SToggleButton("Always use layout of primary graph", BUTTON_PROPS, false)
+                                        .addStateChangeListener(main::doSourceLayout),
+                                new SFiller(0, SPACE_BETWEEN_UI_SECTIONS).setGrowthPolicy(false, false),
+
+                                new SButton("Log Simulation Timings", () -> Logger.DEBUG.print(updateLoop.timer.resultsTable()), BUTTON_PROPS),
+                                new SButton("Log Render Timings", () -> Logger.DEBUG.print(renderLoop.timer.resultsTable()), BUTTON_PROPS)
+                        ), BUTTON_PROPS),
                         SContainer.row(
                                 new PathVisualisationTool(main).button("Find shortest path", BUTTON_PROPS),
                                 new SCloseButton(BUTTON_PROPS.minHeight,
@@ -393,15 +390,20 @@ public class Menu extends SDecorator {
         }
 
         private void colorCompare(State startNode, State endNode, Graph graph) {
-            NodeComparator comparator = new NodeComparator(graph, graph, startNode, endNode);
+            Thread thread = new Thread(() -> {
+                NodeComparator comparator = new NodeComparator(graph, graph, startNode, endNode);
 
-            for (Transition t : comparator.getAMatching()) {
-                t.addColor(A_COLOR, GraphElement.Priority.COMPARE);
-            }
+                for (Transition t : comparator.getAMatching()) {
+                    t.addColor(A_COLOR, GraphElement.Priority.COMPARE);
+                }
 
-            for (Transition t : comparator.getBMatching()) {
-                t.addColor(B_COLOR, GraphElement.Priority.COMPARE);
-            }
+                for (Transition t : comparator.getBMatching()) {
+                    t.addColor(B_COLOR, GraphElement.Priority.COMPARE);
+                }
+            }, "Node Compare");
+
+            thread.setDaemon(true);
+            thread.start();
         }
 
         @Override

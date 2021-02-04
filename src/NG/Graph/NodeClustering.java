@@ -24,11 +24,12 @@ public class NodeClustering extends Graph {
     private EdgeMesh clusterEdges = new EdgeMesh();
     private State clusterInitialState;
 
-    public NodeClustering(SourceGraph graph, Set<String> markedLabels) {
-        super(graph.root);
-        this.graph = graph;
+    public NodeClustering(SourceGraph graph) {
+        this(graph, Collections.emptySet());
+    }
 
-        createCluster(actionLabelCluster(graph, markedLabels), false);
+    public NodeClustering(SourceGraph graph, Set<String> markedLabels) {
+        this(graph, actionLabelCluster(graph, markedLabels), false);
     }
 
     public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop) {

@@ -1,10 +1,8 @@
 package NG.Graph;
 
 import NG.DataStructures.Generic.PairList;
-import NG.Tools.Logger;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -18,11 +16,9 @@ public class NodeComparator {
     private final Map<Transition, Transition> aToBMap = new HashMap<>();
 
     public NodeComparator(Graph aGraph, Graph bGraph, State aState, State bState) {
-//        addMatching(aGraph, aState, bGraph, bState, NodeComparator::equivalence);
-        Match match = addMatching2(aGraph, aState, bGraph, bState, NodeComparator::equivalence, new HashSet<>());
-        Logger.DEBUG.print(match.pairs.size());
-
-        match.pairs.forEach(aToBMap::put);
+        addMatching(aGraph, aState, bGraph, bState, NodeComparator::isomorphic);
+//        Match match = addMatching2(aGraph, aState, bGraph, bState, NodeComparator::isomorphic, new HashSet<>());
+//        match.pairs.forEach(aToBMap::put);
     }
 
     /**
@@ -115,11 +111,11 @@ public class NodeComparator {
         return aToBMap.values();
     }
 
-    private static boolean equivalence(Transition a, Transition b) {
+    private static boolean isomorphic(Transition a, Transition b) {
         return a.label.equals(b.label);
     }
 
-    private static boolean isomorphism(Transition a, Transition b) {
+    private static boolean structuralSimilar(Transition a, Transition b) {
         return a.from.getOutgoing().size() == b.from.getOutgoing().size();
     }
 

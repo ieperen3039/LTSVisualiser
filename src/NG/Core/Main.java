@@ -114,7 +114,8 @@ public class Main {
 
     public void resetCluster() {
         Set<String> markedLabels = getMarkedLabels(menu.clusterButtons);
-        Map<State, State> confluenceClustering = new ConfluenceDetector(graph).getLeaderMap();
+        Set<String> internalLabels = getMarkedLabels(menu.internalButtons);
+        Map<State, State> confluenceClustering = new ConfluenceDetector(graph, internalLabels).getLeaderMap();
         Map<State, State> leaderMap = NodeClustering.actionLabelCluster(graph, markedLabels, confluenceClustering);
         displayGraph.createCluster(leaderMap, false);
 
@@ -272,8 +273,7 @@ public class Main {
 
             graph.init();
 
-            Map<State, State> confluenceClustering = new ConfluenceDetector(graph).getLeaderMap();
-            displayGraph = new NodeClustering(graph, confluenceClustering, false);
+            displayGraph = new NodeClustering(graph);
 
             markings.clear();
 

@@ -1,7 +1,9 @@
 package NG.GUIMenu.Components;
 
+import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
+import NG.GUIMenu.SComponentProperties;
 import org.joml.Vector2i;
 import org.joml.Vector2ic;
 
@@ -149,5 +151,19 @@ public class SFrame extends SDecorator {
      */
     public boolean isDisposed() {
         return isDisposed;
+    }
+
+    public static class Spawner extends SButton {
+        public Spawner(
+                String text, UIFrameManager gui, SComponent framePanel, SComponentProperties properties
+        ) {
+            this(text, gui, new SFrame(text, framePanel), properties);
+        }
+
+        public Spawner(String text, UIFrameManager gui, SFrame frame, SComponentProperties properties) {
+            super(text, () -> gui.focus(frame), properties);
+            frame.setVisible(false);
+            gui.addFrame(frame);
+        }
     }
 }
