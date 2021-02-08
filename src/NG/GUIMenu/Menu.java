@@ -9,6 +9,7 @@ import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.*;
+import NG.Graph.Layout.SpringLayout;
 import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.GraphColorTool;
 import NG.Graph.Rendering.GraphElement;

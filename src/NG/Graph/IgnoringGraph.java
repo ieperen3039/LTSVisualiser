@@ -85,7 +85,7 @@ public class IgnoringGraph extends Graph {
     }
 
     @Override
-    protected State getInitialState() {
+    public State getInitialState() {
         return source.getInitialState();
     }
 

@@ -1,6 +1,6 @@
 package NG.Core;
 
-import NG.Graph.SpringLayout;
+import NG.Graph.Layout.SpringLayout;
 import NG.Settings.Settings;
 import NG.Tools.Logger;
 import NG.Tools.Toolbox;

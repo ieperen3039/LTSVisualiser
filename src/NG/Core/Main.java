@@ -13,6 +13,8 @@ import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.NVGOverlay;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
 import NG.Graph.*;
+import NG.Graph.Layout.HDEPositioning;
+import NG.Graph.Layout.SpringLayout;
 import NG.Graph.Rendering.EdgeShader;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;

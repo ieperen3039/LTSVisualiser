@@ -227,7 +227,7 @@ public class NodeClustering extends Graph {
     }
 
     @Override
-    protected State getInitialState() {
+    public State getInitialState() {
         return clusterInitialState;
     }
 

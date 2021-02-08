@@ -166,7 +166,7 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         return hoveredNode != null ? hoveredNode : hoveredEdge;
     }
 
-    protected abstract State getInitialState();
+    public abstract State getInitialState();
 
     public abstract void cleanup();
 

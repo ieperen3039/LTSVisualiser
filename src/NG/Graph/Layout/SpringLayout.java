@@ -1,10 +1,12 @@
-package NG.Graph;
+package NG.Graph.Layout;
 
 import NG.Core.AbstractGameLoop;
 import NG.Core.Main;
 import NG.Core.ToolElement;
 import NG.DataStructures.Generic.AveragingQueue;
 import NG.DataStructures.Generic.PairList;
+import NG.Graph.Graph;
+import NG.Graph.Transition;
 import NG.Tools.Logger;
 import NG.Tools.TimeObserver;
 import NG.Tools.Toolbox;

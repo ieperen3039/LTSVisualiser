@@ -1,4 +1,8 @@
-package NG.Graph;
+package NG.Graph.Layout;
+
+import NG.Graph.SourceGraph;
+import NG.Graph.State;
+import NG.Graph.Transition;
 
 import java.util.*;
 

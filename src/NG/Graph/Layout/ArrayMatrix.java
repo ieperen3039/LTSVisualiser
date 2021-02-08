@@ -1,4 +1,4 @@
-package NG.Graph;
+package NG.Graph.Layout;
 
 /**
  * Class for performing matrix calculations specific to PCA.
@@ -6,7 +6,6 @@ package NG.Graph;
  * @version 051413
  */
 class ArrayMatrix {
-    static int numMults = 0; //Keeps track of the number of multiplications performed
 
     /**
      * Returns the transpose of the input matrix.
@@ -107,7 +106,6 @@ class ArrayMatrix {
         assert (a.length == b.length);
         double sum = 0;
         for (int i = 0; i < a.length; i++) {
-            numMults++;
             sum += a[i] * b[i];
         }
         return sum;
@@ -149,7 +147,7 @@ class ArrayMatrix {
      */
     static double[] normalize(double[] vec) {
         double[] newVec = new double[vec.length];
-        double norm = lengthSq(vec);
+        double norm = length(vec);
         for (int i = 0; i < vec.length; i++) {
             newVec[i] = vec[i] / norm;
         }
@@ -160,7 +158,7 @@ class ArrayMatrix {
      * Computes the norm of the input vector
      * @return ||vec||
      */
-    static double lengthSq(double[] vec) {
+    static double length(double[] vec) {
         return Math.sqrt(dot(vec, vec));
     }
 
