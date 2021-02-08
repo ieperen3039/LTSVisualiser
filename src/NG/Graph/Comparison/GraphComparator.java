@@ -11,10 +11,7 @@ import NG.Graph.State;
 import NG.Graph.Transition;
 import NG.Tools.Vectors;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Compares two deterministic graphs
@@ -166,12 +163,11 @@ public class GraphComparator extends Graph {
 
             seen.put(node, newNode);
 
-            PairList<Transition, State> connections = graph.outgoingOf(node);
-            for (int i = 0; i < connections.size(); i++) {
-                assert (connections.left(i).from == node);
-                State right = connections.right(i);
-                Transition left = connections.left(i);
-                add(newNode, graph, prefix, color, seen, right, left);
+            List<Transition> connections = node.getOutgoing();
+            for (Transition connection : connections) {
+                assert (connection.from == node);
+                State state = connection.to;
+                add(newNode, graph, prefix, color, seen, state, connection);
             }
         }
     }
@@ -179,16 +175,6 @@ public class GraphComparator extends Graph {
     @Override
     public State getInitialState() {
         return initialState;
-    }
-
-    @Override
-    public PairList<Transition, State> incomingOf(State node) {
-        return incomingTransitions.getOrDefault(node, PairList.empty());
-    }
-
-    @Override
-    public PairList<Transition, State> outgoingOf(State node) {
-        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     @Override

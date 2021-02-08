@@ -1,6 +1,5 @@
 package NG.Graph;
 
-import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.NodeMesh;
 import org.joml.Vector3f;
@@ -13,9 +12,6 @@ import static NG.Core.Main.INITAL_STATE_COLOR;
  * @author Geert van Ieperen created on 5-8-2020.
  */
 public class NodeClustering extends Graph {
-    // maps nodes to their neighbours
-    private final Map<State, PairList<Transition, State>> incomingTransitions = new HashMap<>();
-    private final Map<State, PairList<Transition, State>> outgoingTransitions = new HashMap<>();
 
     // maps a new cluster node to the set of elements representing that cluster
     private final Map<State, Collection<State>> clusterMapping = new HashMap<>();
@@ -52,8 +48,6 @@ public class NodeClustering extends Graph {
      */
     public synchronized void createCluster(Map<State, State> clusterLeaderMap, boolean showSelfLoop) {
         clusterMapping.clear();
-        incomingTransitions.clear();
-        outgoingTransitions.clear();
 
         NodeMesh nodes = graph.getNodeMesh();
         EdgeMesh edges = graph.getEdgeMesh();
@@ -114,14 +108,11 @@ public class NodeClustering extends Graph {
 
             // already exists an equal edge
             // even for non-deterministic graphs, this does not change the meaning of the graph
-            if (edgeExists(outgoingTransitions, aTarget, bTarget, edge.label)) continue;
+            if (edgeExists(aTarget, bTarget, edge.label)) continue;
 
             Transition newEdge = new Transition(aTarget, bTarget, edge.label);
             newEdge.handlePos.set(edge.handlePos);
             clusterEdges.addParticle(newEdge);
-
-            outgoingTransitions.computeIfAbsent(aTarget, n -> new PairList<>()).add(newEdge, bTarget);
-            incomingTransitions.computeIfAbsent(bTarget, n -> new PairList<>()).add(newEdge, aTarget);
         }
     }
 
@@ -159,16 +150,6 @@ public class NodeClustering extends Graph {
         for (Transition edge : graph.getEdgeMesh().edgeList()) {
             edge.handlePos.set(edge.fromPosition).lerp(edge.toPosition, 0.5f);
         }
-    }
-
-    @Override
-    public PairList<Transition, State> incomingOf(State node) {
-        return incomingTransitions.getOrDefault(node, PairList.empty());
-    }
-
-    @Override
-    public PairList<Transition, State> outgoingOf(State node) {
-        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     @Override
@@ -235,18 +216,13 @@ public class NodeClustering extends Graph {
      * @return true iff there is already an edge starting at aTarget, ending at bTarget, with a label {@link
      * String#equals(Object) equal} to the given label
      */
-    public static boolean edgeExists(
-            Map<State, PairList<Transition, State>> neighbourMapping, State aTarget,
-            State bTarget, String label
-    ) {
-        PairList<Transition, State> existingATargets = neighbourMapping.get(aTarget);
-        if (existingATargets == null) return false;
+    public static boolean edgeExists(State aTarget, State bTarget, String label) {
+        List<Transition> outgoing = aTarget.getOutgoing();
+        if (outgoing.isEmpty()) return false;
 
-        for (int i = 0; i < existingATargets.size(); i++) {
-            State existingBTarget = existingATargets.right(i);
-
-            if (existingBTarget == bTarget) {
-                String labelOfExisting = existingATargets.left(i).label;
+        for (Transition transition : outgoing) {
+            if (transition.to == bTarget) {
+                String labelOfExisting = transition.label;
 
                 if (labelOfExisting.equals(label)) {
                     return true;

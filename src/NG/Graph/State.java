@@ -7,6 +7,7 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -51,11 +52,11 @@ public class State extends GraphElement {
     }
 
     public List<Transition> getOutgoing() {
-        return outgoing;
+        return Collections.unmodifiableList(outgoing);
     }
 
     public List<Transition> getIncoming() {
-        return incoming;
+        return Collections.unmodifiableList(incoming);
     }
 
     @Override

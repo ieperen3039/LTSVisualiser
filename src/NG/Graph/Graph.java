@@ -2,7 +2,6 @@ package NG.Graph;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
-import NG.DataStructures.Generic.Pair;
 import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.GraphElement;
@@ -16,6 +15,7 @@ import org.joml.Vector3f;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -45,12 +45,12 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
             Vector3f qMove = new Vector3f(movement).mul(0.75f);
 
             Set<State> uniqueValues = new HashSet<>();
-            for (Pair<Transition, State> pair : connectionsOf(node)) {
-                pair.left.handlePos.add(qMove);
-                if (uniqueValues.add(pair.right)) {
-                    pair.right.position.add(hMove);
+            connectionsOf(node).forEach((edge, otherNode) -> {
+                edge.handlePos.add(qMove);
+                if (uniqueValues.add(otherNode)) {
+                    otherNode.position.add(hMove);
                 }
-            }
+            });
         }
 
         node.position.set(newPosition);
@@ -117,14 +117,19 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         }
     }
 
-    public abstract PairList<Transition, State> incomingOf(State node);
-
-    public abstract PairList<Transition, State> outgoingOf(State node);
-
     public PairList<Transition, State> connectionsOf(State node) {
         PairList<Transition, State> pairs = new PairList<>();
-        pairs.addAll(incomingOf(node));
-        pairs.addAll(outgoingOf(node));
+
+        List<Transition> incoming = node.getIncoming();
+        for (Transition transition : incoming) {
+            pairs.add(transition, transition.to);
+        }
+
+        List<Transition> outgoing = node.getOutgoing();
+        for (Transition transition : outgoing) {
+            pairs.add(transition, transition.to);
+        }
+
         return pairs;
     }
 

@@ -1,7 +1,5 @@
 package NG.Graph;
 
-import NG.DataStructures.Generic.PairList;
-
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -70,23 +68,21 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
         while (!stack.isEmpty()) {
             Transition target = stack.remove();
             // target = s -a> s'
-            PairList<Transition, State> sPrimeConnections = graph.outgoingOf(target.to);
+            List<Transition> sPrimeConnections = target.to.getOutgoing();
 
             // collect all transitions where for any s''': s' -tau> s''', and is candidate
             List<Transition> targetNextTau = new ArrayList<>();
-            for (int i = 0; i < sPrimeConnections.size(); i++) {
-                Transition t = sPrimeConnections.left(i);
+            for (Transition t : sPrimeConnections) {
 //                if (!t.label.equals("tau")) continue; // follows from being a candidate
                 if (!candidates.contains(t)) continue;
 
                 targetNextTau.add(t);
             }
 
-            PairList<Transition, State> fromConnections = graph.outgoingOf(target.from);
+            List<Transition> fromConnections = target.from.getOutgoing();
             boolean anyFail = false;
 
-            for (int i = 0; i < fromConnections.size(); i++) {
-                Transition other = fromConnections.left(i);
+            for (Transition other : fromConnections) {
 //                if (!other.label.equals("tau")) continue;
                 if (!candidates.contains(other)) continue;
                 // other = s -tau> s'' && candidate
@@ -100,10 +96,8 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
             }
 
             if (anyFail) {
-                PairList<Transition, State> toBePutOnStack = graph.incomingOf(target.from);
-                for (int i = 0; i < toBePutOnStack.size(); i++) {
-                    stack.add(toBePutOnStack.left(i));
-                }
+                List<Transition> incoming = target.from.getIncoming();
+                stack.addAll(incoming);
             }
         }
 
@@ -128,11 +122,14 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
         // other ~= target : any edge is confluent with itself
         if (isInternal(target) && target.to == other.to) return true;
 
-        // all transitions of s''
-        PairList<Transition, State> otherTransitions = graph.outgoingOf(other.to);
+        // all neighbors of s''
+        List<State> outgoingStates = new ArrayList<>();
+        for (Transition t : other.to.getOutgoing()) {
+            outgoingStates.add(t.to);
+        }
 
         // s'' -a> s'
-        int index = otherTransitions.indexOfRight(target.to);
+        int index = outgoingStates.indexOf(target.to);
         if (index >= 0) return true;
 
         // for any s''': s'' -a> s''' && s' -tau> s''', where (s' -tau> s''') is candidate
@@ -140,7 +137,7 @@ public class ConfluenceDetector implements Callable<Collection<List<State>>> {
             if (!candidates.contains(nextTarget)) continue;
 
             // nextTarget = s' -tau> s'''
-            int index2 = otherTransitions.indexOfRight(nextTarget.to);
+            int index2 = outgoingStates.indexOf(nextTarget.to);
             if (index2 >= 0) return true;
         }
 

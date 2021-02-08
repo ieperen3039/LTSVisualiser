@@ -1,13 +1,15 @@
 package NG.Graph;
 
 import NG.DataStructures.Generic.Color4f;
-import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
 import NG.Tools.Vectors;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Geert van Ieperen created on 9-9-2020.
@@ -17,8 +19,6 @@ public class IgnoringGraph extends Graph {
     private final Graph source;
     private final Set<String> edgeActionLabels;
     private final EdgeMesh edgeMesh;
-    private final Map<State, PairList<Transition, State>> incomingTransitions;
-    private final Map<State, PairList<Transition, State>> outgoingTransitions;
 
     public IgnoringGraph(Graph source, Collection<String> ignoredLabels) {
         super(source.root);
@@ -26,8 +26,6 @@ public class IgnoringGraph extends Graph {
         this.edgeMesh = new EdgeMesh();
         this.edgeActionLabels = new HashSet<>(source.getEdgeLabels());
         this.edgeActionLabels.removeAll(ignoredLabels);
-        this.incomingTransitions = new HashMap<>();
-        this.outgoingTransitions = new HashMap<>();
 
         List<Transition> edges = source.getEdgeMesh().edgeList();
         for (Transition sourceEdge : edges) {
@@ -38,9 +36,6 @@ public class IgnoringGraph extends Graph {
             newEdge.handlePos.set(sourceEdge.handlePos);
 
             edgeMesh.addParticle(newEdge);
-
-            outgoingTransitions.computeIfAbsent(sourceEdge.from, s -> new PairList<>()).add(newEdge, sourceEdge.to);
-            incomingTransitions.computeIfAbsent(sourceEdge.to, s -> new PairList<>()).add(newEdge, sourceEdge.from);
         }
     }
 
@@ -57,16 +52,6 @@ public class IgnoringGraph extends Graph {
     @Override
     public void cleanup() {
         root.executeOnRenderThread(edgeMesh::dispose);
-    }
-
-    @Override
-    public PairList<Transition, State> incomingOf(State node) {
-        return incomingTransitions.getOrDefault(node, PairList.empty());
-    }
-
-    @Override
-    public PairList<Transition, State> outgoingOf(State node) {
-        return outgoingTransitions.getOrDefault(node, PairList.empty());
     }
 
     @Override

@@ -1,7 +1,5 @@
 package NG.Graph;
 
-import NG.DataStructures.Generic.PairList;
-
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -54,13 +52,11 @@ public class GraphPathFinder implements Callable<List<Transition>> {
             State node = open.remove();
             if (node == endNode) return predecessors;
 
-            PairList<Transition, State> connections = graph.connectionsOf(node);
+            List<Transition> outgoing = node.getOutgoing();
 
-            for (int i = 0; i < connections.size(); i++) {
-                Transition nextEdge = connections.left(i);
-                State nextNode = connections.right(i);
+            for (Transition nextEdge : outgoing) {
+                State nextNode = nextEdge.to;
 
-                if (nextEdge.from != node) continue; // incoming edge
                 if (nextNode == node) continue; // self-loop
                 if (predecessors.containsKey(nextNode)) continue;
 

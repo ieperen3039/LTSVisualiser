@@ -2,7 +2,6 @@ package NG.Graph;
 
 import NG.Core.Main;
 import NG.DataStructures.Generic.Color4f;
-import NG.DataStructures.Generic.PairList;
 import NG.Graph.Rendering.EdgeMesh;
 import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeMesh;
@@ -28,9 +27,6 @@ public class SourceGraph extends Graph {
     public final State[] states;
     public final Transition[] edges;
     private final String[] actionLabels;
-    // maps nodes to their neighbours
-    private final Map<State, PairList<Transition, State>> incomingTransitions;
-    private final Map<State, PairList<Transition, State>> outgoingTransitions;
 
     private final NodeMesh nodeMesh;
     private final EdgeMesh edgeMesh;
@@ -38,8 +34,6 @@ public class SourceGraph extends Graph {
 
     private SourceGraph(Main root, int numStates, int numTransitions) {
         super(root);
-        this.incomingTransitions = new HashMap<>();
-        this.outgoingTransitions = new HashMap<>();
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
 
@@ -86,19 +80,7 @@ public class SourceGraph extends Graph {
     }
 
     public boolean isDeadlocked(State node) {
-        if (!outgoingTransitions.containsKey(node)) return true;
-        assert (!outgoingTransitions.get(node).isEmpty());
-        return false;
-    }
-
-    @Override
-    public PairList<Transition, State> incomingOf(State node) {
-        return incomingTransitions.getOrDefault(node, PairList.empty());
-    }
-
-    @Override
-    public PairList<Transition, State> outgoingOf(State node) {
-        return outgoingTransitions.getOrDefault(node, PairList.empty());
+        return node.getOutgoing().isEmpty();
     }
 
     @Override
@@ -201,8 +183,7 @@ public class SourceGraph extends Graph {
 
             graph.actionLabels[edgeIndex] = label;
             graph.edges[edgeIndex] = edge;
-            graph.outgoingTransitions.computeIfAbsent(startState, s -> new PairList<>()).add(edge, endState);
-            graph.incomingTransitions.computeIfAbsent(endState, s -> new PairList<>()).add(edge, startState);
+            ;
 
             edgeIndex++;
         }

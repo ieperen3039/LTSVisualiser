@@ -164,13 +164,16 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             // quadratic-time edge handle repulsion
             for (NG.Graph.State node : nodes) {
                 PairList<Transition, NG.Graph.State> neighbours = graph.connectionsOf(node);
+                List<Transition> connections = new ArrayList<>(node.getOutgoing());
+                connections.addAll(node.getIncoming());
+
                 assert neighbours != null : node;
 
-                for (int i = 0; i < neighbours.size(); i++) {
-                    Transition a = neighbours.left(i);
+                for (int i = 0; i < connections.size(); i++) {
+                    Transition a = connections.get(i);
 
-                    for (int j = i + 1; j < neighbours.size(); j++) {
-                        Transition b = neighbours.left(j);
+                    for (int j = i + 1; j < connections.size(); j++) {
+                        Transition b = connections.get(j);
 
                         Vector3f force = getRepulsion(a.handlePos, b.handlePos, EDGE_HANDLE_DISTANCE, edgeRepulsion);
 
