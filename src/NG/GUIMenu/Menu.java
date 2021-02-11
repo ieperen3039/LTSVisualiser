@@ -8,7 +8,6 @@ import NG.GUIMenu.Components.*;
 import NG.GUIMenu.FrameManagers.UIFrameManager;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
-import NG.Graph.Comparison.NodeComparator;
 import NG.Graph.Graph;
 import NG.Graph.GraphPathFinder;
 import NG.Graph.Layout.SpringLayout;
@@ -153,9 +152,9 @@ public class Menu extends SDecorator {
                                     updateLoop.defer(updateLoop.timer::reset);
                                 }, BUTTON_PROPS
                         ),
-//                        new SButton("Load second Graph",
-//                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
-//                        ),
+                        new SButton("Load second Graph",
+                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
+                        ),
                         SContainer.row(
                                 new SButton("Load Modal Mu-Formula",
                                         () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"),
@@ -396,15 +395,7 @@ public class Menu extends SDecorator {
 
         private void colorCompare(State startNode, State endNode, Graph graph) {
             Thread thread = new Thread(() -> {
-                NodeComparator comparator = new NodeComparator(graph, graph, startNode, endNode);
-
-                for (Transition t : comparator.getAMatching()) {
-                    t.addColor(A_COLOR, GraphElement.Priority.COMPARE);
-                }
-
-                for (Transition t : comparator.getBMatching()) {
-                    t.addColor(B_COLOR, GraphElement.Priority.COMPARE);
-                }
+                Logger.ASSERT.print("not implemented");
             }, "Node Compare");
 
             thread.setDaemon(true);

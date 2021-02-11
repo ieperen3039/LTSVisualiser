@@ -4,6 +4,7 @@ import NG.Camera.Camera;
 import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
 import NG.DataStructures.Generic.Color4f;
+import NG.DataStructures.Generic.PairList;
 import NG.GUIMenu.Components.STextArea;
 import NG.GUIMenu.Components.SToggleButton;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
@@ -12,10 +13,12 @@ import NG.GUIMenu.Menu;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.NVGOverlay;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
+import NG.Graph.Comparison.ConstraintComparator;
 import NG.Graph.*;
 import NG.Graph.Layout.HDEPositioning;
 import NG.Graph.Layout.SpringLayout;
 import NG.Graph.Rendering.EdgeShader;
+import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
@@ -290,11 +293,10 @@ public class Main {
 
             springLayout.setGraph(doComputeSourceLayout ? graph : displayGraph);
             springLayout.setSpeed(0);
-
-            onNodePositionChange();
             Logger.INFO.print("Loaded graph with " + graph.states.length + " nodes and " + graph.edges.length + " edges");
         }
 
+        onNodePositionChange();
         menu.reloadUI();
 //        });
     }
@@ -316,7 +318,13 @@ public class Main {
                 HDEPositioning.applyTo(secondGraph, springLayout.getNatLength());
                 secondGraph.init();
             }
+
             onNodePositionChange();
+
+            ConstraintComparator comparator = new ConstraintComparator(graph, secondGraph);
+            PairList<State, State> anySolution = comparator.getAnySolution();
+            anySolution.forEach((a, b) -> a.addColor(Color4f.RED, GraphElement.Priority.COMPARE));
+            graph.getNodeMesh().scheduleColorReload();
         });
     }
 

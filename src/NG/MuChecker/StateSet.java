@@ -2,10 +2,7 @@ package NG.MuChecker;
 
 import NG.Graph.State;
 
-import java.util.AbstractSet;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Iterator;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -37,14 +34,33 @@ public class StateSet extends AbstractSet<State> {
 
     /** this = this U other */
     public void union(StateSet other) {
-        assert Arrays.deepEquals(universe, other.universe);
+        assert Arrays.equals(universe, other.universe);
         mask.or(other.mask);
     }
 
     /** this = this A other */
     public void intersect(StateSet other) {
-        assert Arrays.deepEquals(universe, other.universe);
+        assert Arrays.equals(universe, other.universe);
         mask.and(other.mask);
+    }
+
+    /** this = this / other */
+    public void diff(StateSet other) {
+        assert Arrays.equals(universe, other.universe);
+        mask.andNot(other.mask);
+    }
+
+    public State any() {
+        int firstIndex = mask.nextSetBit(0);
+        if (firstIndex == -1) return null;
+        return universe[firstIndex];
+    }
+
+    @Override
+    public boolean add(State state) {
+        assert Arrays.asList(universe).contains(state);
+        mask.set(state.index);
+        return true;
     }
 
     /** this = -this */
@@ -52,10 +68,23 @@ public class StateSet extends AbstractSet<State> {
         mask.flip(0, universe.length);
     }
 
-    /** this = this / other */
-    public void diff(StateSet other) {
-        assert Arrays.deepEquals(universe, other.universe);
-        mask.andNot(other.mask);
+    @Override
+    public boolean addAll(Collection<? extends State> c) {
+        for (State s : c) {
+            mask.set(s.index);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        if (o instanceof State) {
+            assert Arrays.asList(universe).contains(o);
+
+            int index = ((State) o).index;
+            return mask.get(index);
+        }
+        return false;
     }
 
     @Override
@@ -98,26 +127,16 @@ public class StateSet extends AbstractSet<State> {
         }
     }
 
-    @Override
-    public boolean add(State state) {
-        mask.set(state.index);
-        return true;
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        if (o instanceof State) {
-            int index = ((State) o).index;
-            return mask.get(index);
-        }
-        return false;
-    }
-
+    /**
+     * Returns the states contained in this set. This iterator is NOT fail-fast, but is resilient against modification.
+     * elements removed during iteration might get returned by the iterator, and added elements might be skipped.
+     */
     @Override
     public Iterator<State> iterator() {
         assert mask.length() <= universe.length;
         return new Iterator<State>() {
             int i = mask.nextSetBit(0);
+            int last = -1;
 
             @Override
             public boolean hasNext() {
@@ -127,10 +146,41 @@ public class StateSet extends AbstractSet<State> {
             @Override
             public State next() {
                 State s = universe[i];
+                last = i;
                 i = mask.nextSetBit(i + 1);
                 return s;
             }
+
+            @Override
+            public void remove() {
+                mask.set(last, false);
+            }
         };
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return mask.isEmpty();
+    }
+
+    public boolean isSubsetOf(StateSet other) {
+        assert Arrays.equals(universe, other.universe);
+        BitSet notInOther = (BitSet) other.mask.clone();
+        notInOther.flip(0, notInOther.size());
+        return !notInOther.intersects(mask);
+    }
+
+    public boolean isSupersetOf(StateSet other) {
+        assert Arrays.equals(universe, other.universe);
+        return other.isSubsetOf(this);
+    }
+
+    /** return a U b */
+    public static StateSet unionOf(StateSet a, StateSet b) {
+        assert Arrays.equals(a.universe, b.universe);
+        StateSet r = new StateSet(a);
+        r.union(b);
+        return r;
     }
 
     @Override
@@ -169,14 +219,25 @@ public class StateSet extends AbstractSet<State> {
         return mask.cardinality();
     }
 
-    public boolean isSubsetOf(StateSet other) {
-        BitSet notInOther = (BitSet) other.mask.clone();
-        notInOther.flip(0, notInOther.size());
-        return !notInOther.intersects(mask);
+    /** return a A b */
+    public static StateSet intersectionOf(StateSet a, StateSet b) {
+        assert Arrays.equals(a.universe, b.universe);
+        StateSet r = new StateSet(a);
+        r.intersect(b);
+        return r;
     }
 
-    public boolean isSupersetOf(StateSet other) {
-        return other.isSubsetOf(this);
+    /** return (a A b) = 0 */
+    public static boolean areDistinct(StateSet a, StateSet b) {
+        assert Arrays.equals(a.universe, b.universe);
+        return !a.mask.intersects(b.mask);
+    }
+
+    /** return -other */
+    public static StateSet negationOf(StateSet other) {
+        StateSet r = new StateSet(other);
+        r.negate();
+        return r;
     }
 
     public static StateSet allOf(State[] universe) {
