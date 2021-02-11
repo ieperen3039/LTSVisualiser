@@ -187,6 +187,23 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         getEdgeMesh().scheduleColorReload();
     }
 
+    public Transition getTransitionBetween(State a, State b) {
+        List<Transition> incoming = a.getIncoming();
+        for (Transition transition : incoming) {
+            if (transition.from.equals(b)) return transition;
+        }
+
+        List<Transition> outgoing = a.getOutgoing();
+        for (Transition transition : outgoing) {
+            if (transition.to.equals(b)) return transition;
+        }
+        return null;
+    }
+
+    public boolean isAdjacent(State a, State b) {
+        return getTransitionBetween(a, b) != null;
+    }
+
     public static class ManipulationTool extends MouseTool {
         public ManipulationTool(Main root) {
             super(root);

@@ -7,3 +7,4 @@ latest.log
 *.lnk
 /test
 *.csv
+/graphs
