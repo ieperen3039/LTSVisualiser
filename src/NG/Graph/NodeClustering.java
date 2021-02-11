@@ -29,7 +29,7 @@ public class NodeClustering extends Graph {
     }
 
     public NodeClustering(SourceGraph graph, Map<State, State> leaderMap, boolean showSelfLoop) {
-        super(graph.root);
+        super(graph.root, "Clustering of ");
         this.graph = graph;
 
         createCluster(leaderMap, showSelfLoop);

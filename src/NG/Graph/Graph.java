@@ -27,6 +27,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_RIGHT;
  */
 public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     protected transient Main root;
+    private final String name;
     // the node that the mouse is holding
     private State selectedNode = null;
     private float selectedNodeZPlane = 0;
@@ -34,8 +35,9 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
     private Transition hoveredEdge = null;
     private State hoveredNode = null;
 
-    public Graph(Main root) {
+    public Graph(Main root, String name) {
         this.root = root;
+        this.name = name;
     }
 
     protected void setNodePosition(State node, Vector3f newPosition) {
@@ -204,6 +206,11 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
         return getTransitionBetween(a, b) != null;
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
     public static class ManipulationTool extends MouseTool {
         public ManipulationTool(Main root) {
             super(root);
@@ -239,6 +246,5 @@ public abstract class Graph implements MouseMoveListener, MouseReleaseListener {
                 root.toggleClusterActionLabel(edge.label);
             }
         }
-
     }
 }

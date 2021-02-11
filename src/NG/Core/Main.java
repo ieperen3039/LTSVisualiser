@@ -18,7 +18,6 @@ import NG.Graph.*;
 import NG.Graph.Layout.HDEPositioning;
 import NG.Graph.Layout.SpringLayout;
 import NG.Graph.Rendering.EdgeShader;
-import NG.Graph.Rendering.GraphElement;
 import NG.Graph.Rendering.NodeShader;
 import NG.InputHandling.KeyControl;
 import NG.InputHandling.MouseTools.MouseToolCallbacks;
@@ -46,8 +45,7 @@ import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import static NG.Graph.Rendering.GraphElement.Priority.ACTION_MARKING;
-import static NG.Graph.Rendering.GraphElement.Priority.MU_FORMULA;
+import static NG.Graph.Rendering.GraphElement.Priority.*;
 import static org.lwjgl.opengl.GL11.glDepthMask;
 
 /**
@@ -311,21 +309,29 @@ public class Main {
     }
 
     private void setSecondaryGraph(SourceGraph newGraph) {
-        springLayout.defer(() -> {
-            synchronized (graphLock) {
-                secondGraph.cleanup();
-                secondGraph = newGraph;
-                HDEPositioning.applyTo(secondGraph, springLayout.getNatLength());
-                secondGraph.init();
-            }
+//        springLayout.defer(() -> {
+        synchronized (graphLock) {
+            secondGraph.cleanup();
+            secondGraph = newGraph;
+            HDEPositioning.applyTo(secondGraph, springLayout.getNatLength());
+            secondGraph.init();
+        }
 
-            onNodePositionChange();
+        onNodePositionChange();
+//        });
 
-            ConstraintComparator comparator = new ConstraintComparator(graph, secondGraph);
+        Thread comparisonThread = new Thread(() -> {
+            displayGraph.resetColors(COMPARE);
+
+            ConstraintComparator comparator = new ConstraintComparator(displayGraph, secondGraph);
             PairList<State, State> anySolution = comparator.getAnySolution();
-            anySolution.forEach((a, b) -> a.addColor(Color4f.RED, GraphElement.Priority.COMPARE));
-            graph.getNodeMesh().scheduleColorReload();
-        });
+            anySolution.forEach((a, b) -> a.addColor(Color4f.GREEN, COMPARE));
+
+            displayGraph.getNodeMesh().scheduleColorReload();
+        }, "Graph comparison");
+
+        comparisonThread.setDaemon(true);
+        comparisonThread.start();
     }
 
     public void doSourceLayout(boolean doSource) {

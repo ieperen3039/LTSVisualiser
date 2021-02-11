@@ -21,7 +21,7 @@ public class IgnoringGraph extends Graph {
     private final EdgeMesh edgeMesh;
 
     public IgnoringGraph(Graph source, Collection<String> ignoredLabels) {
-        super(source.root);
+        super(source.root, "Ignoring of " + source.toString());
         this.source = source;
         this.edgeMesh = new EdgeMesh();
         this.edgeActionLabels = new HashSet<>(source.getEdgeLabels());

@@ -14,8 +14,6 @@ import java.util.*;
  * @author Geert van Ieperen created on 8-2-2021.
  */
 public class ConstraintComparator {
-    private final Graph aGraph; // G_alpha
-    private final Graph bGraph; // G_beta
     private final State[] aStates; // V_alpha
     private final State[] bStates; // V_beta
 
@@ -32,8 +30,6 @@ public class ConstraintComparator {
                 "choose: %d, reduce: %d, solutions: %d", chooseCalls, reduceCalls, solutions.size()
         ));
 
-        this.aGraph = aGraph;
-        this.bGraph = bGraph;
         aStates = aGraph.getNodeMesh().nodeList().toArray(new State[0]);
         bStates = bGraph.getNodeMesh().nodeList().toArray(new State[0]);
 

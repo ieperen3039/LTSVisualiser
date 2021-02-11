@@ -32,8 +32,8 @@ public class SourceGraph extends Graph {
     private final EdgeMesh edgeMesh;
     private int initialState = 0;
 
-    private SourceGraph(Main root, int numStates, int numTransitions) {
-        super(root);
+    private SourceGraph(Main root, int numStates, int numTransitions, String name) {
+        super(root, name);
         this.nodeMesh = new NodeMesh();
         this.edgeMesh = new EdgeMesh();
 
@@ -137,11 +137,11 @@ public class SourceGraph extends Graph {
      * @param root
      */
     public static SourceGraph parse(File ltsFile, Main root) throws IOException {
-        return parse(new Scanner(ltsFile, "UTF8"), root);
+        return parse(new Scanner(ltsFile, "UTF8"), root, ltsFile.getName());
     }
 
     /** @see #parse(File, Main) */
-    public static SourceGraph parse(Scanner scanner, Main root) throws IOException {
+    public static SourceGraph parse(Scanner scanner, Main root, String fileName) throws IOException {
         // parse header
         String header = scanner.nextLine();
 
@@ -156,7 +156,7 @@ public class SourceGraph extends Graph {
         Logger.DEBUG.printf("Loading graph with %d states and %d transitions...", nrOfStates, nrOfTransitions);
 
         float natLength = root == null ? 1 : root.getSpringLayout().getNatLength();
-        SourceGraph graph = new SourceGraph(root, nrOfStates, nrOfTransitions);
+        SourceGraph graph = new SourceGraph(root, nrOfStates, nrOfTransitions, fileName);
         graph.initialState = initialStateIndex;
 
         // prepare states
@@ -192,12 +192,12 @@ public class SourceGraph extends Graph {
     }
 
     public static SourceGraph empty(Main root) {
-        return new SourceGraph(root, 0, 0);
+        return new SourceGraph(root, 0, 0, "empty graph");
     }
 
     public static SourceGraph parse(String asString) {
         try {
-            return parse(new Scanner(asString), null);
+            return parse(new Scanner(asString), null, "");
 
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -32,7 +32,7 @@ public class GraphComparator extends Graph {
     private int index = 0;
 
     public GraphComparator(Main root, Graph a, Graph b) {
-        super(root);
+        super(root, "Comparison of " + a + " and " + b);
         this.incomingTransitions = new HashMap<>();
         this.outgoingTransitions = new HashMap<>();
         this.actions = new ArrayList<>(a.getEdgeLabels());
