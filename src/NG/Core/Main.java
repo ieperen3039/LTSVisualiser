@@ -178,6 +178,7 @@ public class Main {
 
         if (settings.DATA_COLLECTION_PATH != null) {
             Auto auto = new Auto(this, settings.DATA_COLLECTION_PATH);
+            springLayout.addUpdateListeners(auto::onLayoutUpdate);
             auto.setDaemon(true);
             auto.start();
         }

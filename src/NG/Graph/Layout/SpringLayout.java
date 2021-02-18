@@ -260,6 +260,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
 
         timer.endTiming("position update");
 
+
         // logging of tension
         if (isFirstIteration) {
             nodeTension.fill(totalNodeTension);

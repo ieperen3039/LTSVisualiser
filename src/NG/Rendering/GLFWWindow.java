@@ -130,7 +130,7 @@ public class GLFWWindow {
 
     /**
      * update the {@link GLFWWindow}. This will deal with basic OpenGL formalities. Besides it will also poll for events
-     * which occurred on the window. Finally returns whether the window should close.
+     * which occurred on the window.
      */
     public void update() {
         // Swap buffers

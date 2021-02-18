@@ -92,6 +92,12 @@ public class TimeObserver {
         currentStart = currentTime;
     }
 
+    public float secondsSinceLoopStart() {
+        long currentTime = System.nanoTime();
+        float loopDurationNanos = (currentTime - thisLoopStart);
+        return loopDurationNanos / 1e9f;
+    }
+
     public PairList<String, Float> results() {
         PairList<String, Float> pairs = new PairList<>(allMeasures.size());
 
