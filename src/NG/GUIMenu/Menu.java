@@ -136,7 +136,7 @@ public class Menu extends SDecorator {
                         new SButton("Load Graph",
                                 () -> {
                                     // log timing results as the click happens
-                                    Logger.DEBUG.print(currentGraphFile.getName()
+                                    Logger.DEBUG.print(graph.toString()
                                             + '\n' + updateLoop.timer.resultsTable()
                                             + '\n' + renderLoop.timer.resultsTable()
                                     );

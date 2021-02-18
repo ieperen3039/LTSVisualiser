@@ -65,7 +65,7 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
     }
 
     public synchronized void setGraph(Graph graph) {
-        Logger.DEBUG.print("set graph to " + graph.getClass());
+        Logger.DEBUG.print("set graph to " + graph);
         this.graph = graph;
 
         isFirstIteration = true;

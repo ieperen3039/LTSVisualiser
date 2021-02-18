@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * A set of states, but then more efficient.
+ * A set of states, represented as a bit-vector.
  * @author Geert van Ieperen created on 27-2-2020.
  */
 public class StateSet extends AbstractSet<State> {
@@ -51,9 +51,8 @@ public class StateSet extends AbstractSet<State> {
     }
 
     public State any() {
-        int firstIndex = mask.nextSetBit(0);
-        if (firstIndex == -1) return null;
-        return universe[firstIndex];
+        if (mask.isEmpty()) return null;
+        return universe[mask.nextSetBit(0)];
     }
 
     @Override
@@ -91,7 +90,7 @@ public class StateSet extends AbstractSet<State> {
     public boolean remove(Object o) {
         if (o instanceof State) {
             State s = (State) o;
-            mask.set(s.index, false);
+            mask.clear(s.index);
             return true;
         }
         return false;
@@ -153,7 +152,7 @@ public class StateSet extends AbstractSet<State> {
 
             @Override
             public void remove() {
-                mask.set(last, false);
+                mask.clear(last);
             }
         };
     }
@@ -166,7 +165,7 @@ public class StateSet extends AbstractSet<State> {
     public boolean isSubsetOf(StateSet other) {
         assert Arrays.equals(universe, other.universe);
         BitSet notInOther = (BitSet) other.mask.clone();
-        notInOther.flip(0, notInOther.size());
+        notInOther.flip(0, universe.length);
         return !notInOther.intersects(mask);
     }
 
@@ -248,5 +247,19 @@ public class StateSet extends AbstractSet<State> {
 
     public static StateSet noneOf(State[] universe) {
         return new StateSet(universe);
+    }
+
+    public static StateSet fromPredicate(State[] universe, Predicate<State> predicate) {
+        StateSet set = noneOf(universe);
+
+        for (int i = 0; i < universe.length; i++) {
+            State bState = universe[i];
+
+            if (predicate.test(bState)) {
+                set.mask.set(i);
+            }
+        }
+
+        return set;
     }
 }

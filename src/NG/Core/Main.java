@@ -194,7 +194,7 @@ public class Main {
         renderer.run();
 
         // log timing results when closing
-        Logger.DEBUG.print('\n' + springLayout.timer.resultsTable()
+        Logger.DEBUG.print(graph.toString() + '\n' + springLayout.timer.resultsTable()
                 + '\n' + renderer.timer.resultsTable()
         );
 
@@ -323,9 +323,9 @@ public class Main {
         Thread comparisonThread = new Thread(() -> {
             displayGraph.resetColors(COMPARE);
 
-            ConstraintComparator comparator = new ConstraintComparator(displayGraph, secondGraph);
+            ConstraintComparator comparator = new ConstraintComparator(secondGraph, displayGraph);
             PairList<State, State> anySolution = comparator.getAnySolution();
-            anySolution.forEach((a, b) -> a.addColor(Color4f.GREEN, COMPARE));
+            anySolution.forEach((a, b) -> b.addColor(Color4f.GREEN, COMPARE));
 
             displayGraph.getNodeMesh().scheduleColorReload();
         }, "Graph comparison");
