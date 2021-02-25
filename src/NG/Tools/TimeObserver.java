@@ -45,6 +45,7 @@ public class TimeObserver {
         float loopDurationNanos = (currentStart - thisLoopStart);
         if (!includeOther) loopDurationNanos -= thisLoopMeasures.remove(NONE);
 
+        assert loopDurationNanos >= 0 : thisLoopMeasures;
         loopTimes.add(loopDurationNanos / 1e9f);
         thisLoopStart = currentStart;
 
@@ -98,6 +99,12 @@ public class TimeObserver {
         return loopDurationNanos / 1e9f;
     }
 
+    public float averageLoopTime() {
+        float average = loopTimes.average();
+        assert average > 0 : loopTimes;
+        return average;
+    }
+
     public PairList<String, Float> results() {
         PairList<String, Float> pairs = new PairList<>(allMeasures.size());
 
@@ -112,8 +119,11 @@ public class TimeObserver {
     }
 
     public String resultsTable() {
-        StringBuilder builder = new StringBuilder(String.format("Time division averages of %d loops of %1.04f sec:", queueSize, loopTimes
-                .average()));
+        StringBuilder builder = new StringBuilder(String.format(
+                "Time division averages of %d loops of %1.04f sec:",
+                queueSize, loopTimes.average()
+        ));
+
         for (Pair<String, Float> result : results()) {
             builder.append("\n");
             builder.append(String.format("| %-30s | %4.01f%% |", result.left, result.right * 100));

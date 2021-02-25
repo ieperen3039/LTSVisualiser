@@ -27,7 +27,7 @@ public class Auto extends Thread {
 
     private final BlockingQueue<Float> queue = new ArrayBlockingQueue<>(8);
     private final AtomicInteger iteration = new AtomicInteger(0);
-    private final List<String> blacklist = Arrays.asList("alma_2.aut", "lift3-init.aut");
+    private final List<String> blacklist = Arrays.asList("alma_2.aut", "lift3-init.aut", "twilight_2.aut");
 
     public Auto(Main root, Path directory) {
         super("auto thread");
@@ -40,10 +40,11 @@ public class Auto extends Thread {
         SpringLayout layout = root.getSpringLayout();
         Settings settings = root.settings();
         root.window().setMinimized(true);
+        settings.RANDOM_LAYOUT = true;
 
         File resultFile = new File("barnes_comparison.csv");
         PrintWriter out = getWriter(resultFile);
-        out.println("\"Files\";\"Plain 1\";\"Plain 10\";\"Plain 100\";\"Plain 1000\";\"Barnes 1\";\"Barnes 10\";\"Barnes 100\";\"Barnes 1000\"");
+        out.println("\"Files\";\"Plain 1\";\"Plain 100\";\"Barnes 1\";\"Barnes 100\"");
 
         // all files in directory
         File[] files = directory.toFile().listFiles();
@@ -54,41 +55,45 @@ public class Auto extends Thread {
                 boolean isGraph = name.contains(".aut");
                 if (!isGraph) continue;
                 if (blacklist.contains(name)) continue;
-                out.printf("\"%s\";", name);
 
-                { // plain
-                    layout.defer(() -> {
-                        Logger.INFO.print("Testing plain with " + graphFile);
+                for (int i = 0; i < 10; i++) {
+                    System.gc();
+                    Logger.DEBUG.print(name + " " + i);
+                    out.printf("\"%s %d\";", name, i);
+                    { // plain
+                        layout.defer(() -> {
+                            Logger.INFO.print("Testing plain with " + graphFile);
 
-                        root.setGraph(graphFile);
-                        layout.setSpeed(TARGET_SPEED);
-                        layout.setBarnesHutTheta(0);
-                        iteration.set(0);
-                    });
+                            root.setGraph(graphFile);
+                            layout.setSpeed(TARGET_SPEED);
+                            layout.setBarnesHutTheta(0);
+                            iteration.set(0);
+                        });
 
-                    for (int i = 0; i < 4; i++) {
-                        Float value = queue.take();
-                        out.printf(Locale.US, "%.06f;", value);
+                        for (int j = 0; j < 2; j++) {
+                            Float value = queue.take();
+                            out.printf(Locale.US, "%.06f;", value);
+                        }
                     }
+
+                    { // barnes-hut
+                        layout.defer(() -> {
+                            Logger.INFO.print("Testing barnes-hut with " + graphFile);
+
+                            root.setGraph(graphFile);
+                            layout.setSpeed(TARGET_SPEED);
+                            layout.setBarnesHutTheta(1);
+                            iteration.set(0);
+                        });
+
+                        for (int j = 0; j < 2; j++) {
+                            Float value = queue.take();
+                            out.printf(Locale.US, "%.06f;", value);
+                        }
+                    }
+                    out.println();
                 }
 
-                { // barnes-hut
-                    layout.defer(() -> {
-                        Logger.INFO.print("Testing barnes-hut with " + graphFile);
-
-                        root.setGraph(graphFile);
-                        layout.setSpeed(TARGET_SPEED);
-                        layout.setBarnesHutTheta(1);
-                        iteration.set(0);
-                    });
-
-                    for (int i = 0; i < 4; i++) {
-                        Float value = queue.take();
-                        out.printf(Locale.US, "%.06f;", value);
-                    }
-                }
-
-                out.println();
                 out.flush();
 
             } catch (InterruptedException e) {
@@ -112,9 +117,8 @@ public class Auto extends Thread {
     public void onLayoutUpdate() {
         int i = iteration.incrementAndGet();
 
-        if (i == 1 || i == 10 || i == 100 || i == 1000) {
-            Logger.DEBUG.print("iteration " + i);
-            float time = root.getSpringLayout().timer.secondsSinceLoopStart();
+        if (i == 5 || i == 100) {
+            float time = root.getSpringLayout().timer.averageLoopTime();
             queue.add(time);
         }
     }
