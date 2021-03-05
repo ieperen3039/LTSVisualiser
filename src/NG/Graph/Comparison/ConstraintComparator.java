@@ -8,6 +8,7 @@ import NG.MuChecker.StateSet;
 import NG.Tools.Logger;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * @author Geert van Ieperen created on 8-2-2021.
@@ -26,15 +27,19 @@ public class ConstraintComparator {
 
     private final List<PairList<State, State>> solutions = new ArrayList<>();
     private final State[] varSequence;
-    private int maxSolutionSize = 0;
-    private long choices = 0;
     private int endSubscript;
 
+    private int maxSolutionSize = 0;
+    private long choices = 0;
+    private long stackDepth = 0;
+
     public ConstraintComparator(Graph subGraph, Graph superGraph) {
-        Logger.printOnline(() -> String.format(
-                "choices performed: %d | current num of multivalued variables: %2d | max solution size: %d",
-                choices, endSubscript, maxSolutionSize
-        ));
+        Supplier<String> updateSupplier = () -> String.format(
+                "choices performed: %d | multivalued variables: %2d | stack depth: %2d | max solution size: %d",
+                choices, endSubscript + 1, stackDepth, maxSolutionSize
+        );
+
+        Logger.printOnline(updateSupplier);
 
         int nrOfANodes = subGraph.getNrOfNodes();
         int nrOfBNodes = superGraph.getNrOfNodes();
@@ -104,6 +109,8 @@ public class ConstraintComparator {
             searchRecursive(choice, domains, solutions);
         }
         Logger.INFO.print("Comparison resulted in " + solutions.size() + " solutions");
+
+        Logger.removeOnlinePrint(updateSupplier);
     }
 
     private void searchRecursive(State iState, StateSet[] domains, List<PairList<State, State>> solutions) {
@@ -119,17 +126,21 @@ public class ConstraintComparator {
             choices++;
 
             // remove all impossible values from the local domain
-            reduce(iState, localDomain);
+            boolean isConsistent = reduce(iState, localDomain);
+            if (!isConsistent) continue;
 
             int localEndSubscript = endSubscript;
             State next = chooseNext(localDomain);
 
             if (next != null) {
                 // i->v is possible, and there is another open variable
+                stackDepth++;
                 searchRecursive(next, localDomain, solutions);
+                stackDepth--;
 
             } else {
                 assert endSubscript < 0 : endSubscript;
+
                 PairList<State, State> solution = readSolution(localDomain);
                 int numSingleValuedDomains = solution.size();
 
@@ -243,8 +254,9 @@ public class ConstraintComparator {
      * reduces all domains such that all constraints are satisfied
      * @param focus   a state in aGraph that has just been changed
      * @param domains the domain to reduce over
+     * @return true iff there are no empty domains
      */
-    private void reduce(State focus, StateSet[] domains) {
+    private boolean reduce(State focus, StateSet[] domains) {
         Queue<State> queue = new ArrayDeque<>();
         queue.add(focus);
 
@@ -257,16 +269,20 @@ public class ConstraintComparator {
                 State iState = jOut.to; // state in a
 
                 StateSet[] predicatesIn = edgePredicateIn.get(jOut.label);
-                reduceVariable(iState, jState, domains, predicatesIn, queue);
+                boolean isConsistent = reduceVariable(iState, jState, domains, predicatesIn, queue);
+                if (!isConsistent) return false;
             }
 
             for (Transition jOut : jState.getIncoming()) {
                 State iState = jOut.from; // state in a
 
                 StateSet[] predicatesOut = edgePredicateOut.get(jOut.label);
-                reduceVariable(iState, jState, domains, predicatesOut, queue);
+                boolean isConsistent = reduceVariable(iState, jState, domains, predicatesOut, queue);
+                if (!isConsistent) return false;
             }
         }
+
+        return true;
     }
 
     /**
@@ -276,20 +292,22 @@ public class ConstraintComparator {
      * @param domains    the domain to reduce over
      * @param predicates the predicates to check against
      * @param queue      if iState is changed, it is added to this queue
+     * @return true iff all domains are valid
      */
-    private void reduceVariable(
+    private boolean reduceVariable(
             State iState, State jState, StateSet[] domains, StateSet[] predicates, Queue<State> queue
     ) {
         if (predicates == null) {
             incrementWeight(iState.index, jState.index);
-            return;
+            return false;
         }
 
         StateSet iDomain = domains[iState.index]; // states in b
         StateSet jDomain = domains[jState.index]; // states in b
 
-        if (iDomain.isEmpty() || isSingleValued(iDomain)) return;
-        if (jDomain.isEmpty()) return;
+        if (iDomain.isEmpty()) return false;
+        if (jDomain.isEmpty()) return false;
+        if (isSingleValued(iDomain)) return true;
 
         boolean changed = false;
         Iterator<State> iterator = iDomain.iterator();
@@ -307,11 +325,14 @@ public class ConstraintComparator {
         if (changed) {
             if (iDomain.isEmpty()) {
                 incrementWeight(iState.index, jState.index);
+                return false;
 
             } else if (!queue.contains(iState)) {
                 queue.add(iState);
             }
         }
+
+        return true;
     }
 
     private int getWeight(int iIndex, int jIndex) {
@@ -368,6 +389,7 @@ public class ConstraintComparator {
      */
     private boolean unaryConstraint(State aState, State bState) {
         if (aState.equals(aGraph.getInitialState())) return bState.equals(bGraph.getInitialState());
+        if (aState.getOutgoing().size() < bState.getOutgoing().size()) return false;
         return true;
 
     }

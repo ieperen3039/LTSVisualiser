@@ -27,6 +27,7 @@ public class Settings {
 
     // other
     public boolean PRINT_ROLL = false;
+    public boolean ACCURATE_RENDER_TIMING = false;
     public boolean ADVANCED_MANIPULATION = false;
     public int MAX_ITERATIONS_PER_SECOND = 200;
     public int NUM_WORKER_THREADS = 8;

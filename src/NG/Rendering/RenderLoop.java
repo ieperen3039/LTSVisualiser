@@ -52,6 +52,7 @@ public class RenderLoop extends AbstractGameLoop implements ToolElement {
 
         Settings settings = root.settings();
 
+        accurateTiming = settings.ACCURATE_RENDER_TIMING;
         overlay.init(settings.ANTIALIAS_LEVEL);
         overlay.addHudItem((hud) -> {
             if (root.settings().PRINT_ROLL) {

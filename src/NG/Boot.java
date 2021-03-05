@@ -39,12 +39,14 @@ public class Boot {
                                 "By default, it writes to a generated new file"
                 )
 
-                .addFlag("lwjgl-debug", () -> Configuration.DEBUG.set(true),
+                .addFlag("lwjglDebug", () -> Configuration.DEBUG.set(true),
                         "Activates logging of underlying libraries")
                 .addFlag("untimed", () -> Logger.doPrintTimeStamps = false,
                         "Removes timestamps from logging")
                 .addFlag("loopTimingOverlay", () -> settings.PRINT_ROLL = true,
                         "Display real-time timing results in the graph area")
+                .addFlag("enableRenderTiming", () -> settings.ACCURATE_RENDER_TIMING = true,
+                        "enable measuring the runtime of the rendering procedure")
                 .addFlag("advancedDragging", () -> settings.ADVANCED_MANIPULATION = true,
                         "Activates an experimental dragging mode. " +
                                 "This mode pulls the neighbours of targeted nodes along"
