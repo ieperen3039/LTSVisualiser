@@ -146,9 +146,6 @@ public class Menu extends SDecorator {
                                     updateLoop.defer(updateLoop.timer::reset);
                                 }, BUTTON_PROPS
                         ),
-                        new SButton("Load second Graph",
-                                () -> openFileDialog(main::setSecondaryGraph, "*.aut"), BUTTON_PROPS
-                        ),
                         SContainer.row(
                                 new SButton("Load Modal Mu-Formula",
                                         () -> openFileDialog(main::applyMuFormulaMarking, "*.mcf"),

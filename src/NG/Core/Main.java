@@ -4,7 +4,6 @@ import NG.Camera.Camera;
 import NG.Camera.FlatCamera;
 import NG.Camera.PointCenteredCamera;
 import NG.DataStructures.Generic.Color4f;
-import NG.DataStructures.Generic.PairList;
 import NG.GUIMenu.Components.STextArea;
 import NG.GUIMenu.Components.SToggleButton;
 import NG.GUIMenu.FrameManagers.FrameManagerImpl;
@@ -13,7 +12,6 @@ import NG.GUIMenu.Menu;
 import NG.GUIMenu.Rendering.NGFonts;
 import NG.GUIMenu.Rendering.NVGOverlay;
 import NG.GUIMenu.Rendering.SFrameLookAndFeel;
-import NG.Graph.Comparison.ConstraintComparator;
 import NG.Graph.*;
 import NG.Graph.Layout.HDEPositioning;
 import NG.Graph.Layout.SpringLayout;
@@ -45,7 +43,8 @@ import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import static NG.Graph.Rendering.GraphElement.Priority.*;
+import static NG.Graph.Rendering.GraphElement.Priority.ACTION_MARKING;
+import static NG.Graph.Rendering.GraphElement.Priority.MU_FORMULA;
 import static org.lwjgl.opengl.GL11.glDepthMask;
 
 /**
@@ -81,7 +80,6 @@ public class Main {
 
     private final Object graphLock = new Object();
     private SourceGraph graph;
-    private SourceGraph secondGraph;
     private NodeClustering displayGraph;
 
     private final Map<String, Color4f> markings = new HashMap<>();
@@ -117,7 +115,6 @@ public class Main {
         };
 
         graph = SourceGraph.empty(this);
-        secondGraph = SourceGraph.empty(this);
         displayGraph = new NodeClustering(graph, Collections.emptySet());
     }
 
@@ -146,7 +143,6 @@ public class Main {
 
         // init graphs
         graph.init();
-        secondGraph.init();
 
         renderer.renderSequence(new NodeShader())
                 .add((gl, root) -> {
@@ -298,41 +294,6 @@ public class Main {
         onNodePositionChange();
         menu.reloadUI();
 //        });
-    }
-
-    public void setSecondaryGraph(File newGraphFile) {
-        try {
-            setSecondaryGraph(SourceGraph.parse(newGraphFile, this));
-
-        } catch (IOException e) {
-            Logger.ERROR.print(newGraphFile.getName(), e);
-        }
-    }
-
-    private void setSecondaryGraph(SourceGraph newGraph) {
-//        springLayout.defer(() -> {
-        synchronized (graphLock) {
-            secondGraph.cleanup();
-            secondGraph = newGraph;
-            HDEPositioning.applyTo(secondGraph, springLayout.getNatLength());
-            secondGraph.init();
-        }
-
-        onNodePositionChange();
-//        });
-
-        Thread comparisonThread = new Thread(() -> {
-            displayGraph.resetColors(COMPARE);
-
-            ConstraintComparator comparator = new ConstraintComparator(secondGraph, displayGraph);
-            PairList<State, State> anySolution = comparator.getAnySolution();
-            anySolution.forEach((a, b) -> b.addColor(Color4f.GREEN, COMPARE));
-
-            displayGraph.getNodeMesh().scheduleColorReload();
-        }, "Graph comparison");
-
-        comparisonThread.setDaemon(true);
-        comparisonThread.start();
     }
 
     public void doSourceLayout(boolean doSource) {
