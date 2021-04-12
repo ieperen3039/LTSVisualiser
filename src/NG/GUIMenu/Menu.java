@@ -94,7 +94,7 @@ public class Menu extends SDecorator {
         for (int i = 0; i < actionLabels.length; i++) {
             String label = actionLabels[i];
             //noinspection SuspiciousNameCombination
-            SToggleButton button = new SToggleButton("C", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
+            SToggleButton button = new SToggleButton("C", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, label.equals("tau"));
             button.addStateChangeListener(on -> main.resetCluster());
             button.setGrowthPolicy(false, false);
             clusterButtons[i] = button;
