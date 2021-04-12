@@ -135,12 +135,6 @@ public class Menu extends SDecorator {
                         // file selectors
                         new SButton("Load Graph",
                                 () -> {
-                                    // log timing results as the click happens
-                                    Logger.DEBUG.print(graph.toString()
-                                            + '\n' + updateLoop.timer.resultsTable()
-                                            + '\n' + renderLoop.timer.resultsTable()
-                                    );
-                                    // now load the graph
                                     openFileDialog(
                                             file -> {
                                                 currentGraphFile = file;

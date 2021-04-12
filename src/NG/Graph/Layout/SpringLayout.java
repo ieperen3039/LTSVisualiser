@@ -267,9 +267,6 @@ public class SpringLayout extends AbstractGameLoop implements ToolElement {
             nodeTension.fill(totalNodeTension);
             nodeNetForce.fill(totalNodeNetForce);
 
-            Logger.DEBUG.print("Initial net force: " + totalNodeNetForce);
-            Logger.DEBUG.print("Initial tension: " + totalNodeTension);
-
         } else {
             nodeTension.add(totalNodeTension);
             nodeNetForce.add(totalNodeNetForce);
