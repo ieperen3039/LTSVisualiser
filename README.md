@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/290809781.svg)](https://zenodo.org/badge/latestdoi/290809781)
+
 # LTSVisualiser
 This tool allows visualising a graph encoded as a `.aut` file, providing indicatiors for the graph structure and real-time complexity reduction techniques.
 The tool is effective for graphs up to 100.000 edges.
