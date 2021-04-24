@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/290809781.svg)](https://zenodo.org/badge/latestdoi/290809781)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4680646.svg)](https://doi.org/10.5281/zenodo.4680646)
 
 # LTSVisualiser
 This tool allows visualising a graph encoded as a `.aut` file, providing indicatiors for the graph structure and real-time complexity reduction techniques.
