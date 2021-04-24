@@ -2,7 +2,10 @@
 
 # LTSVisualiser
 This tool allows visualising a graph encoded as a `.aut` file, providing indicatiors for the graph structure and real-time complexity reduction techniques.
-The tool is effective for graphs up to 100.000 edges.
+The tool is effective for graphs up to 100 000 edges.
+
+This tool has been created to demonstrate and analyse the techniques discussed in the thesis by the same author:
+https://zenodo.org/record/4717661#.YIQ4JlUzapp
 
 ## Graph Controls
 Assuming a graph is loaded, the camera can be rotated using both the right mouse button and the middle mouse button.
