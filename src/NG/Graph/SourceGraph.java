@@ -221,4 +221,23 @@ public class SourceGraph extends Graph {
         graph.getNodeMesh().schedulePositionReload();
         graph.getEdgeMesh().schedulePositionReload();
     }
+
+    public boolean isFullyReachable() {
+        StateSet reachableStates = getEmptySet();
+        StateSet openSet = getEmptySet();
+        reachableStates.add(getInitialState());
+
+        while (!openSet.isEmpty()) {
+            State anyState = openSet.any();
+            for (Transition outgoing : anyState.getOutgoing()) {
+                if (!reachableStates.contains(outgoing.to))
+                {
+                    openSet.add(outgoing.to);
+                    reachableStates.add(outgoing.to);
+                }
+            }
+        }
+        
+        return reachableStates.equals(getUniverse());
+    }
 }

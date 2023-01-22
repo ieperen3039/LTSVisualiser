@@ -4,25 +4,89 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>invalid</groupId>
-    <artifactId>TestSuite</artifactId>
-    <version>0.1</version>
+    <groupId>ng.tools</groupId>
+    <artifactId>lts-visualiser</artifactId>
+    <version>1.1</version>
+    <packaging>jar</packaging>
+    
+    <developers>
+        <developer>
+            <id>ieperen3039</id>
+            <name>Geert van Ieperen</name>
+        </developer>
+    </developers>
+
+    <properties>
+        <lwjgl.version>3.2.3</lwjgl.version>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
+        <jarDirectory>../jar</jarDirectory>
+    </properties>
+
     <build>
+        <sourceDirectory>${project.basedir}/src</sourceDirectory>
+        <testSourceDirectory>${project.basedir}/test</testSourceDirectory>
+        <defaultGoal>package</defaultGoal>
         <plugins>
             <plugin>
+                <!-- build jar, add jar/libs to classpath -->
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
                 <configuration>
-                    <source>8</source>
-                    <target>8</target>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>libs/</classpathPrefix>
+                            <mainClass>NG.Boot</mainClass>
+                        </manifest>
+                    </archive>
+                    <outputDirectory>${jarDirectory}</outputDirectory>
                 </configuration>
+            </plugin>
+            <plugin>
+                <!-- copy all dependencies to jar/libs -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${jarDirectory}/libs</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                        <outputDirectory>${jarDirectory}/res</outputDirectory>
+                        <resources>
+                            <resource>
+                                <directory>res</directory>
+                            </resource>
+                        </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
 
-    <properties>
-        <lwjgl.version>3.2.3</lwjgl.version>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>org.lwjgl</groupId>

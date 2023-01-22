@@ -274,10 +274,10 @@ public class Main {
             graph.cleanup();
             graph = newGraph;
 
-            if (settings.RANDOM_LAYOUT) {
-                SourceGraph.randomLayout(graph, springLayout.getNatLength());
-            } else {
+            if (!settings.RANDOM_LAYOUT && graph.states.length > 2 && graph.isFullyReachable()) {
                 HDEPositioning.applyTo(graph, springLayout.getNatLength());
+            } else {
+                SourceGraph.randomLayout(graph, springLayout.getNatLength());
             }
 
             graph.init();

@@ -48,11 +48,12 @@ public class Menu extends SDecorator {
     public static final Color4f B_COLOR = Color4f.rgb(0, 134, 19, 0.8f);
 
     private static final PairList<String, Color4f> PAINT_COLORS = new PairList.Builder<String, Color4f>()
-            .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
             .add("Red", Color4f.rgb(200, 25, 25, 0.8f))
             .add("Orange", Color4f.rgb(220, 105, 20, 0.8f))
             .add("Yellow", Color4f.rgb(220, 150, 0, 0.8f))
             .add("Green", Color4f.rgb(4, 120, 13, 0.8f))
+            .add("Blue", Color4f.rgb(3, 190, 252, 0.8f))
+            .add("Purple", Color4f.rgb(200, 20, 160, 0.8f))
             .add("Faint Grey", new Color4f(0.5f, 0.5f, 0.5f, 0.08f))
             .get();
     public static final int INITIAL_COLOR_INDEX = PAINT_COLORS.indexOfLeft("Green");
@@ -102,7 +103,7 @@ public class Menu extends SDecorator {
 
         internalButtons = new SToggleButton[actionLabels.length];
         for (int i = 0; i < actionLabels.length; i++) {
-            String label = actionLabels[i];
+            // String label = actionLabels[i];
             //noinspection SuspiciousNameCombination
             SToggleButton button = new SToggleButton("I", BUTTON_PROPS.minHeight, BUTTON_PROPS.minHeight, false);
             button.addStateChangeListener(on -> main.resetCluster());
@@ -144,6 +145,17 @@ public class Menu extends SDecorator {
                                     // reset timers
                                     renderLoop.defer(renderLoop.timer::reset);
                                     updateLoop.defer(updateLoop.timer::reset);
+                                }, BUTTON_PROPS
+                        ),
+                        new SButton("Load from mCRL2",
+                                () -> {
+                                    openFileDialog(
+                                            file -> {
+                                                currentGraphFile = file;
+                                                File newGraphFile = processMcrl2File(file);
+                                                main.setGraph(newGraphFile);
+                                            }, "*.mcrl2"
+                                    );
                                 }, BUTTON_PROPS
                         ),
                         SContainer.row(
@@ -227,6 +239,27 @@ public class Menu extends SDecorator {
                         new SFiller()
                 )).setGrowthPolicy(false, true)
         ));
+    }
+
+    private File processMcrl2File(File file) {
+        String fileName = file.getName();
+        fileName = fileName.substring(0, fileName.indexOf('.'));
+        try {
+            int result1 = Runtime.getRuntime().exec(String.format(
+                "C:\\Program Files\\mCRL2\\bin\\mcrl22lps %s %s.lps", file.getPath(), fileName
+            )).waitFor();
+            Logger.INFO.print("mcrl22lps returned " + result1);
+
+            int result2 = Runtime.getRuntime().exec(String.format(
+                "C:\\Program Files\\mCRL2\\bin\\lps2lts %s.lps %s.aut", fileName, fileName
+            )).waitFor();
+            Logger.INFO.print("ltsconvert returned " + result2);
+
+        } catch (Exception ex) {
+            Logger.ERROR.print(ex);
+        }
+
+        return new File(fileName + ".aut");
     }
 
     private void openFileDialog(Consumer<File> action, String extension) {

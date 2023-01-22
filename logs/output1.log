@@ -1,0 +1,19 @@
+32         [INFO ]: Starting up...
+52         [DEBUG]: General debug information: 
+	System OS:          Windows 10
+	Java VM:            17.0.5+8
+	Tool version:       v 0.3
+	Number of workers:  8
+468        [DEBUG]: OpenGL version: 4.6.0 Compatibility Profile Context 22.20.27.07.221020
+524        [DEBUG]: Initializing...
+628        [DEBUG]: set graph to Clustering of empty graph
+629        [INFO ]: Finished startup
+
+2257       [DEBUG]: Renderloop is stopped
+2259       [DEBUG]: empty graph
+Time division averages of 4 loops of 0,0000 sec:
+Time division averages of 16 loops of 0,0178 sec:
+| Other                          | 99,5% |
+| GPU Update                     |  0,5% |
+2267       [DEBUG]: layout is stopped
+2274       [INFO ]: Tool has been closed successfully

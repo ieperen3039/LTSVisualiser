@@ -19,9 +19,10 @@ public class Boot {
 //        Logger.setLoggingLevel(Logger.INFO);
         Logger.setLoggingLevel(Logger.DEBUG);
 
-        File defaultLog = new File("output1.log");
+        new File("logs").mkdir();
+        File defaultLog = new File("logs/output1.log");
         for (int i = 2; defaultLog.exists(); i++) {
-            defaultLog = new File("output" + i + ".log");
+            defaultLog = new File("logs/output" + i + ".log");
         }
 
         new FlagManager()
@@ -33,7 +34,7 @@ public class Boot {
                         "Sets logging to ERROR level")
                 .addExclusivity("debug", "quiet", "silent")
 
-                .addParameterFlag("log", defaultLog.getName(),
+                .addParameterFlag("log", defaultLog.getAbsolutePath(),
                         file -> Logger.setOutputStream(new FileOutputStream(file)),
                         "Sets logging to write to the file with the given name. If the file exists, it is overwritten. " +
                                 "By default, it writes to a generated new file"
