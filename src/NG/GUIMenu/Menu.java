@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static NG.Core.Main.PATH_COLOR;
 
@@ -257,9 +258,15 @@ public class Menu extends SDecorator {
 
         try {
             Float[] progressValue = {0f};
+            long startTimeMillis = System.currentTimeMillis();
+            Supplier<Long> getRunSeconds = () -> (System.currentTimeMillis() - startTimeMillis) / 1000;
+
             progressFrame.setMainPanel(SPanel.column(
                 new SProgressBar(() -> progressValue[0], BUTTON_PROPS),
-                progressText
+                progressText,
+                new SActiveTextArea(() -> {
+                    return String.format("Runtime: %d seconds", getRunSeconds.get());
+                }, BUTTON_PROPS)
             ));
             progressFrame.pack();
             main.gui().addFrameCenter(progressFrame, main.window());
