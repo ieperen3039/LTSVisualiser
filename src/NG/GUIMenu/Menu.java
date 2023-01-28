@@ -23,7 +23,9 @@ import NG.Tools.Logger;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -150,12 +152,17 @@ public class Menu extends SDecorator {
                         new SButton("Load from mCRL2",
                                 () -> {
                                     openFileDialog(
-                                            file -> {
-                                                currentGraphFile = file;
-                                                File newGraphFile = processMcrl2File(file);
-                                                main.setGraph(newGraphFile);
-                                            }, "*.mcrl2"
+                                            file -> new Thread(
+                                                () -> {
+                                                    currentGraphFile = file;
+                                                    File newGraphFile = processMcrl2File(file);
+                                                    main.setGraph(newGraphFile);
+                                                }
+                                            ).start()
+                                            , "*.mcrl2"
                                     );
+                                    renderLoop.defer(renderLoop.timer::reset);
+                                    updateLoop.defer(updateLoop.timer::reset);
                                 }, BUTTON_PROPS
                         ),
                         SContainer.row(
@@ -244,19 +251,62 @@ public class Menu extends SDecorator {
     private File processMcrl2File(File file) {
         String fileName = file.getName();
         fileName = fileName.substring(0, fileName.indexOf('.'));
-        try {
-            int result1 = Runtime.getRuntime().exec(String.format(
-                "C:\\Program Files\\mCRL2\\bin\\mcrl22lps %s %s.lps", file.getPath(), fileName
-            )).waitFor();
-            Logger.INFO.print("mcrl22lps returned " + result1);
 
-            int result2 = Runtime.getRuntime().exec(String.format(
-                "C:\\Program Files\\mCRL2\\bin\\lps2lts %s.lps %s.aut", fileName, fileName
-            )).waitFor();
-            Logger.INFO.print("ltsconvert returned " + result2);
+        SFrame progressFrame = new SFrame("Processing mCRL2 specification...");
+        STextArea progressText = new STextArea("Starting mcrl22lps...", BUTTON_PROPS);
+
+        try {
+            Float[] progressValue = {0f};
+            progressFrame.setMainPanel(SPanel.column(
+                new SProgressBar(() -> progressValue[0], BUTTON_PROPS),
+                progressText
+            ));
+            progressFrame.pack();
+            main.gui().addFrameCenter(progressFrame, main.window());
+
+            int commandErrorValue;
+            {
+                Process process = Runtime.getRuntime().exec(String.format(
+                    "mcrl22lps -v \"%s\" \"%s.lps\"", file.getPath(), fileName
+                ));
+                progressFrame.onDispose(() -> process.destroy());
+
+                BufferedReader processOutputStream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String s = null;
+                while ((s = processOutputStream.readLine()) != null) {
+                    progressText.setText(s);
+                }
+
+                commandErrorValue = process.waitFor();
+                progressText.setText("mcrl22lps returned " + commandErrorValue);
+                progressFrame.onDispose(null);
+            }
+            progressValue[0] = 0.5f;
+
+            if (commandErrorValue == 0) {
+                Process process = Runtime.getRuntime().exec(String.format(
+                "lps2lts -v \"%s.lps\" \"%s.aut\"", fileName, fileName
+                ));
+                progressFrame.onDispose(() -> process.destroy());
+
+                BufferedReader processOutputStream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String s = null;
+                while ((s = processOutputStream.readLine()) != null) {
+                    progressText.setText(s);
+                }
+
+                commandErrorValue = process.waitFor();
+                progressText.setText("lps2lts returned " + commandErrorValue);
+                progressFrame.onDispose(null);
+            }
+            progressValue[0] = 1f;
+
+            progressFrame.dispose();
 
         } catch (Exception ex) {
             Logger.ERROR.print(ex);
+            progressText.setText("Could not process specification: " + ex.getMessage());
+            progressFrame.onDispose(null);
         }
 
         return new File(fileName + ".aut");

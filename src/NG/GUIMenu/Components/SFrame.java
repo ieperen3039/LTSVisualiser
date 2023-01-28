@@ -17,6 +17,7 @@ public class SFrame extends SDecorator {
 
     private final String title;
     private boolean isDisposed = false;
+    private Runnable onDisposeAction = null;
 
     private final SContainer bodyComponent;
     private STextArea titleComponent;
@@ -144,6 +145,7 @@ public class SFrame extends SDecorator {
     public void dispose() {
         this.setVisible(false);
         isDisposed = true;
+        if (onDisposeAction != null) onDisposeAction.run();
     }
 
     /**
@@ -165,5 +167,9 @@ public class SFrame extends SDecorator {
             frame.setVisible(false);
             gui.addFrame(frame);
         }
+    }
+
+    public void onDispose(Runnable action) {
+        onDisposeAction = action;
     }
 }
